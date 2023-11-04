@@ -1,0 +1,11 @@
+/.idea
+/mysql
+/logs
+/config/ssls/*
+.env
+/app/.cache
+/app/.config
+/app/.local
+/app/vendor
+/app/.bash_history
+/app/.phpunit.result.cache

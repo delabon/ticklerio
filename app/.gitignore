@@ -1,0 +1,8 @@
+.local/
+.config/
+.cache/
+.idea/
+/vendor/
+.phpunit.cache/
+.bash_history
+.phpunit.result.cache
