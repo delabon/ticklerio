@@ -64,4 +64,5 @@ jobs:
           args: "--working-dir=app/"
       - uses: php-actions/phpstan@v3
         with:
-          configuration: phpstan.neon
+          src: src/
+          configuration: app/phpstan.neon
