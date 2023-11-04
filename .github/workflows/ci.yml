@@ -47,7 +47,6 @@ jobs:
         with:
           bootstrap: app/vendor/autoload.php
           configuration: app/phpunit.xml
-          args: --coverage-text
           php_version: "8.2"
           php_extensions: gd zip
           version: 10.3
