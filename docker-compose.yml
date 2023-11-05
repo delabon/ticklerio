@@ -5,7 +5,7 @@ networks:
 
 services:
 
-  # nginx
+  # nginx main server
   nginx-service:
     image: nginx:stable-alpine
     container_name: nginx-container
@@ -17,6 +17,22 @@ services:
       - ./logs:/var/log/nginx
       - ./config/ssls:/etc/nginx/ssls
       - ./config/nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - php-service
+      - mysql-service
+    networks:
+      - ticklerio
+
+  # nginx feature tests server
+  nginx-feature-tests-service:
+    image: nginx:stable-alpine
+    container_name: nginx-feature-tests-container
+    ports:
+      - "8081:80"
+    volumes:
+      - ./app:/var/www
+      - ./logs:/var/log/nginx
+      - ./config/nginx/nginx-feature-tests.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - php-service
       - mysql-service

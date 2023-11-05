@@ -6,8 +6,8 @@ ARG GID=1000
 WORKDIR /var/www
 
 RUN apt-get update \
-    && apt-get install -y build-essential zlib1g-dev g++ git libicu-dev zip libzip-dev ffmpeg ghostscript libmagickwand-dev libonig-dev \
-    && docker-php-ext-install intl opcache pdo pdo_mysql gd mysqli mbstring \
+    && apt-get install -y build-essential zlib1g-dev g++ git libicu-dev zip libzip-dev ffmpeg ghostscript libmagickwand-dev libonig-dev libcurl3-dev \
+    && docker-php-ext-install intl opcache pdo pdo_mysql gd mysqli mbstring curl \
     && pecl install xdebug \
     && docker-php-ext-enable xdebug \
     && pecl install apcu \
