@@ -23,6 +23,7 @@ jobs:
         working-directory: app
       - name: Create Database
         run: |
+          mkdir -p app/database
           touch app/database/database.sqlite
       - name: Execute tests (Unit and Feature tests) via PHPUnit
         env:
