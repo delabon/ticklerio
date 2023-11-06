@@ -35,6 +35,7 @@ jobs:
 
       - name: Execute tests (Unit and Feature tests) via PHPUnit
         env:
+          BASE_URL: http://localhost:8000
           DB_CONNECTION: sqlite
           DB_DATABASE: app/database/database.sqlite
         run: vendor/bin/phpunit
