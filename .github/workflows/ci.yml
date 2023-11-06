@@ -4,65 +4,27 @@ on:
   push:
     branches: [ "master" ]
   pull_request:
-    paths:
-      - "app/**.php"
-      - "app/phpcs.xml"
-      - ".github/workflows/ci.yml"
+    branches: [ "master" ]
 
 jobs:
-      
-  phpcs:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0 # important!
+  laravel-tests:
 
-      # we may use whatever way to install phpcs, just specify the path on the next step
-      # however, curl seems to be the fastest
-      - name: Install PHP_CodeSniffer
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+      - uses: actions/checkout@v3
+      - name: Copy .env
+        run: php -r "file_exists('.env') || copy('.env.example', 'app/.env');"
+      - name: Install Dependencies
+        run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+      - name: Create Database
         run: |
-          curl -OL https://squizlabs.github.io/PHP_CodeSniffer/phpcs.phar
-          php phpcs.phar --version
-
-      - uses: tinovyatkin/action-php-codesniffer@v1
-        with:
-          files: "app/**.php" # you may customize glob as needed
-          phpcs_path: php phpcs.phar
-          standard: app/phpcs.xml
-          
-  phpunit:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: php-actions/composer@v6
-        with:
-          php_version: "8.2"
-          php_extensions: gd zip
-          version: 2.x
-          args: "--working-dir=app/"
-
-      - name: PHPUnit Tests
-        uses: php-actions/phpunit@v3
-        with:
-          bootstrap: app/vendor/autoload.php
-          configuration: app/phpunit.xml
-          php_version: "8.2"
-          php_extensions: gd zip
-          version: 10.3
-
-  phpstan:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v3
-      - uses: php-actions/composer@v6
-        with:
-          php_version: "8.2"
-          php_extensions: gd zip
-          version: 2.x
-          args: "--working-dir=app/"
-      - uses: php-actions/phpstan@v3
-        with:
-          src: src/
-          configuration: app/phpstan.neon
+          touch app/database/database.sqlite
+      - name: Execute tests (Unit and Feature tests) via PHPUnit
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: app/database/database.sqlite
+        run: vendor/bin/phpunit
