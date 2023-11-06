@@ -30,3 +30,4 @@ jobs:
           DB_CONNECTION: sqlite
           DB_DATABASE: app/database/database.sqlite
         run: vendor/bin/phpunit
+        working-directory: app
