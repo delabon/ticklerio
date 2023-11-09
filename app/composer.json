@@ -23,6 +23,7 @@
     },
     "require": {
         "rakit/validation": "^1.4",
-        "robmorgan/phinx": "^0.15.2"
+        "symfony/dotenv": "^6.3",
+        "ext-pdo": "*"
     }
 }

@@ -6,7 +6,11 @@
 
 use App\Controllers\RegisterController;
 
-require __DIR__ . '/../vendor/autoload.php';
+require __DIR__ . '/../src/bootstrap.php';
+
+//
+// HTTP requests
+//
 
 $uri = $_SERVER['REQUEST_URI'];
 
@@ -16,6 +20,8 @@ $uri = $_SERVER['REQUEST_URI'];
 
 // Register
 if (preg_match("/^\/ajax\/register\/?$/", $uri)) {
+    var_dump($_POST);
+    die;
     (new RegisterController())->register();
     die;
 }
