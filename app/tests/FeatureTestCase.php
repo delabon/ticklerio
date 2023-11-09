@@ -27,12 +27,12 @@ class FeatureTestCase extends TestCase
             $this->app->pdo(),
             __DIR__ . '/../database/migrations/'
         );
-        $this->migration->migrate();
+        // $this->migration->migrate();
     }
 
     protected function tearDown(): void
     {
-        $this->migration->rollback();
+        // $this->migration->rollback();
         $this->app->destroyPdo();
 
         // Reset the App singleton instance after each test
