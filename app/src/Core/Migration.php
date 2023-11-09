@@ -43,7 +43,7 @@ class Migration
                 continue;
             }
 
-            require $this->migrationsPath . $fileName;
+            require_once $this->migrationsPath . $fileName;
             $ob = new $className($this->pdo);
             $ob->up();
 
