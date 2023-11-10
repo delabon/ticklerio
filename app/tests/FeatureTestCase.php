@@ -3,10 +3,10 @@
 namespace Tests;
 
 use App\Core\App;
-use App\Core\Migration;
-use ReflectionClass;
-use PHPUnit\Framework\TestCase;
+use App\Core\Migration\Migration;
 use GuzzleHttp\Client;
+use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 class FeatureTestCase extends TestCase
 {

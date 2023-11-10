@@ -2,17 +2,10 @@
 
 // phpcs:ignoreFile
 
-use App\Core\Interfaces\MigrationInterface;
+use App\Core\Migration\AbstractMigration;
 
-final class CreateDummyTable implements MigrationInterface
+final class CreateDummyTable extends AbstractMigration
 {
-    private PDO $pdo;
-
-    public function __construct(PDO $pdo)
-    {
-        $this->pdo = $pdo;
-    }
-
     public function up(): void
     {
         $this->pdo->exec("

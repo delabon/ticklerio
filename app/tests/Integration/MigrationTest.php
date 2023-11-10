@@ -2,7 +2,7 @@
 
 namespace Tests\Integration;
 
-use App\Core\Migration;
+use App\Core\Migration\Migration;
 use PDO;
 use PHPUnit\Framework\TestCase;
 
