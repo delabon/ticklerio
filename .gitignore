@@ -2,10 +2,13 @@
 /mysql
 /logs
 /config/ssls/*
-.env
+/app/.env
 /app/.cache
 /app/.config
 /app/.local
 /app/vendor
 /app/.bash_history
 /app/.phpunit.result.cache
+/app/.idea
+/app/database/database.sqlite
+/app/.phpunit.cache

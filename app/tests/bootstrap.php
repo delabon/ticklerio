@@ -14,3 +14,6 @@ if (file_exists(__DIR__ . '/.env.for.testing')) {
 } else {
     throw new OutOfBoundsException('No .env file found.');
 }
+
+var_dump($_ENV['DB_MEMORY']);
+die;

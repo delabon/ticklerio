@@ -20,16 +20,17 @@ class App
 
     public function loadDb(): void
     {
-        if (strtolower($_ENV['DB_ADAPTER']) === 'mysql') {
-            $this->pdo = new PDO(
-                'mysql:host=' . $_ENV['DB_HOST'] . ';dbname=' . $_ENV['DB_NAME'],
-                $_ENV['DB_USER'],
-                $_ENV['DB_PASS']
-            );
-        } elseif (strtolower($_ENV['DB_ADAPTER']) === 'sqlite' && $_ENV['DB_MEMORY']) {
+        if ($_ENV['DB_MEMORY']) {
             $this->pdo = new PDO('sqlite::memory:');
         } else {
-            $this->pdo = new PDO('sqlite:' . __DIR__ . '/../../database/database.sqlite');
+            $this->pdo = new PDO(
+                'sqlite:' . __DIR__ . '/../../' . $_ENV['DB_FILE'],
+                '',
+                '',
+                [
+                    PDO::ATTR_PERSISTENT => true
+                ]
+            );
         }
     }
 

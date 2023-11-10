@@ -38,17 +38,6 @@ cd ../../
 docker-compose up --build -d
 ```
 
-#### Create & import databases
-
-```bash
-http://localhost:8080/
-(root/root)
-
-CREATE DATABASE ticklerio CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
-
-cat live.sql | docker exec -i container_id /usr/bin/mysql -u root --password=root ticklerio
-```
-
 #### Connect to container bash (host)
 
 ```bash
