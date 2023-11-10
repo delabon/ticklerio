@@ -1,8 +1,8 @@
 <?php
 
-use App\Core\Migration\MigrationInterface;
+use App\Core\Migration\AbstractMigration;
 
-final class CreateUsersTable implements MigrationInterface // phpcs:ignore
+final class CreateUsersTable extends AbstractMigration// phpcs:ignore
 {
     public function up(): void
     {

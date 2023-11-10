@@ -24,7 +24,7 @@ class App
             $this->pdo = new PDO('sqlite::memory:');
         } else {
             $this->pdo = new PDO(
-                'sqlite:' . __DIR__ . '/../../' . $_ENV['DB_FILE'],
+                'sqlite:' . __DIR__ . '/../../' . ltrim($_ENV['DB_FILE'], '/'),
                 '',
                 '',
                 [

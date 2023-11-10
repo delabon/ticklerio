@@ -4,6 +4,7 @@
  * Our basic router
  */
 
+use App\Controllers\HomeController;
 use App\Controllers\RegisterController;
 
 require __DIR__ . '/../src/bootstrap.php';
@@ -13,6 +14,14 @@ require __DIR__ . '/../src/bootstrap.php';
 //
 
 $uri = $_SERVER['REQUEST_URI'];
+
+//
+// Home
+//
+if ($uri === '/') {
+    (new HomeController())->index();
+    exit;
+}
 
 //
 // Ajax requests

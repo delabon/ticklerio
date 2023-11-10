@@ -17,9 +17,11 @@ class FeatureTestCase extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->http = new Client([
             'base_uri' => $_ENV['BASE_URL']
         ]);
+
         $this->app = App::getInstance();
         $this->app->loadDb();
 
