@@ -18,17 +18,28 @@ class App
         return self::$instance;
     }
 
+    private function __construct()
+    {
+    }
+
     public function loadDb(): void
     {
-        if ($_ENV['DB_MEMORY']) {
+        if ($_ENV['DB_MEMORY'] === 'true') {
             $this->pdo = new PDO('sqlite::memory:');
         } else {
+            $dbFile = __DIR__ . '/../../' . ltrim($_ENV['DB_FILE'], '/');
+
+            if (!file_exists($dbFile)) {
+                throw new \RuntimeException("The database file \"{$dbFile}\" does not exist.");
+            }
+
             $this->pdo = new PDO(
-                'sqlite:' . __DIR__ . '/../../' . ltrim($_ENV['DB_FILE'], '/'),
+                'sqlite:' . $dbFile,
                 '',
                 '',
                 [
-                    PDO::ATTR_PERSISTENT => true
+                    PDO::ATTR_PERSISTENT => true,
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 ]
             );
         }
