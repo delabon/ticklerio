@@ -25,14 +25,7 @@ class Migration
 
     public function migrate(): void
     {
-        $this->pdo->exec("
-            CREATE TABLE IF NOT EXISTS " . self::TABLE . " (
-                id BIGINT AUTO_INCREMENT PRIMARY KEY,
-                file_path VARCHAR(255),
-                migration_date BIGINT
-            )
-        ");
-
+        $this->createMigrationTableIfNotExists();
         $filePaths = $this->getFilePaths($this->migrationsPath);
         $classes = $this->convertFilePathsToClassNames($filePaths);
 
@@ -53,6 +46,23 @@ class Migration
 
     public function rollback(): void
     {
+        $this->createMigrationTableIfNotExists();
+        $filePaths = $this->getFilePaths($this->migrationsPath);
+        $classes = $this->convertFilePathsToClassNames($filePaths);
+
+        foreach ($classes as $fileName => $className) {
+            $filePath = $this->migrationsPath . $fileName;
+
+            if (!$this->isMigrated($filePath)) {
+                continue;
+            }
+
+            require_once $this->migrationsPath . $fileName;
+            $ob = new $className($this->pdo);
+            $ob->down();
+
+            $this->deleteRow($filePath);
+        }
     }
 
     private function getFilePaths(string $path): array
@@ -113,5 +123,31 @@ class Migration
             $filePath,
             time()
         ]);
+    }
+
+    private function deleteRow(string $filePath): void
+    {
+        $stmt = $this->pdo->prepare("
+            DELETE FROM
+                " . self::TABLE . "
+            WHERE
+                file_path = ?
+        ");
+        $stmt->execute([
+            $filePath,
+        ]);
+    }
+
+    protected function createMigrationTableIfNotExists(): void
+    {
+        $this->pdo->exec(
+            "
+            CREATE TABLE IF NOT EXISTS " . self::TABLE . " (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                file_path VARCHAR(255),
+                migration_date BIGINT
+            )
+        "
+        );
     }
 }
