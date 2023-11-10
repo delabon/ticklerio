@@ -6,7 +6,7 @@ use App\Models\User;
 use PDO;
 use Tests\FeatureTestCase;
 
-class UserRegisterTest extends FeatureTestCase
+class UserRegister extends FeatureTestCase
 {
     // public function testRegisteringUserSuccessfully(): void
     // {
