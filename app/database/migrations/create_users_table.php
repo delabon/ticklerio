@@ -2,7 +2,7 @@
 
 use App\Core\Migration\AbstractMigration;
 
-final class CreateUsersTable extends AbstractMigration// phpcs:ignore
+final class CreateUsersTable extends AbstractMigration // phpcs:ignore
 {
     public function up(): void
     {
