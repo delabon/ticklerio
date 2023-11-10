@@ -1,6 +1,5 @@
 <?php
 
-use Symfony\Component\Dotenv\Dotenv;
 use App\Core\App;
 
 require __DIR__ . '/../vendor/autoload.php';
@@ -8,12 +7,12 @@ require __DIR__ . '/../vendor/autoload.php';
 //
 // Read env
 //
-$dotenv = new Dotenv();
-
-if (file_exists(__DIR__ . '../.env')) {
-    $dotenv->load(__DIR__ . '../.env');
-} elseif (file_exists(__DIR__ . '../.env.example')) {
-    $dotenv->load(__DIR__ . '../.env');
+if (file_exists(__DIR__ . '/../.env')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__, '/../.env');
+    $dotenv->load();
+} elseif (file_exists(__DIR__ . '/../.env.example')) {
+    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__, '/../.env.example');
+    $dotenv->load();
 } else {
     throw new OutOfBoundsException('No .env file found.');
 }
