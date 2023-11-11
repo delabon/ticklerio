@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Core\App;
+use PDO;
+
 class User
 {
     private int $id = 0;
@@ -11,6 +14,12 @@ class User
     private string $password = '';
     private int $createdAt = 0;
     private int $updatedAt = 0;
+    private PDO $pdo;
+
+    public function __construct(PDO $pdo)
+    {
+        $this->pdo = $pdo;
+    }
 
     public function getId(): int
     {
@@ -84,12 +93,33 @@ class User
 
     public function save(): void
     {
-        $this->db->insert();
+        if (!$this->createdAt) {
+            $this->createdAt = time();
+        }
+
+        if (!$this->updatedAt) {
+            $this->updatedAt = time();
+        }
+
+        // Add new user
+        $stmt = $this->pdo->prepare("
+            INSERT INTO
+                users
+                (email, first_name, last_name, password)
+                VALUES (?, ?, ?, ?)
+        ");
+        $stmt->execute([
+            $this->email,
+            $this->firstName,
+            $this->lastName,
+            $this->password
+        ]);
+        $this->id = (int)$this->pdo->lastInsertId();
     }
 
     public static function findBy(string $col, $value): self
     {
-        $user = new self();
+        $user = new self((App::getInstance())->pdo());
         $user->setId(1);
         $user->setEmail('test@test.com');
         $user->setFirstName('John');

@@ -2,13 +2,14 @@
 
 namespace App\Controllers;
 
+use App\Core\App;
 use App\Models\User;
 
 class RegisterController
 {
     public function register(): void
     {
-        $user = new User();
+        $user = new User((App::getInstance())->pdo());
         $user->setEmail($_POST['email']);
         $user->setPassword($_POST['password']);
         $user->setFirstName($_POST['first_name']);

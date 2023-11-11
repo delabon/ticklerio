@@ -15,24 +15,15 @@ require __DIR__ . '/../src/bootstrap.php';
 
 $uri = $_SERVER['REQUEST_URI'];
 
-//
-// Home
-//
 if ($uri === '/') {
+    // Home
     (new HomeController())->index();
     exit;
-}
-
-//
-// Ajax requests
-//
-
-// Register
-if (preg_match("/^\/ajax\/register\/?$/", $uri)) {
-    var_dump($_POST);
-    die;
+} elseif (preg_match("/^\/ajax\/register\/?$/", $uri)) {
+    // Register a user via ajax
     (new RegisterController())->register();
     die;
 }
 
-var_dump($uri);
+header("HTTP/1.0 404 Not Found");
+exit;
