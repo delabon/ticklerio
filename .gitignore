@@ -12,3 +12,5 @@
 /app/.idea
 /app/database/database.sqlite
 /app/.phpunit.cache
+/app/errors.log
+/app/error.log

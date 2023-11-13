@@ -33,12 +33,7 @@ class UserTest extends TestCase
 
     public function testAddingUserSuccessfully(): void
     {
-        $userData = [
-            'email' => 'test@test.com',
-            'first_name' => 'John',
-            'last_name' => 'Doe',
-            'password' => '12345678',
-        ];
+        $userData = $this->getUserData();
         $user = new User($this->pdo);
         $user->setEmail($userData['email']);
         $user->setFirstName($userData['first_name']);
@@ -48,5 +43,37 @@ class UserTest extends TestCase
         $user->save();
 
         $this->assertSame(1, $user->getId());
+        $this->assertCount(1, User::getAll($this->pdo));
+    }
+
+    public function testUpdatingUserSuccessfully(): void
+    {
+        $userData = $this->getUserData();
+        $user = new User($this->pdo);
+        $user->setEmail($userData['email']);
+        $user->setFirstName($userData['first_name']);
+        $user->setLastName($userData['last_name']);
+        $user->setPassword($userData['password']);
+        $user->save();
+
+        $user->setEmail('superupdated@gmail.com');
+        $user->save();
+
+        $this->assertSame(1, $user->getId());
+        $this->assertSame('superupdated@gmail.com', $user->getEmail());
+        $this->assertCount(1, User::getAll($this->pdo));
+    }
+
+    /**
+     * @return string[]
+     */
+    protected function getUserData(): array
+    {
+        return [
+            'email' => 'test@test.com',
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'password' => '12345678',
+        ];
     }
 }

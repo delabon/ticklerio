@@ -140,14 +140,12 @@ class Migration
 
     protected function createMigrationTableIfNotExists(): void
     {
-        $this->pdo->exec(
-            "
+        $this->pdo->exec("
             CREATE TABLE IF NOT EXISTS " . self::TABLE . " (
-                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                id BIGINT PRIMARY KEY,
                 file_path VARCHAR(255),
                 migration_date BIGINT
             )
-        "
-        );
+        ");
     }
 }

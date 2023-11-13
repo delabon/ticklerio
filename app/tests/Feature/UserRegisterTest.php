@@ -3,10 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use PDO;
-use Tests\FeatureTestCase;
+use GuzzleHttp\Exception\GuzzleException;
+use Tests\AppTestCase;
 
-class UserRegisterTest extends FeatureTestCase
+class UserRegisterTest extends AppTestCase
 {
     public function testRegisteringUserSuccessfully(): void
     {
@@ -24,7 +24,8 @@ class UserRegisterTest extends FeatureTestCase
             ]
         );
 
-        $user = User::findBy('email', $email);
+        $user = User::find($this->pdo, 1);
+
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame(1, $user->getId());
         $this->assertSame($email, $user->getEmail());
@@ -49,17 +50,20 @@ class UserRegisterTest extends FeatureTestCase
             'post',
             '/ajax/register',
             [
-                'form_params' => $userOneData            ]
+                'form_params' => $userOneData
+            ]
         );
+
         $response2 = $this->http->request(
             'post',
             '/ajax/register',
             [
-                'form_params' => $userTwoData            ]
+                'form_params' => $userTwoData
+            ]
         );
 
-        $userOne = User::findBy('email', $userOneData['email']);
-        $userTwo = User::findBy('email', $userTwoData['email']);
+        $userOne = User::find($this->pdo, 1);
+        $userTwo = User::find($this->pdo, 2);
 
         $this->assertSame(200, $response1->getStatusCode());
         $this->assertSame(200, $response2->getStatusCode());
@@ -67,5 +71,6 @@ class UserRegisterTest extends FeatureTestCase
         $this->assertSame(2, $userTwo->getId());
         $this->assertSame($userOneData['email'], $userOne->getEmail());
         $this->assertSame($userTwoData['email'], $userTwo->getEmail());
+        $this->assertCount(2, User::getAll($this->pdo));
     }
 }
