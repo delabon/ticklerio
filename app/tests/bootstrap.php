@@ -1,14 +1,7 @@
 <?php
 
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+
 require __DIR__ . '/../vendor/autoload.php';
-
-//
-// Read env
-//
-
-if (file_exists(__DIR__ . '/.env.for.testing')) {
-    $dotenv = Dotenv\Dotenv::createImmutable(__DIR__, '/../.env.testing.example');
-    $dotenv->load();
-} else {
-    throw new OutOfBoundsException('No .env file found.');
-}

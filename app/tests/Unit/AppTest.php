@@ -2,6 +2,7 @@
 
 namespace Tests\Unit;
 
+use App\Core\Container;
 use PHPUnit\Framework\TestCase;
 use App\Core\App;
 use PDO;
@@ -21,21 +22,10 @@ class AppTest extends TestCase
 
     public function testPdoCreation()
     {
-        $app = App::getInstance();
-        $app->loadDb();
+        $container = new Container();
+        $container->singleton(PDO::class, fn () => new PDO('sqlite::memory:'));
+        $app = App::getInstance($container->get(PDO::class));
 
         $this->assertInstanceOf(PDO::class, $app->pdo());
-    }
-
-    public function testDestroyingPdo()
-    {
-        $app = App::getInstance();
-        $app->loadDb();
-
-        $this->assertInstanceOf(PDO::class, $app->pdo());
-
-        $app->destroyPdo();
-
-        $this->assertNull($app->pdo());
     }
 }

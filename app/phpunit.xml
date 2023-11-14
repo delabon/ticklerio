@@ -4,12 +4,22 @@
       xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.4/phpunit.xsd"
       bootstrap="tests/bootstrap.php"
       colors="true"
+      displayDetailsOnTestsThatTriggerWarnings="true"
+      displayDetailsOnTestsThatTriggerErrors="true"
+      displayDetailsOnTestsThatTriggerDeprecations="true"
 >
   <testsuites>
-    <testsuite name="Application Test Suite">
-      <directory>./tests/</directory>
+    <testsuite name="Unit">
+      <directory>./tests/Unit</directory>
+    </testsuite>
+    <testsuite name="Integration">
+      <directory>./tests/Integration</directory>
+    </testsuite>
+    <testsuite name="Feature">
+      <directory>./tests/Feature</directory>
     </testsuite>
   </testsuites>
+
   <php>
     <env name="APP_ENV" value="testing"/>
     <env name="CACHE_DRIVER" value="array"/>

@@ -24,6 +24,7 @@
     "require": {
         "rakit/validation": "^1.4",
         "ext-pdo": "*",
-        "vlucas/phpdotenv": "^5.5"
+        "vlucas/phpdotenv": "^5.5",
+        "symfony/string": "^6.3"
     }
 }
