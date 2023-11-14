@@ -4,10 +4,16 @@ namespace App\Models;
 
 use App\Core\App;
 use Exception;
+use InvalidArgumentException;
 use PDO;
+
+use function Symfony\Component\String\u;
 
 class User
 {
+    public const PASSWORD_PATTERN = "/^\\$2[a-z]\\$\d{2}\\$.+/i";
+    private PDO $pdo;
+
     private int $id = 0;
     private string $email = '';
     private string $firstName = '';
@@ -15,7 +21,8 @@ class User
     private string $password = '';
     private int $createdAt = 0;
     private int $updatedAt = 0;
-    private PDO $pdo;
+
+    protected static array $hidden = ['password']; // should be hidden from any select query
 
     public function __construct(PDO $pdo)
     {
@@ -39,7 +46,15 @@ class User
 
     public function setEmail(string $email): void
     {
+        $this->validateEmail($email);
         $this->email = $email;
+    }
+
+    private function validateEmail(string $email): void
+    {
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new InvalidArgumentException('Invalid email address.');
+        }
     }
 
     public function getFirstName(): string
@@ -49,7 +64,15 @@ class User
 
     public function setFirstName(string $firstName): void
     {
+        $this->validateFirstName($firstName);
         $this->firstName = $firstName;
+    }
+
+    private function validateFirstName(string $firstName): void
+    {
+        if (empty($firstName)) {
+            throw new InvalidArgumentException('Invalid first name.');
+        }
     }
 
     public function getLastName(): string
@@ -59,7 +82,15 @@ class User
 
     public function setLastName(string $lastName): void
     {
+        $this->validateLastName($lastName);
         $this->lastName = $lastName;
+    }
+
+    private function validateLastName(string $lastName): void
+    {
+        if (empty($lastName)) {
+            throw new InvalidArgumentException('Invalid last name.');
+        }
     }
 
     public function getPassword(): string
@@ -69,7 +100,15 @@ class User
 
     public function setPassword(string $password): void
     {
+        $this->validatePassword($password);
         $this->password = $password;
+    }
+
+    private function validatePassword(string $password): void
+    {
+        if (strlen($password) < 8 || strlen($password) > 20) {
+            throw new InvalidArgumentException('The password length should be between 8 and 20 characters.');
+        }
     }
 
     public function getCreatedAt(): int
@@ -102,10 +141,19 @@ class User
             $this->updatedAt = time();
         }
 
+        $this->hashPasswordIfNotAlreadyHashed();
+
         if ($this->id) {
             $this->update();
         } else {
             $this->insert();
+        }
+    }
+
+    private function hashPasswordIfNotAlreadyHashed(): void
+    {
+        if (!preg_match(self::PASSWORD_PATTERN, $this->password)) {
+            $this->password = password_hash($this->password, PASSWORD_DEFAULT);
         }
     }
 
@@ -118,7 +166,8 @@ class User
                 email = ?,
                 first_name = ?,
                 last_name = ?,
-                password = ?
+                password = ?,
+                updated_at = ?
             WHERE
                 id = ?
         ");
@@ -126,7 +175,8 @@ class User
             $this->email,
             $this->firstName,
             $this->lastName,
-            $this->password
+            $this->password,
+            time(),
         ]);
     }
 
@@ -204,13 +254,20 @@ class User
     private static function create(PDO $pdo, array $result): self
     {
         $user = new self($pdo);
-        $user->setId($result['id']);
-        $user->setEmail($result['email']);
-        $user->setPassword($result['password']);
-        $user->setFirstName($result['first_name']);
-        $user->setLastName($result['last_name']);
-        $user->setCreatedAt($result['created_at']);
-        $user->setUpdatedAt($result['updated_at']);
+
+        foreach ($result as $key => $value) {
+            if (in_array($key, self::$hidden)) {
+                continue;
+            }
+
+            $method = u('set_' . $key)->camel()->toString();
+
+            if (!method_exists($user, $method)) {
+                continue;
+            }
+
+            $user->$method($value);
+        }
 
         return $user;
     }

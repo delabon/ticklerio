@@ -3,6 +3,7 @@
 namespace Tests\Integration\Models;
 
 use App\Core\Migration\Migration;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use App\Models\User;
 use PDO;

@@ -73,4 +73,27 @@ class UserRegisterTest extends AppTestCase
         $this->assertSame($userTwoData['email'], $userTwo->getEmail());
         $this->assertCount(2, User::getAll($this->pdo));
     }
+
+    public function testExceptionThrownWhenAddingUserWithInvalidEmail(): void
+    {
+        try {
+            $this->http->request(
+                'post',
+                '/ajax/register',
+                [
+                    'form_params' => [
+                        'email' => 'test',
+                        'first_name' => 'John',
+                        'last_name' => 'Doe',
+                        'password' => '12345678',
+                    ]
+                ]
+            );
+            $httpCode = 200;
+        } catch (GuzzleException $e) {
+            $httpCode = $e->getCode();
+        }
+
+        $this->assertSame(400, $httpCode);
+    }
 }
