@@ -189,6 +189,46 @@ class UserTest extends TestCase
         $this->assertTrue((bool)preg_match(User::PASSWORD_PATTERN, $user->getPassword()));
     }
 
+    public function testSanitizingFirstNameFromXssAttacks(): void
+    {
+        $user = new User($this->createStub(PDO::class));
+        $user->setFirstName("<script>alert('XSS');</script>");
+
+        $this->assertSame('scriptalertxssscript', $user->getFirstName());
+    }
+
+    public function testSanitizingLastNameFromXssAttacks(): void
+    {
+        $user = new User($this->createStub(PDO::class));
+        $user->setLastName('Tab##<IMG+SRC="jav&#x09;ascript:alert(1);">##1');
+
+        $this->assertSame('tabimgsrcjavxascriptalert', $user->getLastName());
+    }
+
+    public function testSanitizingEmailFromXssAttacks(): void
+    {
+        $user = new User($this->createStub(PDO::class));
+        $user->setEmail('“><svg/onload=confirm(1)>”@gmail.com');
+
+        $this->assertSame('svgonload=confirm1@gmail.com', $user->getEmail());
+    }
+
+    public function testSanitizingCreatedAt(): void
+    {
+        $user = new User($this->createStub(PDO::class));
+        $user->setCreatedAt('10');
+
+        $this->assertSame(10, $user->getCreatedAt());
+    }
+
+    public function testSanitizingUpdateAt(): void
+    {
+        $user = new User($this->createStub(PDO::class));
+        $user->setUpdatedAt('999');
+
+        $this->assertSame(999, $user->getUpdatedAt());
+    }
+
     /**
      * @return string[]
      */

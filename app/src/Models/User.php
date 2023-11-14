@@ -46,8 +46,14 @@ class User
 
     public function setEmail(string $email): void
     {
+        $email = $this->sanitizeEmail($email);
         $this->validateEmail($email);
         $this->email = $email;
+    }
+
+    private function sanitizeEmail(string $email): string
+    {
+        return filter_var($email, FILTER_SANITIZE_EMAIL);
     }
 
     private function validateEmail(string $email): void
@@ -64,8 +70,15 @@ class User
 
     public function setFirstName(string $firstName): void
     {
+        $firstName = strtolower($firstName);
+        $firstName = $this->sanitizeName($firstName);
         $this->validateFirstName($firstName);
         $this->firstName = $firstName;
+    }
+
+    private function sanitizeName(string $name): string
+    {
+        return preg_replace("/[^a-z]/i", "", $name);
     }
 
     private function validateFirstName(string $firstName): void
@@ -82,6 +95,8 @@ class User
 
     public function setLastName(string $lastName): void
     {
+        $lastName = strtolower($lastName);
+        $lastName = $this->sanitizeName($lastName);
         $this->validateLastName($lastName);
         $this->lastName = $lastName;
     }
