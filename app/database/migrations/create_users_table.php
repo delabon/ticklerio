@@ -12,6 +12,7 @@ final class CreateUsersTable extends AbstractMigration // phpcs:ignore
                 email VARCHAR(255),
                 first_name VARCHAR(255),
                 last_name VARCHAR(255),
+                type VARCHAR(50),
                 password TEXT,
                 created_at BIGINT,
                 updated_at BIGINT

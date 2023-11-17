@@ -2,9 +2,9 @@
 
 namespace Tests\Feature;
 
-use Tests\AppTestCase;
+use Tests\FeatureTestCase;
 
-class HomePageTest extends AppTestCase
+class HomePageTest extends FeatureTestCase
 {
     public function testHttpRequestSuccessfully(): void
     {

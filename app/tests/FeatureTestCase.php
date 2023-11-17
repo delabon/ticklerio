@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use RuntimeException;
 
-class AppTestCase extends TestCase
+class FeatureTestCase extends TestCase
 {
     private const TMP_DIR = __DIR__ . '/.tmp';
     private const TMP_ENV_NAME = '.env';
