@@ -5,6 +5,10 @@ namespace App\Controllers;
 use App\Core\App;
 use App\Core\Controller;
 use App\Models\User;
+use App\Users\UserRepository;
+use App\Users\UserSanitizer;
+use App\Users\UserService;
+use App\Users\UserValidator;
 use Exception;
 use PDO;
 
@@ -13,12 +17,9 @@ class RegisterController extends Controller
     public function register(): void
     {
         try {
-            $user = new User($this->pdo);
-            $user->setEmail($_POST['email']);
-            $user->setPassword($_POST['password']);
-            $user->setFirstName($_POST['first_name']);
-            $user->setLastName($_POST['last_name']);
-            $user->save();
+            $userRepository = new UserRepository($this->pdo);
+            $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
+            $userService->createUser($_POST);
         } catch (Exception $e) {
             http_response_code(400);
             echo json_encode(["error" => $e->getMessage()]);

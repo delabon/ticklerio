@@ -3,10 +3,12 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Users\UserRepository;
+use App\Users\UserType;
 use GuzzleHttp\Exception\GuzzleException;
-use Tests\AppTestCase;
+use Tests\FeatureTestCase;
 
-class UserRegisterTest extends AppTestCase
+class UserRegisterTest extends FeatureTestCase
 {
     public function testRegisteringUserSuccessfully(): void
     {
@@ -20,11 +22,13 @@ class UserRegisterTest extends AppTestCase
                     'first_name' => 'John',
                     'last_name' => 'Doe',
                     'password' => '12345678',
+                    'type' => UserType::Member->value,
                 ]
             ]
         );
 
-        $user = User::find($this->pdo, 1);
+        $userRepository = new UserRepository($this->pdo);
+        $user = $userRepository->find(1);
 
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame(1, $user->getId());
@@ -38,12 +42,14 @@ class UserRegisterTest extends AppTestCase
             'first_name' => 'John',
             'last_name' => 'Doe',
             'password' => '12345678',
+            'type' => UserType::Admin->value,
         ];
         $userTwoData = [
             'email' => 'admin@test.com',
             'first_name' => 'Ahmed',
             'last_name' => 'Balack',
             'password' => '987654122',
+            'type' => UserType::Member->value,
         ];
 
         $response1 = $this->http->request(
@@ -62,8 +68,9 @@ class UserRegisterTest extends AppTestCase
             ]
         );
 
-        $userOne = User::find($this->pdo, 1);
-        $userTwo = User::find($this->pdo, 2);
+        $userRepository = new UserRepository($this->pdo);
+        $userOne = $userRepository->find(1);
+        $userTwo = $userRepository->find(2);
 
         $this->assertSame(200, $response1->getStatusCode());
         $this->assertSame(200, $response2->getStatusCode());
@@ -71,7 +78,7 @@ class UserRegisterTest extends AppTestCase
         $this->assertSame(2, $userTwo->getId());
         $this->assertSame($userOneData['email'], $userOne->getEmail());
         $this->assertSame($userTwoData['email'], $userTwo->getEmail());
-        $this->assertCount(2, User::getAll($this->pdo));
+        $this->assertCount(2, $userRepository->all());
     }
 
     public function testExceptionThrownWhenAddingUserWithInvalidEmail(): void
