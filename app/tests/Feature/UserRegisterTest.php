@@ -83,6 +83,8 @@ class UserRegisterTest extends FeatureTestCase
 
     public function testExceptionThrownWhenAddingUserWithInvalidEmail(): void
     {
+        $httpCode = 200;
+
         try {
             $this->http->request(
                 'post',
@@ -96,7 +98,7 @@ class UserRegisterTest extends FeatureTestCase
                     ]
                 ]
             );
-            $httpCode = 200;
+
         } catch (GuzzleException $e) {
             $httpCode = $e->getCode();
         }

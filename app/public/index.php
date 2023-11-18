@@ -6,6 +6,8 @@
 
 use App\Controllers\HomeController;
 use App\Controllers\RegisterController;
+use App\Core\Http\HttpStatusCode;
+use App\Core\Http\Response;
 
 //
 // Bootstrap
@@ -21,13 +23,15 @@ $uri = $_SERVER['REQUEST_URI'];
 
 if ($uri === '/') {
     // Home
-    (new HomeController())->index();
-    exit;
+    $response = (new HomeController())->index();
 } elseif (preg_match("/^\/ajax\/register\/?$/", $uri)) {
     // Register a user via ajax
-    (new RegisterController($container->get(PDO::class)))->register();
-    exit;
+    $response = (new RegisterController($container->get(PDO::class)))->register();
 }
 
-header("HTTP/1.0 404 Not Found");
-exit;
+// In-case of no response
+if (!isset($response)) {
+    $response = new Response('404 Not Found', HttpStatusCode::NotFound);
+}
+
+$response->send();

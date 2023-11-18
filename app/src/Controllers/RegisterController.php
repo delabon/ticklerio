@@ -3,6 +3,8 @@
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\Http\HttpStatusCode;
+use App\Core\Http\Response;
 use App\Users\UserRepository;
 use App\Users\UserSanitizer;
 use App\Users\UserService;
@@ -11,16 +13,18 @@ use Exception;
 
 class RegisterController extends Controller
 {
-    public function register(): void
+    public function register(): Response
     {
         try {
             $userRepository = new UserRepository($this->pdo);
             $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-            $userService->createUser($_POST);
+            $user = $userService->createUser($_POST);
+
+            return new Response(json_encode([
+                'id' => $user->getId()
+            ]));
         } catch (Exception $e) {
-            http_response_code(400);
-            echo json_encode(["error" => $e->getMessage()]);
-            exit;
+            return new Response($e->getMessage(), HttpStatusCode::BadRequest);
         }
     }
 }
