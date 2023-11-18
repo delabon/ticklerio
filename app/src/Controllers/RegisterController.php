@@ -2,15 +2,12 @@
 
 namespace App\Controllers;
 
-use App\Core\App;
 use App\Core\Controller;
-use App\Models\User;
 use App\Users\UserRepository;
 use App\Users\UserSanitizer;
 use App\Users\UserService;
 use App\Users\UserValidator;
 use Exception;
-use PDO;
 
 class RegisterController extends Controller
 {

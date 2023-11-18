@@ -3,6 +3,7 @@
 namespace Tests\Unit\Core;
 
 use App\Core\Container;
+use Exception;
 use PHPUnit\Framework\TestCase;
 
 class ContainerTest extends TestCase
@@ -43,7 +44,7 @@ class ContainerTest extends TestCase
     {
         $container = new Container();
 
-        $this->expectException(\Exception::class);
+        $this->expectException(Exception::class);
 
         $container->get(ClassNumberThree::class);
     }

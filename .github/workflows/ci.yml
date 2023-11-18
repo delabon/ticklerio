@@ -5,10 +5,7 @@ on:
     branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
-    paths:
-      - "app/src/**.php"
-      - "app/phpcs.xml"
-      - ".github/workflows/ci.yml"
+
 jobs:
 
   phpcs:
@@ -25,13 +22,18 @@ jobs:
           curl -OL https://squizlabs.github.io/PHP_CodeSniffer/phpcs.phar
           php phpcs.phar --version
 
-      - uses: tinovyatkin/action-php-codesniffer@v1
-        with:
-          files: "app/src/**.php" # you may customize glob as needed
-          phpcs_path: php phpcs.phar
-          standard: app/phpcs.xml
+      - name: Find Modified PHP Files
+        id: modified-files
+        run: |
+          echo "::set-output name=files::$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '\.php$' | xargs)"
+        shell: bash
 
-  app-tests:
+      - name: Run PHP_CodeSniffer
+        if: steps.modified-files.outputs.files != ''
+        run: |
+          php phpcs.phar --standard=app/phpcs.xml ${{ steps.modified-files.outputs.files }}
+
+  testing:
 
     runs-on: ubuntu-latest
 

@@ -3,12 +3,10 @@
 namespace Tests;
 
 use PDO;
-use App\Core\App;
 use App\Core\Migration\Migration;
 use Dotenv\Dotenv;
 use GuzzleHttp\Client;
 use PHPUnit\Framework\TestCase;
-use ReflectionClass;
 use RuntimeException;
 
 class FeatureTestCase extends TestCase
@@ -48,11 +46,6 @@ class FeatureTestCase extends TestCase
         $this->migration->rollback();
         $this->pdo = null;
         $this->http = null;
-
-        // Reset the App singleton instance after each test
-        $reflection = new ReflectionClass(App::class);
-        $instance = $reflection->getProperty('instance');
-        $instance->setValue(null);
 
         // Delete tmp folder
         $this->deleteDir(self::TMP_DIR);
