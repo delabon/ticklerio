@@ -2,7 +2,6 @@
 
 namespace Tests\Unit\Users;
 
-use App\Models\User;
 use App\Users\UserSanitizer;
 use App\Users\UserType;
 use PHPUnit\Framework\TestCase;

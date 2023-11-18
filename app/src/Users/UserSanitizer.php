@@ -4,6 +4,10 @@ namespace App\Users;
 
 class UserSanitizer
 {
+    /**
+     * @param mixed[]|array $data
+     * @return mixed[]|array
+     */
     public function sanitize(array $data): array
     {
         $data = $this->sanitizeName($data, 'first_name');
@@ -15,6 +19,11 @@ class UserSanitizer
         return $data;
     }
 
+    /**
+     * @param mixed[]|array $data
+     * @param string $key
+     * @return mixed[]|array
+     */
     private function sanitizeName(array $data, string $key): array
     {
         if (!$this->isValidString($data, $key)) {
@@ -27,6 +36,10 @@ class UserSanitizer
         return $data;
     }
 
+    /**
+     * @param mixed[]|array $data
+     * @return mixed[]|array
+     */
     private function sanitizeEmail(array $data): array
     {
         if (!$this->isValidString($data, 'email')) {
@@ -38,6 +51,11 @@ class UserSanitizer
         return $data;
     }
 
+    /**
+     * @param mixed[]|array $data
+     * @param string $key
+     * @return mixed[]|array
+     */
     private function sanitizeTimestamp(array $data, string $key): array
     {
         if (!isset($data[$key])) {
@@ -49,6 +67,11 @@ class UserSanitizer
         return $data;
     }
 
+    /**
+     * @param mixed[]|array $data
+     * @param string $key
+     * @return bool
+     */
     private function isValidString(array $data, string $key): bool
     {
         if (!isset($data[$key]) || !is_string($data[$key])) {

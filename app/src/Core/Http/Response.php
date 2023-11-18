@@ -9,7 +9,9 @@ class Response implements ResponseInterface
     /**
      * Sets the content-type to 'application/json' when the body parameter is and array
      * Sets the content-type to 'text/html' when the content-type is not set
-     * @throws RuntimeException
+     * @param string|array<mixed> $body
+     * @param HttpStatusCode $code
+     * @param array<string, mixed> $headers
      */
     public function __construct(
         private string|array $body = "",

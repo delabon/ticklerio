@@ -95,6 +95,9 @@ class User
         $this->updatedAt = $updatedAt;
     }
 
+    /**
+     * @return array|mixed[]
+     */
     public function toArray(): array
     {
         $data = [];

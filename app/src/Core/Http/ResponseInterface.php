@@ -8,6 +8,9 @@ interface ResponseInterface
 
     public function getBody(): string;
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getHeaders(): array;
 
     public function send(): void;

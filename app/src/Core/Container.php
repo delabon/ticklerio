@@ -11,7 +11,9 @@ use ReflectionParameter;
 
 class Container
 {
+    /** @var array<string, callable> */
     private array $definitions = [];
+    /** @var array<string, int|callable> */
     private array $singletons = [];
 
     public function register(string $className, callable $definition): self

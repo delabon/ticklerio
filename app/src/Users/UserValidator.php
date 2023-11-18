@@ -7,6 +7,10 @@ use InvalidArgumentException;
 
 class UserValidator
 {
+    /**
+     * @param mixed[]|array $data
+     * @return void
+     */
     private function validateEmail(array $data): void
     {
         if (!isset($data['email'])) {
@@ -18,16 +22,30 @@ class UserValidator
         }
     }
 
+    /**
+     * @param mixed[]|array $data
+     * @return void
+     */
     private function validateFirstName(array $data): void
     {
         $this->validateName($data, 'first_name', 'first name');
     }
 
+    /**
+     * @param mixed[]|array $data
+     * @return void
+     */
     private function validateLastName(array $data): void
     {
         $this->validateName($data, 'last_name', 'last name');
     }
 
+    /**
+     * @param mixed[]|array $data
+     * @param string $key
+     * @param string $text
+     * @return void
+     */
     private function validateName(array $data, string $key, string $text): void
     {
         if (!isset($data[$key])) {
@@ -47,6 +65,10 @@ class UserValidator
         }
     }
 
+    /**
+     * @param mixed[]|array $data
+     * @return void
+     */
     private function validateType(array $data): void
     {
         if (!isset($data['type'])) {
@@ -61,6 +83,10 @@ class UserValidator
         }
     }
 
+    /**
+     * @param mixed[]|array $data
+     * @return void
+     */
     private function validatePassword(array $data): void
     {
         if (!isset($data['password'])) {
@@ -79,16 +105,30 @@ class UserValidator
         }
     }
 
+    /**
+     * @param mixed[]|array $data
+     * @return void
+     */
     private function validateCreatedAt(array $data): void
     {
         $this->validateDate($data, 'created_at', 'created-at');
     }
 
+    /**
+     * @param mixed[]|array $data
+     * @return void
+     */
     private function validateUpdatedAt(array $data): void
     {
         $this->validateDate($data, 'updated_at', 'updated-at');
     }
 
+    /**
+     * @param mixed[]|array $data
+     * @param string $key
+     * @param string $text
+     * @return void
+     */
     private function validateDate(array $data, string $key, string $text): void
     {
         if (!isset($data[$key])) {
@@ -100,6 +140,10 @@ class UserValidator
         }
     }
 
+    /**
+     * @param mixed[]|array $data
+     * @return void
+     */
     public function validate(array $data): void
     {
         $this->validateEmail($data);
