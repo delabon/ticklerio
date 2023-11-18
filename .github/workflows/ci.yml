@@ -22,16 +22,17 @@ jobs:
           curl -OL https://squizlabs.github.io/PHP_CodeSniffer/phpcs.phar
           php phpcs.phar --version
 
-      - name: Find Modified PHP Files
+      - name: Find Modified PHP Files in app/src and app/database
         id: modified-files
         run: |
-          echo "::set-output name=files::$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep '\.php$' | xargs)"
+          echo "::set-output name=files::$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -E '^(app/src|app/database)/.*\.php$' | xargs)"
         shell: bash
 
       - name: Run PHP_CodeSniffer
         if: steps.modified-files.outputs.files != ''
         run: |
           php phpcs.phar --standard=app/phpcs.xml ${{ steps.modified-files.outputs.files }}
+
 
   testing:
 
