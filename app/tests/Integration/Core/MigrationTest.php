@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Integration;
+namespace Tests\Integration\Core;
 
 use App\Core\Migration\Migration;
 use PDO;
