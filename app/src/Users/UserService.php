@@ -35,7 +35,7 @@ class UserService
         $data = $this->userSanitizer->sanitize($data);
         $this->userValidator->validate($data);
         $data['password'] = PasswordUtils::hashPasswordIfNotHashed($data['password']);
-        $user = $this->userRepository->create($data);
+        $user = $this->userRepository->make($data);
         $this->userRepository->save($user);
 
         return $user;

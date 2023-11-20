@@ -109,7 +109,7 @@ class UserRepository
         $return = [];
 
         foreach ($results as $result) {
-            $return[] = self::create($result);
+            $return[] = self::make($result);
         }
 
         return $return;
@@ -140,14 +140,15 @@ class UserRepository
             return false;
         }
 
-        return $this->create($result);
+        return $this->make($result);
     }
 
     /**
+     * Instantiates a User using the data passed
      * @param array|mixed[] $data
      * @return User
      */
-    public function create(array $data): User
+    public function make(array $data): User
     {
         $user = new User();
 

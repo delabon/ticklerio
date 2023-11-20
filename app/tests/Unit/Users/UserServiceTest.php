@@ -143,7 +143,7 @@ class UserServiceTest extends TestCase
             ->willReturn($pdoStatementMock);
 
         $userRepository = new UserRepository($pdoMock);
-        $user = $userRepository->create($this->userData());
+        $user = $userRepository->make($this->userData());
         $user->setId(999999);
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
 
@@ -216,7 +216,7 @@ class UserServiceTest extends TestCase
     {
         $userData = $this->userData();
         $userRepository = new UserRepository($this->createStub(PDO::class));
-        $user = $userRepository->create($userData);
+        $user = $userRepository->make($userData);
         $user->setId(9999);
         $user->setEmail('test');
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
@@ -318,7 +318,7 @@ class UserServiceTest extends TestCase
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $user = $userService->createUser($userData);
 
-        $this->assertSame('scriptalertXSSscript', $user->getFirstName());
+        $this->assertSame("scriptalert'XSS'script", $user->getFirstName());
         $this->assertSame('Sam', $user->getLastName());
         $this->assertSame('svgonload=confirm1@gmail.com', $user->getEmail());
         $this->assertSame(99, $user->getCreatedAt());

@@ -8,37 +8,37 @@ use PHPUnit\Framework\TestCase;
 
 class UserSanitizerTest extends TestCase
 {
-    public function testSanitizeFirstNameFromNonAlphabeticalCharsAndSpaces(): void
+    public function testSanitizesFirstNameSuccessfully(): void
     {
         $userData = $this->userData();
-        $userData['first_name'] = ' $*J0hn_ -doe ';
+        $userData['first_name'] = " $*J'0hn_ -doe ";
         $userSanitizer = new UserSanitizer();
         $sanitizedData = $userSanitizer->sanitize($userData);
 
-        $this->assertSame('Jhn doe', $sanitizedData['first_name']);
+        $this->assertSame("J'hn doe", $sanitizedData['first_name']);
     }
 
-    public function testSanitizeFirstNameFromXssAttacks(): void
+    public function testSanitizesFirstNameFromXssAttacks(): void
     {
         $userData = $this->userData();
         $userData['first_name'] = "<script>alert('XSS');</script>";
         $userSanitizer = new UserSanitizer();
         $sanitizedData = $userSanitizer->sanitize($userData);
 
-        $this->assertSame('scriptalertXSSscript', $sanitizedData['first_name']);
+        $this->assertSame("scriptalert'XSS'script", $sanitizedData['first_name']);
     }
 
-    public function testSanitizeLastNameFromNonAlphabeticalCharsAndSpaces(): void
+    public function testSanitizesLastNameSuccessfully(): void
     {
         $userData = $this->userData();
-        $userData['last_name'] = ' @*$&^11 -ben';
+        $userData['last_name'] = " @*$&^11 -b'en";
         $userSanitizer = new UserSanitizer();
         $sanitizedData = $userSanitizer->sanitize($userData);
 
-        $this->assertSame('ben', $sanitizedData['last_name']);
+        $this->assertSame("b'en", $sanitizedData['last_name']);
     }
 
-    public function testSanitizeLastNameFromXssAttacks(): void
+    public function testSanitizesLastNameFromXssAttacks(): void
     {
         $userData = $this->userData();
         $userData['last_name'] = 'Mocha##<IMG SRC="mocha:[code]">##1';
@@ -48,7 +48,7 @@ class UserSanitizerTest extends TestCase
         $this->assertSame('MochaIMG SRCmochacode', $sanitizedData['last_name']);
     }
 
-    public function testSanitizingEmailFromXssAttacks(): void
+    public function testSanitizesEmailFromXssAttacks(): void
     {
         $userData = $this->userData();
         $userData['email'] = '“><svg/onload=confirm(1)>”@gmail.com';
@@ -58,7 +58,7 @@ class UserSanitizerTest extends TestCase
         $this->assertSame('svgonload=confirm1@gmail.com', $sanitizedData['email']);
     }
 
-    public function testSanitizingCreatedAt(): void
+    public function testSanitizesCreatedAt(): void
     {
         $userData = $this->userData();
         $userData['created_at'] = '10';
@@ -68,7 +68,7 @@ class UserSanitizerTest extends TestCase
         $this->assertSame(10, $sanitizedData['created_at']);
     }
 
-    public function testSanitizingUpdateAt(): void
+    public function testSanitizesUpdateAt(): void
     {
         $userData = $this->userData();
         $userData['updated_at'] = '999';

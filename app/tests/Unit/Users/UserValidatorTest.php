@@ -236,7 +236,7 @@ class UserValidatorTest extends TestCase
         return [
             'email' => 'test@test.com',
             'first_name' => 'John',
-            'last_name' => 'Doe',
+            'last_name' => "Doe O'Alley",
             'password' => '12345678',
             'type' => UserType::Member->value,
             'created_at' => $now,

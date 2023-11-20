@@ -60,7 +60,7 @@ class UserServiceTest extends IntegrationTestCase
     {
         $userData = $this->userData();
         $userRepository = new UserRepository($this->pdo);
-        $user = $userRepository->create($userData);
+        $user = $userRepository->make($userData);
         $user->setId(9999);
         $user->setEmail('test');
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
