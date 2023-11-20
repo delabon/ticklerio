@@ -18,21 +18,10 @@ class Response implements ResponseInterface
         private readonly HttpStatusCode $code = HttpStatusCode::OK,
         private array $headers = []
     ) {
-        if (is_array($this->body)) {
-            $this->headers['Content-Type'] = 'application/json';
-            $this->body = json_encode($this->body);
-
-            if (!$this->body) {
-                throw new RuntimeException("Json encoding has failed.");
-            }
-        }
-
-        // Sets content type as text/html if it's not set
-        if (!isset($this->headers['Content-Type'])) {
-            $this->headers['Content-Type'] = 'text/html';
-        }
-
-        $this->headers['Content-Length'] = strlen($this->body);
+        $this->makeHeaderKeysLowerCase();
+        $this->ifBodyIsArrayMakeItJsonResponse();
+        $this->contentTypeAsHtmlIfNotSet();
+        $this->headers['content-length'] = strlen($this->body);
     }
 
     public function getStatusCode(): int
@@ -58,5 +47,39 @@ class Response implements ResponseInterface
 
         http_response_code($this->getStatusCode());
         echo $this->getBody();
+    }
+
+    private function makeHeaderKeysLowerCase(): void
+    {
+        $headers = [];
+
+        foreach ($this->headers as $key => $value) {
+            $headers[strtolower($key)] = $value;
+        }
+
+        $this->headers = $headers;
+    }
+
+    /**
+     * @return void
+     * @throws RuntimeException
+     */
+    private function ifBodyIsArrayMakeItJsonResponse(): void
+    {
+        if (is_array($this->body)) {
+            $this->headers['content-type'] = 'application/json';
+            $this->body = json_encode($this->body);
+
+            if (!$this->body) {
+                throw new RuntimeException("Json encoding has failed.");
+            }
+        }
+    }
+
+    private function contentTypeAsHtmlIfNotSet(): void
+    {
+        if (!isset($this->headers['content-type'])) {
+            $this->headers['content-type'] = 'text/html';
+        }
     }
 }

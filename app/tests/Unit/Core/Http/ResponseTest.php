@@ -26,10 +26,10 @@ class ResponseTest extends TestCase
 
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
         $this->assertSame($jsonStr, $response->getBody());
-        $this->assertArrayHasKey('Content-Type', $headers);
-        $this->assertArrayHasKey('Content-Length', $headers);
-        $this->assertSame('application/json', $headers['Content-Type']);
-        $this->assertSame(strlen($jsonStr), $headers['Content-Length']);
+        $this->assertArrayHasKey('content-type', $headers);
+        $this->assertArrayHasKey('content-length', $headers);
+        $this->assertSame('application/json', $headers['content-type']);
+        $this->assertSame(strlen($jsonStr), $headers['content-length']);
     }
 
     public function testBasicResponse(): void
@@ -40,10 +40,10 @@ class ResponseTest extends TestCase
 
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
         $this->assertSame($body, $response->getBody());
-        $this->assertArrayHasKey('Content-Type', $headers);
-        $this->assertArrayHasKey('Content-Length', $headers);
-        $this->assertSame('text/html', $headers['Content-Type']);
-        $this->assertSame(strlen($body), $headers['Content-Length']);
+        $this->assertArrayHasKey('content-type', $headers);
+        $this->assertArrayHasKey('content-length', $headers);
+        $this->assertSame('text/html', $headers['content-type']);
+        $this->assertSame(strlen($body), $headers['content-length']);
     }
 
     public function testNotFoundResponse(): void
@@ -53,10 +53,10 @@ class ResponseTest extends TestCase
 
         $this->assertSame(HttpStatusCode::NotFound->value, $response->getStatusCode());
         $this->assertSame('', $response->getBody());
-        $this->assertArrayHasKey('Content-Type', $headers);
-        $this->assertArrayHasKey('Content-Length', $headers);
-        $this->assertSame('text/html', $headers['Content-Type']);
-        $this->assertSame(0, $headers['Content-Length']);
+        $this->assertArrayHasKey('content-type', $headers);
+        $this->assertArrayHasKey('content-length', $headers);
+        $this->assertSame('text/html', $headers['content-type']);
+        $this->assertSame(0, $headers['content-length']);
     }
 
     public function testExceptionThrownWhenEncodingAnArrayWithNonUtf8String(): void
@@ -76,8 +76,8 @@ class ResponseTest extends TestCase
         $headers = $response->getHeaders();
 
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
-        $this->assertArrayHasKey('Custom-Header', $headers);
-        $this->assertSame(5444, $headers['Custom-Header']);
+        $this->assertArrayHasKey('custom-header', $headers);
+        $this->assertSame(5444, $headers['custom-header']);
     }
 
     /**

@@ -7,6 +7,7 @@
 use App\Controllers\HomeController;
 use App\Controllers\RegisterController;
 use App\Core\Http\HttpStatusCode;
+use App\Core\Http\Request;
 use App\Core\Http\Response;
 
 //
@@ -26,7 +27,10 @@ if ($uri === '/') {
     $response = (new HomeController())->index();
 } elseif (preg_match("/^\/ajax\/register\/?$/", $uri)) {
     // Register a user via ajax
-    $response = (new RegisterController($container->get(PDO::class)))->register();
+    $response = (new RegisterController(
+        $container->get(Request::class),
+        $container->get(PDO::class)
+    ))->register();
 }
 
 // In-case of no response

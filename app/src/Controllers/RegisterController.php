@@ -18,7 +18,7 @@ class RegisterController extends Controller
         try {
             $userRepository = new UserRepository($this->pdo);
             $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-            $user = $userService->createUser($_POST);
+            $user = $userService->createUser($this->request->postParams);
 
             return new Response(json_encode([
                 'id' => $user->getId()
