@@ -1,6 +1,7 @@
 <?php
 
 use App\Core\Container;
+use App\Core\Http\Request;
 
 require __DIR__ . '/../vendor/autoload.php';
 
@@ -38,6 +39,14 @@ if (strtolower($_ENV['APP_DEBUG']) === 'true') {
 //
 
 $container = new Container();
+
+//
+// Request
+//
+
+$container->singleton(Request::class, function () {
+    return Request::createFromGlobals();
+});
 
 //
 // Set up PDO

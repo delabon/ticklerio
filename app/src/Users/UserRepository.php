@@ -11,6 +11,7 @@ use function Symfony\Component\String\u;
 class UserRepository
 {
     private PDO $pdo;
+    /** @var array|string[] */
     protected static array $hidden = ['password']; // should be hidden from any select query
 
     public function __construct(PDO $pdo)
@@ -87,7 +88,7 @@ class UserRepository
     }
 
     /**
-     * @param array $columns
+     * @param array|string[] $columns
      * @return User[]|array
      */
     public function all(array $columns = ['*']): array
@@ -142,6 +143,10 @@ class UserRepository
         return $this->create($result);
     }
 
+    /**
+     * @param array|mixed[] $data
+     * @return User
+     */
     public function create(array $data): User
     {
         $user = new User();

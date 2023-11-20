@@ -18,6 +18,10 @@ class UserService
         $this->userSanitizer = $userSanitizer;
     }
 
+    /**
+     * @param mixed[]|array $data
+     * @return User
+     */
     public function createUser(array $data): User
     {
         if (empty($data['created_at'])) {

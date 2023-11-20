@@ -2,10 +2,12 @@
 
 namespace App\Controllers;
 
+use App\Core\Http\Response;
+
 class HomeController
 {
-    public function index(): void
+    public function index(): Response
     {
-        echo 'Welcome to homepage!';
+        return new Response('Welcome to homepage!');
     }
 }

@@ -65,6 +65,10 @@ class Migration
         }
     }
 
+    /**
+     * @param string $path
+     * @return array<int, string>
+     */
     private function getFilePaths(string $path): array
     {
         $result = scandir($path);
@@ -74,6 +78,10 @@ class Migration
         return $result;
     }
 
+    /**
+     * @param array<int, string> $filePaths
+     * @return array<string, string>
+     */
     private function convertFilePathsToClassNames(array $filePaths): array
     {
         $classes = [];
