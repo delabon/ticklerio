@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use GuzzleHttp\Exception\GuzzleException;
 use Tests\FeatureTestCase;
 
 class HomePageTest extends FeatureTestCase

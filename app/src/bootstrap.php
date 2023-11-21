@@ -2,14 +2,16 @@
 
 use App\Core\Container;
 use App\Core\Http\Request;
+use App\Core\Session\FileSessionHandler;
+use App\Core\Session\Session;
 
 require __DIR__ . '/../vendor/autoload.php';
-
-$headers = getallheaders();
 
 //
 // Read env
 //
+
+$headers = getallheaders();
 
 if (isset($headers['App-Testing'], $headers['App-Testing-Env'])) {
     $envFile = $headers['App-Testing-Env'];
@@ -39,6 +41,25 @@ if (strtolower($_ENV['APP_DEBUG']) === 'true') {
 //
 
 $container = new Container();
+
+//
+// Session
+//
+
+$container->singleton(Session::class, function () {
+    return new Session(
+        new FileSessionHandler($_ENV['SESSION_ENCRYPTION_KEY']),
+        $_ENV['SESSION_NAME'],
+        $_ENV['SESSION_LIFE_TIME'],
+        $_ENV['SESSION_SSL'] === 'true',
+        $_ENV['SESSION_HTTP_ONLY'] === 'true',
+        $_ENV['SESSION_PATH'],
+        $_ENV['SESSION_DOMAIN'],
+        $_ENV['SESSION_SAVE_PATH']
+    );
+});
+// Start session
+$container->get(Session::class)->start();
 
 //
 // Request

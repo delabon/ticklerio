@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\User;
 use App\Users\UserRepository;
 use App\Users\UserType;
 use GuzzleHttp\Exception\GuzzleException;
