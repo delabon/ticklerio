@@ -6,6 +6,7 @@ use App\Core\Http\HttpStatusCode;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Users\UserService;
+use App\Users\UserType;
 use Exception;
 
 class RegisterController
@@ -13,7 +14,9 @@ class RegisterController
     public function register(Request $request, UserService $userService): Response
     {
         try {
-            $user = $userService->createUser($request->postParams);
+            $params = $request->postParams;
+            $params['type'] = UserType::Member->value;
+            $user = $userService->createUser($params);
 
             return new Response(json_encode([
                 'id' => $user->getId()

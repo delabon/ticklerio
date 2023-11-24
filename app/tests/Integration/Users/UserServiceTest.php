@@ -6,6 +6,7 @@ use App\Users\User;
 use App\Users\UserRepository;
 use App\Users\UserSanitizer;
 use App\Users\UserService;
+use App\Users\UserType;
 use App\Users\UserValidator;
 use App\Utilities\PasswordUtils;
 use InvalidArgumentException;

@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Core\Http\HttpStatusCode;
 use App\Users\UserRepository;
 use App\Users\UserType;
-use GuzzleHttp\Exception\GuzzleException;
 use Tests\FeatureTestCase;
 
 class UserRegisterTest extends FeatureTestCase
@@ -86,5 +85,30 @@ class UserRegisterTest extends FeatureTestCase
         );
 
         $this->assertSame(HttpStatusCode::BadRequest->value, $response->getStatusCode());
+    }
+
+    /**
+     * The user's type should always be member when registering
+     * @return void
+     */
+    public function testUserTypeShouldAlwaysBeMemberWhenRegistering(): void
+    {
+        $response = $this->post(
+            '/ajax/register',
+            [
+                'email' => 'test@test.com',
+                'first_name' => 'John',
+                'last_name' => 'Doe',
+                'password' => '12345678',
+                'type' => UserType::Admin->value,
+            ]
+        );
+
+        $userRepository = new UserRepository($this->pdo);
+        $user = $userRepository->find(1);
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame(1, $user->getId());
+        $this->assertSame(UserType::Member->value, $user->getType());
     }
 }

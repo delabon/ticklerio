@@ -32,6 +32,7 @@ class UserService
             $data['updated_at'] = time();
         }
 
+
         $data = $this->userSanitizer->sanitize($data);
         $this->userValidator->validate($data);
         $data['password'] = PasswordUtils::hashPasswordIfNotHashed($data['password']);
