@@ -12,5 +12,4 @@ class HomePageTest extends FeatureTestCase
 
         $this->assertSame(200, $response->getStatusCode());
     }
-
 }

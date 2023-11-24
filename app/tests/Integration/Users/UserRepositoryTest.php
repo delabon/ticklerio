@@ -94,7 +94,7 @@ class UserRepositoryTest extends IntegrationTestCase
         $userRepository->save($user);
     }
 
-    public function testFindUserByIdSuccessfully(): void
+    public function testFindsUserByIdSuccessfully(): void
     {
         $now = time();
         $userData = [
@@ -177,5 +177,44 @@ class UserRepositoryTest extends IntegrationTestCase
         $this->assertSame(1, $user->getId());
         $this->assertSame(2, $user2->getId());
         $this->assertCount(2, $userRepository->all());
+    }
+
+    public function testFindsUserByEmailSuccessfully(): void
+    {
+        $now = time();
+        $userData = [
+            'email' => 'test@test.com',
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'password' => '12345678',
+            'type' => 'member',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+        $user = new User();
+        $user->setEmail($userData['email']);
+        $user->setFirstName($userData['first_name']);
+        $user->setLastName($userData['last_name']);
+        $user->setPassword($userData['password']);
+        $user->setType($userData['type']);
+        $user->setCreatedAt($userData['created_at']);
+        $user->setUpdatedAt($userData['updated_at']);
+        $userRepository = new UserRepository($this->pdo);
+        $userRepository->save($user);
+
+        $usersFound = $userRepository->findBy('email', $userData['email']);
+
+        $this->assertCount(1, $usersFound);
+        $this->assertSame(1, $usersFound[0]->getId());
+        $this->assertSame($userData['email'], $usersFound[0]->getEmail());
+    }
+
+    public function testReturnsEmptyArrayWhenFindingUserWithNonExistentEmail(): void
+    {
+        $userRepository = new UserRepository($this->pdo);
+
+        $usersFound = $userRepository->findBy('email', 'test@example.com');
+
+        $this->assertCount(0, $usersFound);
     }
 }

@@ -2,21 +2,30 @@
 
 namespace Tests;
 
-use PDO;
+use App\Core\Http\RequestType;
+use App\Core\Session\DatabaseSessionHandler;
 use App\Core\Migration\Migration;
-use Dotenv\Dotenv;
-use GuzzleHttp\Client;
+use App\Core\Session\FileSessionHandler;
+use App\Core\Session\SessionHandlerType;
 use PHPUnit\Framework\TestCase;
+use App\Core\Session\Session;
+use GuzzleHttp\Client;
+use Psr\Http\Message\ResponseInterface;
 use RuntimeException;
+use Dotenv\Dotenv;
+use PDO;
 
 class FeatureTestCase extends TestCase
 {
     private const TMP_DIR = __DIR__ . '/.tmp';
     private const TMP_ENV_NAME = '.env';
     private const TMP_DB_FILE_NAME = 'tmp.sqlite';
+    private const HTTP_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36';
+    private string $sessionId = '';
     private Migration $migration;
     protected ?Client $http;
     protected ?PDO $pdo;
+    protected ?Session $session;
 
     protected function setUp(): void
     {
@@ -25,24 +34,21 @@ class FeatureTestCase extends TestCase
         $this->createTmpFolder();
         $this->generateEnv();
         $this->loadEnv();
+        $this->setUpHeaders();
         $this->setUpPdo();
-        $this->migration = new Migration(
-            $this->pdo,
-            __DIR__ . '/../database/migrations/'
-        );
-        $this->migration->migrate();
-        $this->http = new Client([
-            'base_uri' => $_ENV['BASE_URL'],
-            'headers' => [
-                'App-Testing' => 1, // App testing custom header
-                'App-Testing-Env' => self::TMP_DIR . '/' . self::TMP_ENV_NAME,
-            ]
-        ]);
+        $this->setUpMigration();
+        $this->setUpSession();
+        $this->setUpHttpClient();
     }
 
     protected function tearDown(): void
     {
-        // Reset
+        // write & close session
+        session_write_close();
+
+        // Reset (the order matter's)
+        $this->session->end();
+        $this->session = null;
         $this->migration->rollback();
         $this->pdo = null;
         $this->http = null;
@@ -57,7 +63,7 @@ class FeatureTestCase extends TestCase
     {
         $this->deleteDir(self::TMP_DIR);
         $old = umask(0);
-        mkdir(self::TMP_DIR, 0777);
+        mkdir(self::TMP_DIR);
         umask($old);
     }
 
@@ -76,6 +82,11 @@ class FeatureTestCase extends TestCase
         $dbFile = self::TMP_DIR . '/' . self::TMP_DB_FILE_NAME;
         file_put_contents(self::TMP_DIR . '/.env', "\nAPP_DEBUG=true\n", FILE_APPEND);
         file_put_contents(self::TMP_DIR . '/.env', "\nDB_FILE=" . $dbFile . "\n", FILE_APPEND);
+        file_put_contents(self::TMP_DIR . '/.env', "\nSESSION_SAVE_PATH=" . self::TMP_DIR . "\n", FILE_APPEND);
+        file_put_contents(self::TMP_DIR . '/.env', "\nSESSION_HANDLER=files\n", FILE_APPEND);
+        file_put_contents(self::TMP_DIR . '/.env', "\nSESSION_USE_COOKIES=false\n", FILE_APPEND);
+        file_put_contents(self::TMP_DIR . '/.env', "\nSESSION_HTTP_ONLY=false\n", FILE_APPEND);
+        file_put_contents(self::TMP_DIR . '/.env', "\nSESSION_SSL=false\n", FILE_APPEND);
     }
 
     private function loadEnv(): void
@@ -122,5 +133,102 @@ class FeatureTestCase extends TestCase
         }
 
         return rmdir($path);
+    }
+
+    /**
+     * @return void
+     */
+    protected function setUpMigration(): void
+    {
+        $this->migration = new Migration(
+            $this->pdo,
+            __DIR__ . '/../database/migrations/'
+        );
+        $this->migration->migrate();
+    }
+
+    /**
+     * @return void
+     */
+    protected function setUpHttpClient(): void
+    {
+        $this->http = new Client([
+            'base_uri' => $_ENV['BASE_URL'],
+            'headers' => [
+                'Cookie' => "PHPSESSID={$this->sessionId}",
+                'User-Agent' => self::HTTP_USER_AGENT,
+                'App-Testing' => 1, // App testing custom header
+                'App-Testing-Env' => self::TMP_DIR . '/' . self::TMP_ENV_NAME,
+                'App-Session-Id' => $this->sessionId,
+            ],
+        ]);
+    }
+
+    private function setUpSession(): void
+    {
+        $this->session = new Session(
+            handler: new FileSessionHandler($_ENV['SESSION_ENCRYPTION_KEY']),
+            handlerType: SessionHandlerType::Files,
+            name: $_ENV['SESSION_NAME'],
+            lifeTime: (int)$_ENV['SESSION_LIFE_TIME'],
+            ssl: $_ENV['SESSION_SSL'] === 'true',
+            useCookies: $_ENV['SESSION_USE_COOKIES'] === 'true',
+            httpOnly: $_ENV['SESSION_HTTP_ONLY'] === 'true',
+            path: $_ENV['SESSION_PATH'],
+            domain: $_ENV['SESSION_DOMAIN'],
+            savePath: $_ENV['SESSION_SAVE_PATH']
+        );
+        $this->session->start();
+        $this->sessionId = session_id();
+    }
+
+    private function setUpHeaders(): void
+    {
+        // This is required for sessions
+        $_SERVER['HTTP_USER_AGENT'] = self::HTTP_USER_AGENT;
+    }
+
+    /**
+     * This request method is important because it saves the session'
+     * @param RequestType $requestType
+     * @param string $uri
+     * @param array $data
+     * @return ResponseInterface
+     * @throws \GuzzleHttp\Exception\GuzzleException
+     */
+    private function request(RequestType $requestType, string $uri, array $data = []): ResponseInterface
+    {
+        // write & close session or the data from the process that will handle the Guzzle request will use an empty session
+        session_write_close();
+
+        if ($requestType === RequestType::Get) {
+            $response = $this->http->request(
+                'get',
+                '/' . ltrim($uri, '/'),
+            );
+        } elseif ($requestType === RequestType::Post) {
+            $response = $this->http->request(
+                'post',
+                '/' . ltrim($uri, '/'),
+                [
+                    'form_params' => $data
+                ]
+            );
+        }
+
+        // Re-start session with the
+        $this->session->start($this->sessionId);
+
+        return $response;
+    }
+
+    protected function get(string $uri): ResponseInterface
+    {
+        return $this->request(RequestType::Get, $uri);
+    }
+
+    protected function post(string $uri, array $data): ResponseInterface
+    {
+        return $this->request(RequestType::Post, $uri, $data);
     }
 }

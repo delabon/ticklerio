@@ -2,23 +2,18 @@
 
 namespace App\Controllers;
 
-use App\Core\Controller;
 use App\Core\Http\HttpStatusCode;
+use App\Core\Http\Request;
 use App\Core\Http\Response;
-use App\Users\UserRepository;
-use App\Users\UserSanitizer;
 use App\Users\UserService;
-use App\Users\UserValidator;
 use Exception;
 
-class RegisterController extends Controller
+class RegisterController
 {
-    public function register(): Response
+    public function register(Request $request, UserService $userService): Response
     {
         try {
-            $userRepository = new UserRepository($this->pdo);
-            $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-            $user = $userService->createUser($this->request->postParams);
+            $user = $userService->createUser($request->postParams);
 
             return new Response(json_encode([
                 'id' => $user->getId()

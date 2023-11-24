@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Core\Auth;
+namespace App\Core;
 
 use App\Core\Session\Session;
 use App\Users\User;
 
-class Auth
+readonly class Auth
 {
-    public function __construct(private readonly Session $session)
+    public function __construct(private Session $session)
     {
     }
 

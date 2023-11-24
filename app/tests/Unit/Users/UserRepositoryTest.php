@@ -311,4 +311,86 @@ class UserRepositoryTest extends TestCase
         $this->assertSame(2, $user2->getId());
         $this->assertCount(2, $userRepository->all());
     }
+
+    public function testFindsUserByEmailSuccessfully(): void
+    {
+        $now = time();
+        $userData = [
+            'email' => 'test@test.com',
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'password' => '12345678',
+            'type' => 'member',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+
+        $pdoStatementMock = $this->createMock(PDOStatement::class);
+        $pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+        $pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () use ($userData) {
+                $userData['id'] = 1;
+
+                return [$userData];
+            });
+        $pdoMock = $this->createMock(PDO::class);
+        $pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturn($pdoStatementMock);
+        $pdoMock->expects($this->once())
+            ->method('lastInsertId')
+            ->willReturnOnConsecutiveCalls("1");
+
+        $user = new User();
+        $user->setEmail($userData['email']);
+        $user->setFirstName($userData['first_name']);
+        $user->setLastName($userData['last_name']);
+        $user->setPassword($userData['password']);
+        $user->setType($userData['type']);
+        $user->setCreatedAt($userData['created_at']);
+        $user->setUpdatedAt($userData['updated_at']);
+        $userRepository = new UserRepository($pdoMock);
+        $userRepository->save($user);
+
+        $usersFound = $userRepository->findBy('email', $userData['email']);
+
+        $this->assertCount(1, $usersFound);
+        $this->assertSame(1, $usersFound[0]->getId());
+        $this->assertSame($userData['email'], $usersFound[0]->getEmail());
+    }
+
+    public function testThrowsExceptionWhenFindUserWithAnInvalidColumnName(): void
+    {
+        $userRepository = new UserRepository($this->createStub(PDO::class));
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        $userRepository->findBy('not_a_valid_column_name', 1);
+    }
+
+    public function testReturnsEmptyArrayWhenFindingUserWithNonExistentEmail(): void
+    {
+        $pdoStatementMock = $this->createMock(PDOStatement::class);
+        $pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+        $pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([]);
+        $pdoMock = $this->createMock(PDO::class);
+        $pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($pdoStatementMock);
+
+        $userRepository = new UserRepository($pdoMock);
+
+        $usersFound = $userRepository->findBy('email', 'test@example.com');
+
+        $this->assertCount(0, $usersFound);
+    }
 }
