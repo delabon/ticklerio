@@ -41,9 +41,16 @@ if ($uri === '/') {
             new UserSanitizer()
         )
     );
-} elseif (preg_match("/^\/ajax\/auth\/?$/", $uri)) {
+} elseif (preg_match("/^\/ajax\/auth\/login\/?$/", $uri)) {
     // Register a user via ajax
-    $response = (new AuthController())->auth(
+    $response = (new AuthController())->login(
+        $container->get(Request::class),
+        $container->get(Auth::class),
+        new UserRepository($container->get(PDO::class))
+    );
+} elseif (preg_match("/^\/ajax\/auth\/logout\/?$/", $uri)) {
+    // Register a user via ajax
+    $response = (new AuthController())->logout(
         $container->get(Request::class),
         $container->get(Auth::class),
         new UserRepository($container->get(PDO::class))

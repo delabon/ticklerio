@@ -8,7 +8,13 @@ use App\Core\Session\FileSessionHandler;
 use App\Core\Session\Session;
 use App\Core\Session\SessionHandlerType;
 use App\Users\User;
+use App\Users\UserFactory;
+use App\Users\UserRepository;
+use Exception;
+use Faker\Factory;
+use LogicException;
 use PHPUnit\Framework\TestCase;
+use UnexpectedValueException;
 
 class AuthTest extends TestCase
 {
@@ -70,5 +76,15 @@ class AuthTest extends TestCase
         $user->setId(99);
 
         $this->assertFalse($this->auth->isAuth($user));
+    }
+
+    public function testThrowsExceptionWhenLoggingOutUserWhoIsNotLoggedIn(): void
+    {
+        $user = new User();
+        $user->setId(999);
+
+        $this->expectException(LogicException::class);
+
+        $this->auth->logout($user);
     }
 }

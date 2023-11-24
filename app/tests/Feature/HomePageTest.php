@@ -8,7 +8,7 @@ class HomePageTest extends FeatureTestCase
 {
     public function testHttpRequestSuccessfully(): void
     {
-        $response = $this->http->request('GET', '/');
+        $response = $this->get('/');
 
         $this->assertSame(200, $response->getStatusCode());
     }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Core\Http\HttpStatusCode;
 use App\Users\UserRepository;
 use App\Users\UserType;
 use GuzzleHttp\Exception\GuzzleException;
@@ -12,17 +13,14 @@ class UserRegisterTest extends FeatureTestCase
     public function testRegisteringUserSuccessfully(): void
     {
         $email = 'test@test.com';
-        $response = $this->http->request(
-            'post',
+        $response = $this->post(
             '/ajax/register',
             [
-                'form_params' => [
-                    'email' => $email,
-                    'first_name' => 'John',
-                    'last_name' => 'Doe',
-                    'password' => '12345678',
-                    'type' => UserType::Member->value,
-                ]
+                'email' => $email,
+                'first_name' => 'John',
+                'last_name' => 'Doe',
+                'password' => '12345678',
+                'type' => UserType::Member->value,
             ]
         );
 
@@ -51,20 +49,14 @@ class UserRegisterTest extends FeatureTestCase
             'type' => UserType::Member->value,
         ];
 
-        $response1 = $this->http->request(
-            'post',
+        $response1 = $this->post(
             '/ajax/register',
-            [
-                'form_params' => $userOneData
-            ]
+            $userOneData
         );
 
-        $response2 = $this->http->request(
-            'post',
+        $response2 = $this->post(
             '/ajax/register',
-            [
-                'form_params' => $userTwoData
-            ]
+            $userTwoData
         );
 
         $userRepository = new UserRepository($this->pdo);
@@ -82,26 +74,17 @@ class UserRegisterTest extends FeatureTestCase
 
     public function testExceptionThrownWhenAddingUserWithInvalidEmail(): void
     {
-        $httpCode = 200;
+        $response = $this->post(
+            '/ajax/register',
+            [
+                'email' => 'test',
+                'first_name' => 'John',
+                'last_name' => 'Doe',
+                'password' => '12345678',
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
 
-        try {
-            $this->http->request(
-                'post',
-                '/ajax/register',
-                [
-                    'form_params' => [
-                        'email' => 'test',
-                        'first_name' => 'John',
-                        'last_name' => 'Doe',
-                        'password' => '12345678',
-                    ]
-                ]
-            );
-
-        } catch (GuzzleException $e) {
-            $httpCode = $e->getCode();
-        }
-
-        $this->assertSame(400, $httpCode);
+        $this->assertSame(HttpStatusCode::BadRequest->value, $response->getStatusCode());
     }
 }

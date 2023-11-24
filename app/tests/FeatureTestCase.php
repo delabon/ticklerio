@@ -3,7 +3,6 @@
 namespace Tests;
 
 use App\Core\Http\RequestType;
-use App\Core\Session\DatabaseSessionHandler;
 use App\Core\Migration\Migration;
 use App\Core\Session\FileSessionHandler;
 use App\Core\Session\SessionHandlerType;
@@ -17,6 +16,7 @@ use PDO;
 
 class FeatureTestCase extends TestCase
 {
+    public const DISABLE_GUZZLE_EXCEPTION = false;
     private const TMP_DIR = __DIR__ . '/.tmp';
     private const TMP_ENV_NAME = '.env';
     private const TMP_DB_FILE_NAME = 'tmp.sqlite';
@@ -34,7 +34,6 @@ class FeatureTestCase extends TestCase
         $this->createTmpFolder();
         $this->generateEnv();
         $this->loadEnv();
-        $this->setUpHeaders();
         $this->setUpPdo();
         $this->setUpMigration();
         $this->setUpSession();
@@ -182,12 +181,6 @@ class FeatureTestCase extends TestCase
         $this->sessionId = session_id();
     }
 
-    private function setUpHeaders(): void
-    {
-        // This is required for sessions
-        $_SERVER['HTTP_USER_AGENT'] = self::HTTP_USER_AGENT;
-    }
-
     /**
      * This request method is important because it saves the session'
      * @param RequestType $requestType
@@ -196,7 +189,7 @@ class FeatureTestCase extends TestCase
      * @return ResponseInterface
      * @throws \GuzzleHttp\Exception\GuzzleException
      */
-    private function request(RequestType $requestType, string $uri, array $data = []): ResponseInterface
+    private function request(RequestType $requestType, string $uri, array $data = [], bool $throwExceptions = true): ResponseInterface
     {
         // write & close session or the data from the process that will handle the Guzzle request will use an empty session
         session_write_close();
@@ -205,13 +198,17 @@ class FeatureTestCase extends TestCase
             $response = $this->http->request(
                 'get',
                 '/' . ltrim($uri, '/'),
+                [
+                    'http_errors' => $throwExceptions
+                ]
             );
         } elseif ($requestType === RequestType::Post) {
             $response = $this->http->request(
                 'post',
                 '/' . ltrim($uri, '/'),
                 [
-                    'form_params' => $data
+                    'form_params' => $data,
+                    'http_errors' => $throwExceptions,
                 ]
             );
         }
@@ -222,13 +219,13 @@ class FeatureTestCase extends TestCase
         return $response;
     }
 
-    protected function get(string $uri): ResponseInterface
+    protected function get(string $uri, bool $throwExceptions = true): ResponseInterface
     {
-        return $this->request(RequestType::Get, $uri);
+        return $this->request(RequestType::Get, $uri, [], $throwExceptions);
     }
 
-    protected function post(string $uri, array $data): ResponseInterface
+    protected function post(string $uri, array $data = [], bool $throwExceptions = true): ResponseInterface
     {
-        return $this->request(RequestType::Post, $uri, $data);
+        return $this->request(RequestType::Post, $uri, $data, $throwExceptions);
     }
 }
