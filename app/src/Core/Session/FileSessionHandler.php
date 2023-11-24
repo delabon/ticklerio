@@ -82,13 +82,16 @@ class FileSessionHandler implements SessionHandlerInterface
 
     public function gc(int $max_lifetime): int|false // phpcs:ignore
     {
+        $count = 0;
+
         foreach (glob("$this->path/sess_*") as $file) {
             if (filemtime($file) + $max_lifetime < time() && file_exists($file)) { // phpcs:ignore
                 unlink($file);
+                $count += 1;
             }
         }
 
-        return true;
+        return $count;
     }
 
     public function open(string $path, string $name): bool

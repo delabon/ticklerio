@@ -6,6 +6,7 @@ use SessionHandlerInterface;
 
 class ArraySessionHandler implements SessionHandlerInterface
 {
+    /** @var array<string, mixed> */
     private array $sessions = [];
 
     public function open(string $path, string $name): bool

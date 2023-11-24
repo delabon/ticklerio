@@ -101,7 +101,7 @@ if ($_ENV['SESSION_HANDLER'] === 'database') {
     $sessionHandler = new ArraySessionHandler();
 }
 
-$container->singleton(Session::class, function () use ($container, $sessionHandler, $sessionHandlerType) {
+$container->singleton(Session::class, function () use ($sessionHandler, $sessionHandlerType) {
     return new Session(
         handler: $sessionHandler,
         handlerType: $sessionHandlerType,

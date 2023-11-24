@@ -12,6 +12,7 @@ use function Symfony\Component\String\u;
 class UserRepository
 {
     private PDO $pdo;
+    /** @var array|string[] */
     private array $validColumns = [
         'id',
         'email',
