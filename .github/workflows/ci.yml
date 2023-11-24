@@ -31,10 +31,8 @@ jobs:
         run: |
           php phpcs.phar --standard=app/phpcs.xml ${{ env.MODIFIED_FILES }}
 
-  testing:
-
+  phpunit:
     runs-on: ubuntu-latest
-
     steps:
       - uses: shivammathur/setup-php@v2
         with:
@@ -52,8 +50,22 @@ jobs:
         run: php -S localhost:8000 -t public &
         working-directory: app
 
-      - name: Execute tests (Unit and Feature tests) via PHPUnit
+      - name: Execute tests (Unit, Integration, and Feature tests) via PHPUnit
         env:
           BASE_URL: http://localhost:8000
         run: vendor/bin/phpunit
         working-directory: app
+
+  phpstan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies
+        uses: php-actions/composer@v6
+
+      - name: PHPStan Static Analysis
+        uses: php-actions/phpstan@v3
+        with:
+          configuration: phpstan.neon
+          working-directory: app
