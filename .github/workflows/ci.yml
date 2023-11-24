@@ -63,6 +63,8 @@ jobs:
 
       - name: Install dependencies
         uses: php-actions/composer@v6
+        with:
+          working-directory: app
 
       - name: PHPStan Static Analysis
         uses: php-actions/phpstan@v3
