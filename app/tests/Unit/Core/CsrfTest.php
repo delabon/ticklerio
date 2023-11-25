@@ -11,6 +11,7 @@ use PHPUnit\Framework\TestCase;
 class CsrfTest extends TestCase
 {
     private ?Session $session;
+    private Csrf $csrf;
 
     protected function setUp(): void
     {
@@ -29,6 +30,7 @@ class CsrfTest extends TestCase
             savePath: '/tmp'
         );
         $this->session->start();
+        $this->csrf = new Csrf($this->session, 'mySalt00');
     }
 
     protected function tearDown(): void
@@ -41,9 +43,7 @@ class CsrfTest extends TestCase
 
     public function testCreatesCsrfSuccessfully(): void
     {
-        $csrf = new Csrf($this->session, 'mySalt00');
-
-        $token = $csrf->generate();
+        $token = $this->csrf->generate();
 
         $this->assertIsString($token);
         $this->assertNotEmpty($token);
@@ -54,12 +54,10 @@ class CsrfTest extends TestCase
 
     public function testValidatesCsrf(): void
     {
-        $csrf = new Csrf($this->session, 'mySalt00');
+        $token = $this->csrf->generate();
 
-        $token = $csrf->generate();
-
-        $this->assertTrue($csrf->validate($token));
-        $this->assertFalse($csrf->validate('test'));
+        $this->assertTrue($this->csrf->validate($token));
+        $this->assertFalse($this->csrf->validate('test'));
     }
 
     public function testValidateShouldReturnFalseWhenTheCsrfExpired(): void
@@ -73,27 +71,22 @@ class CsrfTest extends TestCase
 
     public function testGetsCsrfTokenSuccessfully(): void
     {
-        $csrf = new Csrf($this->session, 'mySalt00');
+        $token = $this->csrf->generate();
 
-        $token = $csrf->generate();
-
-        $this->assertSame($token, $csrf->get());
+        $this->assertSame($token, $this->csrf->get());
     }
 
     public function testGetReturnsNullWhenCsrfHasNotBeenGenerated(): void
     {
-        $csrf = new Csrf($this->session, 'mySalt00');
-
-        $this->assertNull($csrf->get());
+        $this->assertNull($this->csrf->get());
     }
 
     public function testDeletesCsrf(): void
     {
-        $csrf = new Csrf($this->session, 'mySalt00');
-        $csrf->generate();
+        $this->csrf->generate();
 
-        $csrf->delete();
+        $this->csrf->delete();
 
-        $this->assertNull($csrf->get());
+        $this->assertNull($this->csrf->get());
     }
 }
