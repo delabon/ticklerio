@@ -6,7 +6,7 @@ use Tests\FeatureTestCase;
 
 class HomePageTest extends FeatureTestCase
 {
-    public function testHttpRequestSuccessfully(): void
+    public function testAccessesHomePageSuccessfully(): void
     {
         $response = $this->get('/');
 

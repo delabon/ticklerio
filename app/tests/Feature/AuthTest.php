@@ -11,7 +11,7 @@ use Tests\FeatureTestCase;
 
 class AuthTest extends FeatureTestCase
 {
-    public function testLogInUserSuccessfully(): void
+    public function testLogsInUserSuccessfully(): void
     {
         $auth = new Auth($this->session);
         $userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
@@ -36,7 +36,7 @@ class AuthTest extends FeatureTestCase
         $this->assertArrayHasKey('id', $_SESSION['auth']);
     }
 
-    public function testLogoutUserSuccessfully(): void
+    public function testLogsOutUserSuccessfully(): void
     {
         $auth = new Auth($this->session);
         $userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());

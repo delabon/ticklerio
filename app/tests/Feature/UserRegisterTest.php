@@ -74,7 +74,7 @@ class UserRegisterTest extends FeatureTestCase
         $this->assertCount(2, $userRepository->all());
     }
 
-    public function testExceptionThrownWhenAddingUserWithInvalidEmail(): void
+    public function testThrowsExceptionWhenAddingUserWithInvalidEmail(): void
     {
         $response = $this->post(
             '/ajax/register',

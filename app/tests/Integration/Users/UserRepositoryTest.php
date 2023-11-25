@@ -9,7 +9,7 @@ use Tests\IntegrationTestCase;
 
 class UserRepositoryTest extends IntegrationTestCase
 {
-    public function testAddingUserSuccessfully(): void
+    public function testAddsUserSuccessfully(): void
     {
         $now = time();
         $userData = [
@@ -39,7 +39,7 @@ class UserRepositoryTest extends IntegrationTestCase
         $this->assertSame($now, $user->getUpdatedAt());
     }
 
-    public function testUpdatingUserSuccessfully(): void
+    public function testUpdatesUserSuccessfully(): void
     {
         $now = time();
         $userData = [
@@ -82,7 +82,7 @@ class UserRepositoryTest extends IntegrationTestCase
         $this->assertSame($updatedAt, $users[0]->getCreatedAt());
     }
 
-    public function testExceptionThrownWhenTryingToUpdateNonExistentUser(): void
+    public function testThrowsExceptionWhenTryingToUpdateNonExistentUser(): void
     {
         $user = new User();
         $user->setId(5555);
@@ -123,7 +123,7 @@ class UserRepositoryTest extends IntegrationTestCase
         $this->assertSame($userData['email'], $userFound->getEmail());
     }
 
-    public function testFindingNonExistentUserShouldFail(): void
+    public function testFindsNonExistentUserShouldFail(): void
     {
         $userRepository = new UserRepository($this->pdo);
 
@@ -132,7 +132,7 @@ class UserRepositoryTest extends IntegrationTestCase
         $this->assertFalse($userFound);
     }
 
-    public function testAddingMultipleUsersSuccessfully(): void
+    public function testAddsMultipleUsersSuccessfully(): void
     {
         $now = time();
         $userOneData = [

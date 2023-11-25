@@ -7,7 +7,7 @@ use Tests\FeatureTestCase;
 
 class NotFound404Test extends FeatureTestCase
 {
-    public function test404NotFound(): void
+    public function testReturnsNotFoundResponseForNonExistentUrl(): void
     {
         $response = $this->get(
             '/65z4eaz6aze-' . uniqid() . '-98999-azeze-xsdqsd5411-z5er5ezr/',

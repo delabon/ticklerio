@@ -15,7 +15,7 @@ use Tests\IntegrationTestCase;
 
 class UserServiceTest extends IntegrationTestCase
 {
-    public function testCreatingUserSuccessfully(): void
+    public function testCreatesUserSuccessfully(): void
     {
         $userRepository = new UserRepository($this->pdo);
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
@@ -26,7 +26,7 @@ class UserServiceTest extends IntegrationTestCase
         $this->assertCount(1, $userRepository->all());
     }
 
-    public function testUpdatingUserSuccessfully(): void
+    public function testUpdatesUserSuccessfully(): void
     {
         $userData = $this->userData();
         $userRepository = new UserRepository($this->pdo);
@@ -45,7 +45,7 @@ class UserServiceTest extends IntegrationTestCase
         $this->assertCount(1, $userRepository->all());
     }
 
-    public function testExceptionThrownWhenUpdatingUserWithAnIdOfZero(): void
+    public function testThrowsExceptionWhenUpdatingUserWithAnIdOfZero(): void
     {
         $user = new User();
         $user->setId(0);
@@ -57,7 +57,7 @@ class UserServiceTest extends IntegrationTestCase
         $userService->updateUser($user);
     }
 
-    public function testExceptionThrownWhenUpdatingUserWithInvalidData(): void
+    public function testThrowsExceptionWhenUpdatingUserWithInvalidData(): void
     {
         $userData = $this->userData();
         $userRepository = new UserRepository($this->pdo);
