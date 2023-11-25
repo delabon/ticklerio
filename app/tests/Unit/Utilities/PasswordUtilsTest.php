@@ -7,7 +7,7 @@ use PHPUnit\Framework\TestCase;
 
 class PasswordUtilsTest extends TestCase
 {
-    public function testHashingPasswordSuccessfully(): void
+    public function testHashesPasswordSuccessfully(): void
     {
         $hashedPassword = PasswordUtils::hashPasswordIfNotHashed('123456789');
 

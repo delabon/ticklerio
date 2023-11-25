@@ -10,8 +10,8 @@ final class CreateUsersTable extends AbstractMigration // phpcs:ignore
             CREATE TABLE users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 email VARCHAR(255),
-                first_name VARCHAR(255),
-                last_name VARCHAR(255),
+                first_name VARCHAR(50),
+                last_name VARCHAR(50),
                 type VARCHAR(50),
                 password TEXT,
                 created_at BIGINT,

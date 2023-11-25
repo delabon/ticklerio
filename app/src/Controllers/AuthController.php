@@ -37,7 +37,7 @@ class AuthController
         }
 
         // Log in
-        $auth->authenticate($user);
+        $auth->login($user);
 
         return new Response([
             'success' => true,

@@ -84,7 +84,7 @@ class ResponseTest extends TestCase
      * Tests output buffering
      * @return void
      */
-    public function testSendingBasicResponse(): void
+    public function testSendsBasicResponse(): void
     {
         $response = new Response("Hello world!");
         ob_start();
@@ -99,7 +99,7 @@ class ResponseTest extends TestCase
      * Tests output buffering
      * @return void
      */
-    public function testSendingJsonResponse(): void
+    public function testSendsJsonResponse(): void
     {
         $response = new Response(['test' => 112]);
         ob_start();

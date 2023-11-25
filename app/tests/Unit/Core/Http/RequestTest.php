@@ -10,14 +10,14 @@ use PHPUnit\Framework\TestCase;
 
 class RequestTest extends TestCase
 {
-    public function testCreateFromGlobals(): void
+    public function testCreateFromGlobalsReturnsInstanceOfRequestInterface(): void
     {
         $request = Request::createFromGlobals();
 
         $this->assertInstanceOf(RequestInterface::class, $request);
     }
 
-    public function testUri(): void
+    public function testUriReturnsCorrectUriString(): void
     {
         $server = [
             'REQUEST_URI' => '/api/v1/users'
@@ -36,7 +36,7 @@ class RequestTest extends TestCase
         $request->uri();
     }
 
-    public function testIp(): void
+    public function testIpReturnsCorrectIpAddressString(): void
     {
         $server = [
             'REMOTE_ADDR' => '127.0.2.5'
@@ -55,7 +55,7 @@ class RequestTest extends TestCase
         $request->ip();
     }
 
-    public function testUrl(): void
+    public function testUrlReturnsCorrectUrlString(): void
     {
         $server = [
             'HTTP_HOST' => 'delabon.com',
@@ -105,7 +105,7 @@ class RequestTest extends TestCase
         $this->assertNull($request->header('X-Forwarded-Host'));
     }
 
-    public function testQuery(): void
+    public function testQueryReturnsCorrectValues(): void
     {
         $request = Request::create(
             getParams: [

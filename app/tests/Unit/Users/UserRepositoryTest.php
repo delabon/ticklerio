@@ -11,7 +11,7 @@ use PHPUnit\Framework\TestCase;
 
 class UserRepositoryTest extends TestCase
 {
-    public function testAddingUserSuccessfully(): void
+    public function testAddsUserSuccessfully(): void
     {
         $now = time();
         $userData = [
@@ -67,7 +67,7 @@ class UserRepositoryTest extends TestCase
         $this->assertSame($now, $user->getUpdatedAt());
     }
 
-    public function testUpdatingUserSuccessfully(): void
+    public function testUpdatesUserSuccessfully(): void
     {
         $now = time();
         $userData = [
@@ -143,7 +143,7 @@ class UserRepositoryTest extends TestCase
         $this->assertSame($userUpdatedData['created_at'], $users[0]->getCreatedAt());
     }
 
-    public function testExceptionThrownWhenTryingToUpdateNonExistentUser(): void
+    public function testThrowsExceptionWhenTryingToUpdateNonExistentUser(): void
     {
         $now = time();
         $pdoStatementMock = $this->createMock(PDOStatement::class);
@@ -169,7 +169,7 @@ class UserRepositoryTest extends TestCase
         $userRepository->save($user);
     }
 
-    public function testFindUserByIdSuccessfully(): void
+    public function testFindsUserByIdSuccessfully(): void
     {
         $now = time();
         $userData = [
@@ -222,7 +222,7 @@ class UserRepositoryTest extends TestCase
         $this->assertSame($userData['email'], $userFound->getEmail());
     }
 
-    public function testFindingNonExistentUserShouldFail(): void
+    public function testFindsNonExistentUserShouldFail(): void
     {
         $pdoStatementMock = $this->createMock(PDOStatement::class);
         $pdoStatementMock->expects($this->once())
@@ -243,7 +243,7 @@ class UserRepositoryTest extends TestCase
         $this->assertFalse($userFound);
     }
 
-    public function testAddingMultipleUsersSuccessfully(): void
+    public function testAddsMultipleUsersSuccessfully(): void
     {
         $now = time();
         $userOneData = [

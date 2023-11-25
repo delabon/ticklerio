@@ -17,7 +17,7 @@ use PHPUnit\Framework\TestCase;
 
 class UserServiceTest extends TestCase
 {
-    public function testCreatingUserSuccessfully(): void
+    public function testCreatesUserSuccessfully(): void
     {
         $userData = $this->userData();
 
@@ -57,7 +57,7 @@ class UserServiceTest extends TestCase
         $this->assertCount(1, $userRepository->all());
     }
 
-    public function testUpdatingUserSuccessfully(): void
+    public function testUpdatesUserSuccessfully(): void
     {
         $userData = $this->userData();
 
@@ -115,7 +115,7 @@ class UserServiceTest extends TestCase
         $this->assertCount(1, $userRepository->all());
     }
 
-    public function testExceptionThrownWhenUpdatingUserWithAnIdOfZero(): void
+    public function testThrowsExceptionWhenUpdatingUserWithAnIdOfZero(): void
     {
         $user = new User();
         $user->setId(0);
@@ -127,7 +127,7 @@ class UserServiceTest extends TestCase
         $userService->updateUser($user);
     }
 
-    public function testExceptionThrownWhenUpdatingNonExistentUser(): void
+    public function testThrowsExceptionWhenUpdatingNonExistentUser(): void
     {
         $pdoStatementMock = $this->createMock(PDOStatement::class);
         $pdoStatementMock->expects($this->once())
@@ -152,7 +152,7 @@ class UserServiceTest extends TestCase
         $userService->updateUser($user);
     }
 
-    public function testExceptionThrownWhenAddingUserWithInvalidEmail(): void
+    public function testThrowsExceptionWhenAddingUserWithInvalidEmail(): void
     {
         $userRepository = new UserRepository($this->createStub(PDO::class));
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
@@ -164,7 +164,7 @@ class UserServiceTest extends TestCase
         $userService->createUser($userData);
     }
 
-    public function testExceptionThrownWhenAddingUserWithInvalidFirstName(): void
+    public function testThrowsExceptionWhenAddingUserWithInvalidFirstName(): void
     {
         $userRepository = new UserRepository($this->createStub(PDO::class));
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
@@ -176,7 +176,7 @@ class UserServiceTest extends TestCase
         $userService->createUser($userData);
     }
 
-    public function testExceptionThrownWhenAddingUserWithInvalidLastName(): void
+    public function testThrowsExceptionWhenAddingUserWithInvalidLastName(): void
     {
         $userRepository = new UserRepository($this->createStub(PDO::class));
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
@@ -188,7 +188,7 @@ class UserServiceTest extends TestCase
         $userService->createUser($userData);
     }
 
-    public function testExceptionThrownWhenAddingUserWithInvalidPassword(): void
+    public function testThrowsExceptionWhenAddingUserWithInvalidPassword(): void
     {
         $userRepository = new UserRepository($this->createStub(PDO::class));
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
@@ -200,7 +200,7 @@ class UserServiceTest extends TestCase
         $userService->createUser($userData);
     }
 
-    public function testExceptionThrownWhenAddingUserWithInvalidType(): void
+    public function testThrowsExceptionWhenAddingUserWithInvalidType(): void
     {
         $userRepository = new UserRepository($this->createStub(PDO::class));
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
@@ -212,7 +212,7 @@ class UserServiceTest extends TestCase
         $userService->createUser($userData);
     }
 
-    public function testExceptionThrownWhenUpdatingUserWithInvalidData(): void
+    public function testThrowsExceptionWhenUpdatingUserWithInvalidData(): void
     {
         $userData = $this->userData();
         $userRepository = new UserRepository($this->createStub(PDO::class));
@@ -293,7 +293,7 @@ class UserServiceTest extends TestCase
         $this->assertTrue(PasswordUtils::isPasswordHashed($user->getPassword()));
     }
 
-    public function testSanitizingDataWhenAddingUser(): void
+    public function testSanitizesDataWhenAddingUser(): void
     {
         $userData = $this->userData();
 

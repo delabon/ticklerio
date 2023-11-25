@@ -45,7 +45,7 @@ class AuthTest extends FeatureTestCase
             'password' => $password
         ])[0];
 
-        $auth->authenticate($user);
+        $auth->login($user);
         $this->assertTrue($auth->isAuth($user));
 
         $response = $this->post(

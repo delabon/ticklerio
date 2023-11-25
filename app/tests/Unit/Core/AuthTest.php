@@ -49,28 +49,28 @@ class AuthTest extends TestCase
         parent::tearDown();
     }
 
-    public function testAuthUser(): void
+    public function testLogsInUser(): void
     {
         $user = new User();
         $user->setId(1);
 
-        $this->auth->authenticate($user);
+        $this->auth->login($user);
 
         $this->assertArrayHasKey('auth', $_SESSION);
         $this->assertArrayHasKey('id', $_SESSION['auth']);
         $this->assertSame(1, $this->session->get('auth')['id']);
     }
 
-    public function testIsUserAuthenticated(): void
+    public function testIsUserLoggedIn(): void
     {
         $user = new User();
         $user->setId(1);
-        $this->auth->authenticate($user);
+        $this->auth->login($user);
 
         $this->assertTrue($this->auth->isAuth($user));
     }
 
-    public function testIsUserNoTAuthenticated(): void
+    public function testIsUserNoTLoggedIn(): void
     {
         $user = new User();
         $user->setId(99);
@@ -81,7 +81,7 @@ class AuthTest extends TestCase
     public function testThrowsExceptionWhenLoggingOutUserWhoIsNotLoggedIn(): void
     {
         $user = new User();
-        $user->setId(999);
+        $user->setId(555);
 
         $this->expectException(LogicException::class);
 

@@ -75,6 +75,10 @@ class UserValidator
             throw new InvalidArgumentException("The {$text} cannot be empty.");
         }
 
+        if (strlen($data[$key]) > 50) {
+            throw new InvalidArgumentException("The {$text} should be equal or less than 50 characters.");
+        }
+
         if (preg_match("/[^a-z ']/i", $data[$key])) {
             throw new InvalidArgumentException("The {$text} should consist only of alphabetical characters and spaces.");
         }

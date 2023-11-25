@@ -14,7 +14,7 @@ readonly class Auth
     {
     }
 
-    public function authenticate(User $user): void
+    public function login(User $user): void
     {
         $this->session->add('auth', [
             'id' => $user->getId()
