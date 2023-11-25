@@ -8,6 +8,7 @@ use App\Controllers\AuthController;
 use App\Controllers\HomeController;
 use App\Controllers\RegisterController;
 use App\Core\Auth;
+use App\Core\Csrf;
 use App\Core\Http\HttpStatusCode;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
@@ -39,7 +40,8 @@ if ($uri === '/') {
             new UserRepository($container->get(PDO::class)),
             new UserValidator(),
             new UserSanitizer()
-        )
+        ),
+        $container->get(Csrf::class)
     );
 } elseif (preg_match("/^\/ajax\/auth\/login\/?$/", $uri)) {
     // Register a user via ajax

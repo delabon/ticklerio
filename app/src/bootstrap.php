@@ -2,6 +2,7 @@
 
 use App\Core\Auth;
 use App\Core\Container;
+use App\Core\Csrf;
 use App\Core\Http\Request;
 use App\Core\Session\ArraySessionHandler;
 use App\Core\Session\DatabaseSessionHandler;
@@ -125,6 +126,14 @@ $container->get(Session::class)->start(isset($headers['App-Session-Id']) && $isT
 
 $container->singleton(Auth::class, function () use ($container) {
     return new Auth($container->get(Session::class));
+});
+
+//
+// CSRF
+//
+
+$container->singleton(Csrf::class, function () use ($container) {
+    return new Csrf($container->get(Session::class), $_ENV['CSRF_SALT'], $_ENV['CSRF_LIFE_TIME_FOR_NON_LOGGED_IN']);
 });
 
 //

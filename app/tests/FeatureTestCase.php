@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use App\Core\Csrf;
 use App\Core\Http\RequestType;
 use App\Core\Migration\Migration;
 use App\Core\Session\FileSessionHandler;
@@ -26,6 +27,7 @@ class FeatureTestCase extends TestCase
     protected ?Client $http;
     protected ?PDO $pdo;
     protected ?Session $session;
+    protected ?Csrf $csrf;
 
     protected function setUp(): void
     {
@@ -38,6 +40,7 @@ class FeatureTestCase extends TestCase
         $this->setUpMigration();
         $this->setUpSession();
         $this->setUpHttpClient();
+        $this->setUpCsrf();
     }
 
     protected function tearDown(): void
@@ -51,6 +54,7 @@ class FeatureTestCase extends TestCase
         $this->migration->rollback();
         $this->pdo = null;
         $this->http = null;
+        $this->csrf = null;
 
         // Delete tmp folder
         $this->deleteDir(self::TMP_DIR);
@@ -79,6 +83,7 @@ class FeatureTestCase extends TestCase
         }
 
         $dbFile = self::TMP_DIR . '/' . self::TMP_DB_FILE_NAME;
+        file_put_contents(self::TMP_DIR . '/.env', "\nAPP_ENV=testing\n", FILE_APPEND);
         file_put_contents(self::TMP_DIR . '/.env', "\nAPP_DEBUG=true\n", FILE_APPEND);
         file_put_contents(self::TMP_DIR . '/.env', "\nDB_FILE=" . $dbFile . "\n", FILE_APPEND);
         file_put_contents(self::TMP_DIR . '/.env', "\nSESSION_SAVE_PATH=" . self::TMP_DIR . "\n", FILE_APPEND);
@@ -179,6 +184,11 @@ class FeatureTestCase extends TestCase
         );
         $this->session->start();
         $this->sessionId = session_id();
+    }
+
+    private function setUpCsrf()
+    {
+        $this->csrf = new Csrf($this->session, $_ENV['CSRF_SALT'], $_ENV['CSRF_LIFE_TIME_FOR_NON_LOGGED_IN']);
     }
 
     /**
