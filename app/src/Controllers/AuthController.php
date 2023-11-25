@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Core\Auth;
+use App\Core\Csrf;
 use App\Core\Http\HttpStatusCode;
 use App\Core\Http\Request;
 use App\Core\Http\RequestType;
@@ -13,8 +14,12 @@ use UnexpectedValueException;
 
 class AuthController
 {
-    public function login(Request $request, Auth $auth, UserRepository $userRepository): Response
+    public function login(Request $request, Auth $auth, UserRepository $userRepository, Csrf $csrf): Response
     {
+        if (!$csrf->validate($request->query(RequestType::Post, 'csrf_token') ?: '')) {
+            return new Response('Invalid CSRF token.', HttpStatusCode::Forbidden);
+        }
+
         $email = $request->query(RequestType::Post, 'email');
         $password = $request->query(RequestType::Post, 'password');
         $results = $userRepository->findBy('email', $email);
@@ -32,8 +37,12 @@ class AuthController
         ]);
     }
 
-    public function logout(Request $request, Auth $auth, UserRepository $userRepository): Response
+    public function logout(Request $request, Auth $auth, UserRepository $userRepository, Csrf $csrf): Response
     {
+        if (!$csrf->validate($request->query(RequestType::Post, 'csrf_token') ?: '')) {
+            return new Response('Invalid CSRF token.', HttpStatusCode::Forbidden);
+        }
+
         $id = (int)$request->query(RequestType::Post, 'id');
         $user = $userRepository->find($id);
 

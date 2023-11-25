@@ -48,14 +48,16 @@ if ($uri === '/') {
     $response = (new AuthController())->login(
         $container->get(Request::class),
         $container->get(Auth::class),
-        new UserRepository($container->get(PDO::class))
+        new UserRepository($container->get(PDO::class)),
+        $container->get(Csrf::class)
     );
 } elseif (preg_match("/^\/ajax\/auth\/logout\/?$/", $uri)) {
     // Register a user via ajax
     $response = (new AuthController())->logout(
         $container->get(Request::class),
         $container->get(Auth::class),
-        new UserRepository($container->get(PDO::class))
+        new UserRepository($container->get(PDO::class)),
+        $container->get(Csrf::class)
     );
 }
 

@@ -25,6 +25,7 @@ class AuthTest extends FeatureTestCase
             [
                 'email' => $user->getEmail(),
                 'password' => $password,
+                'csrf_token' => $this->csrf->generate()
             ]
         );
 
@@ -51,6 +52,7 @@ class AuthTest extends FeatureTestCase
             '/ajax/auth/logout',
             [
                 'id' => $user->getId(),
+                'csrf_token' => $this->csrf->generate()
             ]
         );
 
@@ -68,11 +70,11 @@ class AuthTest extends FeatureTestCase
             '/ajax/auth/logout',
             [
                 'id' => $user->getId(),
+                'csrf_token' => $this->csrf->generate()
             ],
             self::DISABLE_GUZZLE_EXCEPTION
         );
 
         $this->assertSame(HttpStatusCode::BadRequest->value, $response->getStatusCode());
     }
-
 }
