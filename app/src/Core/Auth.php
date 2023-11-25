@@ -42,6 +42,6 @@ readonly class Auth
             throw new UnexpectedValueException("The logged-in user is not the one you're trying to log out.");
         }
 
-        $this->session->remove('auth');
+        $this->session->delete('auth');
     }
 }

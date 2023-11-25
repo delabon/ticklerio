@@ -58,13 +58,13 @@ class SessionTest extends TestCase
         $this->assertFalse($this->session->has('not_my_var'));
     }
 
-    public function testRemovesFromSession(): void
+    public function testDeletesFromSession(): void
     {
         $this->session->add('test', 111);
 
         $this->assertTrue($this->session->has('test'));
 
-        $this->session->remove('test');
+        $this->session->delete('test');
 
         $this->assertFalse($this->session->has('test'));
     }

@@ -107,7 +107,7 @@ readonly class Session
         return isset($_SESSION[$key]);
     }
 
-    public function remove(string $key): void
+    public function delete(string $key): void
     {
         unset($_SESSION[$key]);
     }
