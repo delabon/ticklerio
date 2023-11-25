@@ -24,12 +24,20 @@ class AuthController
         $password = $request->query(RequestType::Post, 'password');
         $results = $userRepository->findBy('email', $email);
 
-        // // Email does not exist in the database
-        // if (empty($results)) {
-        //     return new Response("No user found with the email address '{$email}'.", HttpStatusCode::NotFound);
-        // }
+        // Email does not exist in the database
+        if (empty($results)) {
+            return new Response("No user found with the email address '{$email}'.", HttpStatusCode::NotFound);
+        }
 
-        $auth->authenticate($results[0]);
+        $user = $results[0];
+
+        // Password does not match the user's password in database
+        if (!password_verify($password, $user->getPassword())) {
+            return new Response("The password does not match the user's password in database", HttpStatusCode::Unauthorized);
+        }
+
+        // Log in
+        $auth->authenticate($user);
 
         return new Response([
             'success' => true,

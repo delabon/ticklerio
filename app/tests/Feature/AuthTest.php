@@ -106,4 +106,42 @@ class AuthTest extends FeatureTestCase
 
         $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
     }
+
+    public function testReturnsNotFoundResponseWhenTryingToLogInWithAnEmailThatIsNotRegistered(): void
+    {
+        $response = $this->post(
+            '/ajax/auth/login',
+            [
+                'email' => 'not_registered@gmail.com',
+                'password' => '5za5eaz5ee',
+                'csrf_token' => $this->csrf->generate()
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::NotFound->value, $response->getStatusCode());
+        $this->assertArrayNotHasKey('auth', $_SESSION);
+    }
+
+    public function testReturnsInvalidResponseWhenTryingToLogInWithInvalidPassword(): void
+    {
+        $userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
+        $password = '123456789';
+        $user = $userFactory->create([
+            'password' => $password
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/auth/login',
+            [
+                'email' => $user->getEmail(),
+                'password' => $password . 'aaaa111',
+                'csrf_token' => $this->csrf->generate()
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Unauthorized->value, $response->getStatusCode());
+        $this->assertArrayNotHasKey('auth', $_SESSION);
+    }
 }
