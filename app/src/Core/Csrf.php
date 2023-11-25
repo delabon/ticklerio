@@ -4,6 +4,7 @@ namespace App\Core;
 
 use App\Core\Session\Session;
 use DateTime;
+use Exception;
 
 class Csrf
 {
@@ -21,9 +22,12 @@ class Csrf
     {
     }
 
+    /**
+     * @throws Exception
+     */
     public function generate(): string
     {
-        $token = hash('sha256', $this->salt . uniqid() . time());
+        $token = hash('sha256', $this->salt . random_bytes(12));
         $now = new DateTime();
         $now->modify('+ ' . $this->lifeTime . ' minutes');
         $this->session->add(self::SESSION_KEY, [
