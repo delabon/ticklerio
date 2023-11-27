@@ -2,23 +2,28 @@
 
 namespace App\Controllers;
 
-use App\Core\Controller;
+use App\Core\Csrf;
 use App\Core\Http\HttpStatusCode;
+use App\Core\Http\Request;
+use App\Core\Http\RequestType;
 use App\Core\Http\Response;
-use App\Users\UserRepository;
-use App\Users\UserSanitizer;
 use App\Users\UserService;
-use App\Users\UserValidator;
+use App\Users\UserType;
 use Exception;
 
-class RegisterController extends Controller
+class RegisterController
 {
-    public function register(): Response
+    public function register(Request $request, UserService $userService, Csrf $csrf): Response
     {
+        $params = $request->postParams;
+        $params['type'] = UserType::Member->value;
+
+        if (!$csrf->validate($params['csrf_token'] ?? '')) {
+            return new Response('Invalid CSRF token.', HttpStatusCode::Forbidden);
+        }
+
         try {
-            $userRepository = new UserRepository($this->pdo);
-            $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-            $user = $userService->createUser($this->request->postParams);
+            $user = $userService->createUser($params);
 
             return new Response(json_encode([
                 'id' => $user->getId()

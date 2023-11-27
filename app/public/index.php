@@ -4,11 +4,18 @@
  * Our basic router
  */
 
+use App\Controllers\AuthController;
 use App\Controllers\HomeController;
 use App\Controllers\RegisterController;
+use App\Core\Auth;
+use App\Core\Csrf;
 use App\Core\Http\HttpStatusCode;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
+use App\Users\UserRepository;
+use App\Users\UserSanitizer;
+use App\Users\UserService;
+use App\Users\UserValidator;
 
 //
 // Bootstrap
@@ -27,10 +34,31 @@ if ($uri === '/') {
     $response = (new HomeController())->index();
 } elseif (preg_match("/^\/ajax\/register\/?$/", $uri)) {
     // Register a user via ajax
-    $response = (new RegisterController(
+    $response = (new RegisterController())->register(
         $container->get(Request::class),
-        $container->get(PDO::class)
-    ))->register();
+        new UserService(
+            new UserRepository($container->get(PDO::class)),
+            new UserValidator(),
+            new UserSanitizer()
+        ),
+        $container->get(Csrf::class)
+    );
+} elseif (preg_match("/^\/ajax\/auth\/login\/?$/", $uri)) {
+    // Register a user via ajax
+    $response = (new AuthController())->login(
+        $container->get(Request::class),
+        $container->get(Auth::class),
+        new UserRepository($container->get(PDO::class)),
+        $container->get(Csrf::class)
+    );
+} elseif (preg_match("/^\/ajax\/auth\/logout\/?$/", $uri)) {
+    // Register a user via ajax
+    $response = (new AuthController())->logout(
+        $container->get(Request::class),
+        $container->get(Auth::class),
+        new UserRepository($container->get(PDO::class)),
+        $container->get(Csrf::class)
+    );
 }
 
 // In-case of no response

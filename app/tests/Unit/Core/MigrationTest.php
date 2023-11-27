@@ -9,7 +9,7 @@ use PHPUnit\Framework\TestCase;
 
 class MigrationTest extends TestCase
 {
-    public function testMigratingSuccessfully(): void
+    public function testMigratesSuccessfully(): void
     {
         $pdoStatementMock = $this->createMock(PDOStatement::class);
         $pdoStatementMock->expects($this->exactly(2))
@@ -36,7 +36,7 @@ class MigrationTest extends TestCase
         $migration->migrate();
     }
 
-    public function testExceptionThrownWhenTheMigrationsFolderPathIsIncorrect(): void
+    public function testThrowsExceptionWhenTheMigrationsFolderPathIsIncorrect(): void
     {
         $this->expectException(\RuntimeException::class);
 
@@ -47,7 +47,7 @@ class MigrationTest extends TestCase
         );
     }
 
-    public function testMigratingTheSameScriptTwiceWillOnlyExecuteTheMigrationScriptOnce(): void
+    public function testMigratesTheSameScriptTwiceWillOnlyExecuteTheMigrationScriptOnce(): void
     {
         $pdoStatementMock = $this->createMock(PDOStatement::class);
         $pdoStatementMock->expects($this->exactly(3))
@@ -80,7 +80,7 @@ class MigrationTest extends TestCase
         $migration->migrate();
     }
 
-    public function testRollbackAllMigrationsSuccessfully(): void
+    public function testRollbacksAllMigrationsSuccessfully(): void
     {
         $pdoStatementMock = $this->createMock(PDOStatement::class);
         $pdoStatementMock->expects($this->exactly(4))

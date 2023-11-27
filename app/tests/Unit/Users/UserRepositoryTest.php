@@ -2,27 +2,19 @@
 
 namespace Tests\Unit\Users;
 
+use PDO;
 use App\Users\User;
 use App\Users\UserRepository;
 use OutOfBoundsException;
-use PDO;
 use PDOStatement;
 use PHPUnit\Framework\TestCase;
 
 class UserRepositoryTest extends TestCase
 {
-    public function testAddingUserSuccessfully(): void
+    public function testAddsUserSuccessfully(): void
     {
         $now = time();
-        $userData = [
-            'email' => 'test@test.com',
-            'first_name' => 'John',
-            'last_name' => 'Doe',
-            'password' => '12345678',
-            'type' => 'member',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ];
+        $userData = $this->userData();
         $pdoStatementMock = $this->createMock(PDOStatement::class);
         $pdoStatementMock->expects($this->exactly(2))
             ->method('execute')
@@ -30,18 +22,11 @@ class UserRepositoryTest extends TestCase
         $pdoStatementMock->expects($this->once())
             ->method('fetchAll')
             ->with(PDO::FETCH_ASSOC)
-            ->willReturn([
-                [
-                    'id' => 1,
-                    'email' => 'test@test.com',
-                    'first_name' => 'John',
-                    'last_name' => 'Doe',
-                    'password' => '12345678',
-                    'type' => 'member',
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ]
-            ]);
+            ->willReturnCallback(function () use ($userData) {
+                $userData['id'] = 1;
+
+                return [$userData];
+            });
         $pdoMock = $this->createMock(PDO::class);
         $pdoMock->expects($this->exactly(2))
             ->method('prepare')
@@ -67,23 +52,15 @@ class UserRepositoryTest extends TestCase
         $this->assertSame($now, $user->getUpdatedAt());
     }
 
-    public function testUpdatingUserSuccessfully(): void
+    public function testUpdatesUserSuccessfully(): void
     {
         $now = time();
-        $userData = [
-            'id' => 1,
-            'email' => 'test@test.com',
-            'first_name' => 'John',
-            'last_name' => 'Doe',
-            'password' => '12345678',
-            'type' => 'member',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ];
+        $userData = $this->userData();
+        $userData['id'] = 1;
         $userUpdatedData = [
             'id' => 1,
             'email' => 'updated@email.com',
-            'first_name' => 'Ahmed',
+            'first_name' => 'Mo Salah',
             'last_name' => 'Ben Sol',
             'password' => '99999999',
             'type' => 'admin',
@@ -140,10 +117,11 @@ class UserRepositoryTest extends TestCase
         $this->assertSame($userUpdatedData['first_name'], $users[0]->getFirstName());
         $this->assertSame($userUpdatedData['last_name'], $users[0]->getLastName());
         $this->assertSame($userUpdatedData['email'], $users[0]->getEmail());
+        $this->assertSame($userUpdatedData['type'], $users[0]->getType());
         $this->assertSame($userUpdatedData['created_at'], $users[0]->getCreatedAt());
     }
 
-    public function testExceptionThrownWhenTryingToUpdateNonExistentUser(): void
+    public function testThrowsExceptionWhenTryingToUpdateNonExistentUser(): void
     {
         $now = time();
         $pdoStatementMock = $this->createMock(PDOStatement::class);
@@ -169,7 +147,7 @@ class UserRepositoryTest extends TestCase
         $userRepository->save($user);
     }
 
-    public function testFindUserByIdSuccessfully(): void
+    public function testFindsUserByIdSuccessfully(): void
     {
         $now = time();
         $userData = [
@@ -222,7 +200,7 @@ class UserRepositoryTest extends TestCase
         $this->assertSame($userData['email'], $userFound->getEmail());
     }
 
-    public function testFindingNonExistentUserShouldFail(): void
+    public function testFindsNonExistentUserShouldFail(): void
     {
         $pdoStatementMock = $this->createMock(PDOStatement::class);
         $pdoStatementMock->expects($this->once())
@@ -243,7 +221,7 @@ class UserRepositoryTest extends TestCase
         $this->assertFalse($userFound);
     }
 
-    public function testAddingMultipleUsersSuccessfully(): void
+    public function testAddsMultipleUsersSuccessfully(): void
     {
         $now = time();
         $userOneData = [
@@ -310,5 +288,126 @@ class UserRepositoryTest extends TestCase
         $this->assertSame(1, $user->getId());
         $this->assertSame(2, $user2->getId());
         $this->assertCount(2, $userRepository->all());
+    }
+
+    public function testFindsUserByEmailSuccessfully(): void
+    {
+        $now = time();
+        $userData = [
+            'email' => 'test@test.com',
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'password' => '12345678',
+            'type' => 'member',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+
+        $pdoStatementMock = $this->createMock(PDOStatement::class);
+        $pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+        $pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () use ($userData) {
+                $userData['id'] = 1;
+
+                return [$userData];
+            });
+        $pdoMock = $this->createMock(PDO::class);
+        $pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturn($pdoStatementMock);
+        $pdoMock->expects($this->once())
+            ->method('lastInsertId')
+            ->willReturnOnConsecutiveCalls("1");
+
+        $user = new User();
+        $user->setEmail($userData['email']);
+        $user->setFirstName($userData['first_name']);
+        $user->setLastName($userData['last_name']);
+        $user->setPassword($userData['password']);
+        $user->setType($userData['type']);
+        $user->setCreatedAt($userData['created_at']);
+        $user->setUpdatedAt($userData['updated_at']);
+        $userRepository = new UserRepository($pdoMock);
+        $userRepository->save($user);
+
+        $usersFound = $userRepository->findBy('email', $userData['email']);
+
+        $this->assertCount(1, $usersFound);
+        $this->assertSame(1, $usersFound[0]->getId());
+        $this->assertSame($userData['email'], $usersFound[0]->getEmail());
+    }
+
+    public function testThrowsExceptionWhenFindUserWithAnInvalidColumnName(): void
+    {
+        $userRepository = new UserRepository($this->createStub(PDO::class));
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        $userRepository->findBy('not_a_valid_column_name', 1);
+    }
+
+    public function testReturnsEmptyArrayWhenFindingUserWithNonExistentEmail(): void
+    {
+        $pdoStatementMock = $this->createMock(PDOStatement::class);
+        $pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+        $pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([]);
+        $pdoMock = $this->createMock(PDO::class);
+        $pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($pdoStatementMock);
+
+        $userRepository = new UserRepository($pdoMock);
+
+        $usersFound = $userRepository->findBy('email', 'test@example.com');
+
+        $this->assertCount(0, $usersFound);
+    }
+
+    public function testMakesUserFromAnArrayOfData(): void
+    {
+        $userData = $this->userData();
+        $userRepository = new UserRepository($this->createStub(PDO::class));
+        $user = $userRepository->make($userData);
+
+        $this->assertInstanceOf(User::class, $user);
+        $this->assertSame($userData['email'], $user->getEmail());
+        $this->assertSame($userData['first_name'], $user->getFirstName());
+        $this->assertSame($userData['last_name'], $user->getLastName());
+        $this->assertSame($userData['password'], $user->getPassword());
+        $this->assertSame($userData['type'], $user->getType());
+        $this->assertSame($userData['created_at'], $user->getCreatedAt());
+        $this->assertSame($userData['updated_at'], $user->getUpdatedAt());
+    }
+
+    public function testPassingUserInstanceToMakeShouldUpdateThatInstanceShouldNotCreateDifferentOne(): void
+    {
+        $user = new User();
+        $userRepository = new UserRepository($this->createStub(PDO::class));
+
+        $this->assertSame($user, $userRepository->make($this->userData(), $user));
+    }
+
+    public function userData(): array
+    {
+        $now = time();
+
+        return [
+            'email' => 'test@test.com',
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'password' => '12345678',
+            'type' => 'member',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
     }
 }

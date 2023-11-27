@@ -13,6 +13,7 @@ class Container
 {
     /** @var array<string, callable> */
     private array $definitions = [];
+
     /** @var array<string, int|callable> */
     private array $singletons = [];
 

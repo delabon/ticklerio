@@ -23,7 +23,7 @@ class MigrationTest extends TestCase
         $this->migration->migrate();
     }
 
-    public function testMigratingSuccessfully(): void
+    public function testMigratesSuccessfully(): void
     {
         $this->migration->migrate();
 
@@ -32,7 +32,7 @@ class MigrationTest extends TestCase
         $this->assertEquals(1, $stmt->fetch(PDO::FETCH_OBJ)->is_found);
     }
 
-    public function testMigratingTheSameScriptTwiceWillOnlyExecuteTheMigrationScriptOnce(): void
+    public function testMigratesTheSameScriptTwiceWillOnlyExecuteTheMigrationScriptOnce(): void
     {
         $this->migration->migrate();
         $this->migration->migrate();
@@ -42,7 +42,7 @@ class MigrationTest extends TestCase
         $this->assertEquals(1, $stmt->fetch(PDO::FETCH_OBJ)->is_found);
     }
 
-    public function testRollbackAllMigrationsSuccessfully(): void
+    public function testRollbacksAllMigrationsSuccessfully(): void
     {
         $this->migration->migrate();
 

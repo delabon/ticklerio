@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 
 class ContainerTest extends TestCase
 {
-    public function testRegisteringSuccessfully(): void
+    public function testRegistersSuccessfully(): void
     {
         $container = new Container();
         $container->register(ClassNumberOne::class, fn () => new ClassNumberOne());
@@ -17,7 +17,7 @@ class ContainerTest extends TestCase
         $this->assertInstanceOf(ClassNumberOne::class, $obj);
     }
 
-    public function testAutoWiring(): void
+    public function testAutoWires(): void
     {
         $container = new Container();
         $obj = $container->get(ClassNumberTwo::class);
@@ -40,7 +40,7 @@ class ContainerTest extends TestCase
         $this->assertSame(1, $b::$count);
     }
 
-    public function testExceptionThrownWhenAutoWirePrimitiveType(): void
+    public function testThrowsExceptionWhenAutoWirePrimitiveType(): void
     {
         $container = new Container();
 

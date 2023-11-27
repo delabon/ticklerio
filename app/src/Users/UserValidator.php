@@ -11,6 +11,21 @@ class UserValidator
      * @param mixed[]|array $data
      * @return void
      */
+    public function validate(array $data): void
+    {
+        $this->validateEmail($data);
+        $this->validateFirstName($data);
+        $this->validateLastName($data);
+        $this->validateType($data);
+        $this->validatePassword($data);
+        $this->validateCreatedAt($data);
+        $this->validateUpdatedAt($data);
+    }
+
+    /**
+     * @param mixed[]|array $data
+     * @return void
+     */
     private function validateEmail(array $data): void
     {
         if (!isset($data['email'])) {
@@ -60,7 +75,11 @@ class UserValidator
             throw new InvalidArgumentException("The {$text} cannot be empty.");
         }
 
-        if (preg_match("/[^a-z ]/i", $data[$key])) {
+        if (strlen($data[$key]) > 50) {
+            throw new InvalidArgumentException("The {$text} should be equal or less than 50 characters.");
+        }
+
+        if (preg_match("/[^a-z ']/i", $data[$key])) {
             throw new InvalidArgumentException("The {$text} should consist only of alphabetical characters and spaces.");
         }
     }
@@ -138,20 +157,5 @@ class UserValidator
         if (!is_int($data[$key])) {
             throw new InvalidArgumentException("The {$text} is of invalid type. It should be an integer.");
         }
-    }
-
-    /**
-     * @param mixed[]|array $data
-     * @return void
-     */
-    public function validate(array $data): void
-    {
-        $this->validateEmail($data);
-        $this->validateFirstName($data);
-        $this->validateLastName($data);
-        $this->validateType($data);
-        $this->validatePassword($data);
-        $this->validateCreatedAt($data);
-        $this->validateUpdatedAt($data);
     }
 }

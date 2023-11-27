@@ -14,3 +14,4 @@
 /app/.phpunit.cache
 /app/errors.log
 /app/error.log
+/app/tests/.tmp

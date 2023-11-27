@@ -75,6 +75,17 @@ class UserValidatorTest extends TestCase
         $userValidator->validate($userData);
     }
 
+    public function testThrowsExceptionWhenFirstNameLengthIsLongerThanFiftyAlphabeticalChars(): void
+    {
+        $userData = $this->userData();
+        $userData['first_name'] = 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzMoreHere';
+        $userValidator = new UserValidator();
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $userValidator->validate($userData);
+    }
+
     public function testExceptionThrownWhenLastNameIsEmpty(): void
     {
         $userData = $this->userData();
@@ -101,6 +112,17 @@ class UserValidatorTest extends TestCase
     {
         $userData = $this->userData();
         $userData['last_name'] = ' 88 test1~é';
+        $userValidator = new UserValidator();
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $userValidator->validate($userData);
+    }
+
+    public function testThrowsExceptionWhenLastNameLengthIsLongerThanFiftyAlphabeticalChars(): void
+    {
+        $userData = $this->userData();
+        $userData['last_name'] = 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzMoreHere';
         $userValidator = new UserValidator();
 
         $this->expectException(InvalidArgumentException::class);
@@ -236,7 +258,7 @@ class UserValidatorTest extends TestCase
         return [
             'email' => 'test@test.com',
             'first_name' => 'John',
-            'last_name' => 'Doe',
+            'last_name' => "Doe O'Alley",
             'password' => '12345678',
             'type' => UserType::Member->value,
             'created_at' => $now,

@@ -30,7 +30,7 @@ class UserSanitizer
             return $data;
         }
 
-        $data[$key] = preg_replace("/[^a-z ]/i", "", $data[$key]);
+        $data[$key] = preg_replace("/[^a-z ']/i", "", $data[$key]);
         $data[$key] = trim($data[$key]);
 
         return $data;

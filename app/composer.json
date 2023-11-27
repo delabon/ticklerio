@@ -22,9 +22,11 @@
         "guzzlehttp/guzzle": "^7.8"
     },
     "require": {
-        "rakit/validation": "^1.4",
         "ext-pdo": "*",
+        "ext-openssl": "*",
+        "rakit/validation": "^1.4",
         "vlucas/phpdotenv": "^5.5",
-        "symfony/string": "^6.3"
+        "symfony/string": "^6.3",
+        "fakerphp/faker": "^1.23"
     }
 }

@@ -2,16 +2,14 @@
 
 namespace Tests\Feature;
 
-use GuzzleHttp\Exception\GuzzleException;
 use Tests\FeatureTestCase;
 
 class HomePageTest extends FeatureTestCase
 {
-    public function testHttpRequestSuccessfully(): void
+    public function testAccessesHomePageSuccessfully(): void
     {
-        $response = $this->http->request('GET', '/');
+        $response = $this->get('/');
 
         $this->assertSame(200, $response->getStatusCode());
     }
-
 }

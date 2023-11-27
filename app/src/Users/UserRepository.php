@@ -2,6 +2,7 @@
 
 namespace App\Users;
 
+use InvalidArgumentException;
 use OutOfBoundsException;
 use PDOException;
 use PDO;
@@ -11,8 +12,18 @@ use function Symfony\Component\String\u;
 class UserRepository
 {
     private PDO $pdo;
+
     /** @var array|string[] */
-    protected static array $hidden = ['password']; // should be hidden from any select query
+    private array $validColumns = [
+        'id',
+        'email',
+        'password',
+        'first_name',
+        'last_name',
+        'type',
+        'created_at',
+        'updated_at',
+    ];
 
     public function __construct(PDO $pdo)
     {
@@ -109,7 +120,7 @@ class UserRepository
         $return = [];
 
         foreach ($results as $result) {
-            $return[] = self::create($result);
+            $return[] = self::make($result);
         }
 
         return $return;
@@ -140,16 +151,64 @@ class UserRepository
             return false;
         }
 
-        return $this->create($result);
+        return $this->make($result);
     }
 
     /**
+     * Find use by column and value
+     * @param string $column
+     * @param mixed $value
+     * @return array|User[]
+     */
+    public function findBy(string $column, mixed $value): array
+    {
+        $column = strtolower($column);
+
+        if (!in_array($column, $this->validColumns)) {
+            throw new InvalidArgumentException("Invalid column name.");
+        }
+
+        $stmt = $this->pdo->prepare("
+            SELECT
+                *
+            FROM
+                users
+            WHERE
+                {$column} = ?
+        ");
+
+        try {
+            $stmt->execute([
+                $value
+            ]);
+            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            error_log($e->getMessage());
+            $results = [];
+        }
+
+        if (!$results) {
+            return [];
+        }
+
+        $return = [];
+
+        foreach ($results as $result) {
+            $return[] = $this->make($result);
+        }
+
+        return $return;
+    }
+
+    /**
+     * Instantiates a User using the data passed
      * @param array|mixed[] $data
+     * @param User|null $user
      * @return User
      */
-    public function create(array $data): User
+    public function make(array $data, null|User $user = null): User
     {
-        $user = new User();
+        $user = is_null($user) ? new User() : $user;
 
         foreach ($data as $key => $value) {
             $method = u('set_' . $key)->camel()->toString();

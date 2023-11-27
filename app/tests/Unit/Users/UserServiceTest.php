@@ -6,6 +6,7 @@ use App\Users\User;
 use App\Users\UserRepository;
 use App\Users\UserSanitizer;
 use App\Users\UserService;
+use App\Users\UserType;
 use App\Users\UserValidator;
 use App\Utilities\PasswordUtils;
 use InvalidArgumentException;
@@ -17,7 +18,7 @@ use PHPUnit\Framework\TestCase;
 
 class UserServiceTest extends TestCase
 {
-    public function testCreatingUserSuccessfully(): void
+    public function testCreatesUserSuccessfully(): void
     {
         $userData = $this->userData();
 
@@ -57,9 +58,10 @@ class UserServiceTest extends TestCase
         $this->assertCount(1, $userRepository->all());
     }
 
-    public function testUpdatingUserSuccessfully(): void
+    public function testUpdatesUserSuccessfully(): void
     {
         $userData = $this->userData();
+        $userUpdatedData = $this->userUpdatedData();
 
         $pdoStatementMock = $this->createMock(PDOStatement::class);
         $pdoStatementMock->expects($this->exactly(5))
@@ -74,12 +76,11 @@ class UserServiceTest extends TestCase
 
                     return $userData;
                 })(),
-                (function () use ($userData) {
-                    $userData['id'] = 1;
-                    $userData['email'] = 'cool@gmail.com';
-                    $userData['first_name'] = 'Jimmy';
+                (function () use ($userUpdatedData) {
+                    $userUpdatedData['id'] = 1;
+                    $userUpdatedData['password'] = PasswordUtils::hashPasswordIfNotHashed($userUpdatedData['password']);
 
-                    return $userData;
+                    return $userUpdatedData;
                 })()
             );
         $pdoStatementMock->expects($this->once())
@@ -101,21 +102,23 @@ class UserServiceTest extends TestCase
         $userRepository = new UserRepository($pdoMock);
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $user = $userService->createUser($userData);
-
-        $user->setEmail('cool@gmail.com');
-        $user->setFirstName('Jimmy');
+        $user = $userRepository->make($userUpdatedData, $user);
 
         $userService->updateUser($user);
 
         $updatedUser = $userRepository->find(1);
 
         $this->assertSame(1, $updatedUser->getId());
-        $this->assertSame('cool@gmail.com', $updatedUser->getEmail());
-        $this->assertSame('Jimmy', $updatedUser->getFirstName());
+        $this->assertSame($userUpdatedData['email'], $updatedUser->getEmail());
+        $this->assertSame($userUpdatedData['first_name'], $updatedUser->getFirstName());
+        $this->assertSame($userUpdatedData['last_name'], $updatedUser->getLastName());
+        $this->assertSame($userUpdatedData['type'], $updatedUser->getType());
+        $this->assertSame($userUpdatedData['created_at'], $updatedUser->getCreatedAt());
+        $this->assertTrue(PasswordUtils::isPasswordHashed($updatedUser->getPassword()));
         $this->assertCount(1, $userRepository->all());
     }
 
-    public function testExceptionThrownWhenUpdatingUserWithAnIdOfZero(): void
+    public function testThrowsExceptionWhenUpdatingUserWithAnIdOfZero(): void
     {
         $user = new User();
         $user->setId(0);
@@ -127,7 +130,7 @@ class UserServiceTest extends TestCase
         $userService->updateUser($user);
     }
 
-    public function testExceptionThrownWhenUpdatingNonExistentUser(): void
+    public function testThrowsExceptionWhenUpdatingNonExistentUser(): void
     {
         $pdoStatementMock = $this->createMock(PDOStatement::class);
         $pdoStatementMock->expects($this->once())
@@ -143,7 +146,7 @@ class UserServiceTest extends TestCase
             ->willReturn($pdoStatementMock);
 
         $userRepository = new UserRepository($pdoMock);
-        $user = $userRepository->create($this->userData());
+        $user = $userRepository->make($this->userData());
         $user->setId(999999);
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
 
@@ -152,7 +155,7 @@ class UserServiceTest extends TestCase
         $userService->updateUser($user);
     }
 
-    public function testExceptionThrownWhenAddingUserWithInvalidEmail(): void
+    public function testThrowsExceptionWhenAddingUserWithInvalidEmail(): void
     {
         $userRepository = new UserRepository($this->createStub(PDO::class));
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
@@ -164,7 +167,7 @@ class UserServiceTest extends TestCase
         $userService->createUser($userData);
     }
 
-    public function testExceptionThrownWhenAddingUserWithInvalidFirstName(): void
+    public function testThrowsExceptionWhenAddingUserWithInvalidFirstName(): void
     {
         $userRepository = new UserRepository($this->createStub(PDO::class));
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
@@ -176,7 +179,7 @@ class UserServiceTest extends TestCase
         $userService->createUser($userData);
     }
 
-    public function testExceptionThrownWhenAddingUserWithInvalidLastName(): void
+    public function testThrowsExceptionWhenAddingUserWithInvalidLastName(): void
     {
         $userRepository = new UserRepository($this->createStub(PDO::class));
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
@@ -188,7 +191,7 @@ class UserServiceTest extends TestCase
         $userService->createUser($userData);
     }
 
-    public function testExceptionThrownWhenAddingUserWithInvalidPassword(): void
+    public function testThrowsExceptionWhenAddingUserWithInvalidPassword(): void
     {
         $userRepository = new UserRepository($this->createStub(PDO::class));
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
@@ -200,7 +203,7 @@ class UserServiceTest extends TestCase
         $userService->createUser($userData);
     }
 
-    public function testExceptionThrownWhenAddingUserWithInvalidType(): void
+    public function testThrowsExceptionWhenAddingUserWithInvalidType(): void
     {
         $userRepository = new UserRepository($this->createStub(PDO::class));
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
@@ -212,11 +215,11 @@ class UserServiceTest extends TestCase
         $userService->createUser($userData);
     }
 
-    public function testExceptionThrownWhenUpdatingUserWithInvalidData(): void
+    public function testThrowsExceptionWhenUpdatingUserWithInvalidData(): void
     {
         $userData = $this->userData();
         $userRepository = new UserRepository($this->createStub(PDO::class));
-        $user = $userRepository->create($userData);
+        $user = $userRepository->make($userData);
         $user->setId(9999);
         $user->setEmail('test');
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
@@ -293,10 +296,8 @@ class UserServiceTest extends TestCase
         $this->assertTrue(PasswordUtils::isPasswordHashed($user->getPassword()));
     }
 
-    public function testSanitizingDataWhenAddingUser(): void
+    public function testSanitizesDataBeforeCreatingAccount(): void
     {
-        $userData = $this->userData();
-
         $pdoStatementMock = $this->createMock(PDOStatement::class);
         $pdoStatementMock->expects($this->once())
             ->method('execute')
@@ -309,20 +310,68 @@ class UserServiceTest extends TestCase
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $userData['first_name'] = "<script>alert('XSS');</script>";
-        $userData['last_name'] = "^$ Sam -";
-        $userData['email'] = "“><svg/onload=confirm(1)>”@gmail.com";
-        $userData['created_at'] = "99";
-        $userData['updated_at'] = "10";
+        $userData = $this->userUnsanitizedData();
         $userRepository = new UserRepository($pdoMock);
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $user = $userService->createUser($userData);
 
-        $this->assertSame('scriptalertXSSscript', $user->getFirstName());
+        $this->assertSame("scriptalert'XSS'script", $user->getFirstName());
         $this->assertSame('Sam', $user->getLastName());
         $this->assertSame('svgonload=confirm1@gmail.com', $user->getEmail());
-        $this->assertSame(99, $user->getCreatedAt());
-        $this->assertSame(10, $user->getUpdatedAt());
+        $this->assertSame(88, $user->getCreatedAt());
+        $this->assertSame(111, $user->getUpdatedAt());
+    }
+
+    public function testSanitizesDataBeforeUpdatingAccount(): void
+    {
+        $userData = $this->userData();
+        $unsanitizedData = $this->userUnsanitizedData();
+
+        $pdoStatementMock = $this->createMock(PDOStatement::class);
+        $pdoStatementMock->expects($this->exactly(4))
+            ->method('execute')
+            ->willReturn(true);
+        $pdoStatementMock->expects($this->exactly(2))
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnOnConsecutiveCalls(
+                (function () use ($userData) {
+                    $userData['id'] = 1;
+
+                    return $userData;
+                })(),
+                (function () use ($unsanitizedData) {
+                    $unsanitizedData['id'] = 1;
+                    $unsanitizedData['email'] = "svgonload=confirm1@gmail.com";
+                    $unsanitizedData['first_name'] = "scriptalert'XSS'script";
+                    $unsanitizedData['last_name'] = 'Sam';
+                    $unsanitizedData['created_at'] = 88;
+
+                    return $unsanitizedData;
+                })()
+            );
+        $pdoMock = $this->createMock(PDO::class);
+        $pdoMock->expects($this->exactly(4))
+            ->method('prepare')
+            ->willReturn($pdoStatementMock);
+        $pdoMock->expects($this->once())
+            ->method('lastInsertId')
+            ->willReturn("1");
+
+        $userRepository = new UserRepository($pdoMock);
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
+        $user = $userService->createUser($userData);
+
+        $user = $userRepository->make($unsanitizedData, $user);
+
+        $userService->updateUser($user);
+
+        $user = $userRepository->find(1);
+
+        $this->assertSame("scriptalert'XSS'script", $user->getFirstName());
+        $this->assertSame('Sam', $user->getLastName());
+        $this->assertSame('svgonload=confirm1@gmail.com', $user->getEmail());
+        $this->assertSame(88, $user->getCreatedAt());
     }
 
     private function userData(): array
@@ -334,9 +383,37 @@ class UserServiceTest extends TestCase
             'first_name' => 'John',
             'last_name' => 'Doe',
             'password' => '12345678',
-            'type' => 'member',
+            'type' => UserType::Member->value,
             'created_at' => $now,
             'updated_at' => $now,
+        ];
+    }
+
+    private function userUpdatedData(): array
+    {
+        $now = time();
+
+        return [
+            'email' => 'sam.updated@example.com',
+            'first_name' => 'Sam',
+            'last_name' => 'Doe',
+            'password' => '1234567888999777',
+            'type' => UserType::Admin->value,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+    }
+
+    private function userUnsanitizedData(): array
+    {
+        return [
+            'email' => '“><svg/onload=confirm(1)>”@gmail.com',
+            'first_name' => "<script>alert('XSS');</script>",
+            'last_name' => '^$ Sam -',
+            'password' => '12345678',
+            'type' => UserType::Member->value,
+            'created_at' => '88',
+            'updated_at' => '111',
         ];
     }
 }
