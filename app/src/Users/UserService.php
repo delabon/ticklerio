@@ -4,6 +4,7 @@ namespace App\Users;
 
 use App\Utilities\PasswordUtils;
 use LogicException;
+use OutOfBoundsException;
 
 class UserService
 {
@@ -32,7 +33,6 @@ class UserService
             $data['updated_at'] = time();
         }
 
-
         $data = $this->userSanitizer->sanitize($data);
         $this->userValidator->validate($data);
         $data['password'] = PasswordUtils::hashPasswordIfNotHashed($data['password']);
@@ -49,9 +49,11 @@ class UserService
         }
 
         $data = $user->toArray();
+
+        $data = $this->userSanitizer->sanitize($data);
         $this->userValidator->validate($data);
-        $data['password'] = PasswordUtils::hashPasswordIfNotHashed($data['password']);
-        $user->setPassword($data['password']);
+        $user = $this->userRepository->make($data, $user);
+        $user->setPassword(PasswordUtils::hashPasswordIfNotHashed($data['password']));
         $this->userRepository->save($user);
     }
 }

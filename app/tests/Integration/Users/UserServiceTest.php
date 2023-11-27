@@ -29,28 +29,35 @@ class UserServiceTest extends IntegrationTestCase
     public function testUpdatesUserSuccessfully(): void
     {
         $userData = $this->userData();
+        $userUpdatedData = $this->userUpdatedData();
+
         $userRepository = new UserRepository($this->pdo);
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $user = $userService->createUser($userData);
 
-        $user->setEmail('cool@gmail.com');
-        $user->setFirstName('Jimmy');
+        $userUpdatedData['id'] = 1;
+        $user = $userRepository->make($userUpdatedData, $user);
+
         $userService->updateUser($user);
 
         $updatedUser = $userRepository->find(1);
 
         $this->assertSame(1, $updatedUser->getId());
-        $this->assertSame('cool@gmail.com', $updatedUser->getEmail());
-        $this->assertSame('Jimmy', $updatedUser->getFirstName());
+        $this->assertSame($userUpdatedData['email'], $updatedUser->getEmail());
+        $this->assertSame($userUpdatedData['first_name'], $updatedUser->getFirstName());
+        $this->assertSame($userUpdatedData['last_name'], $updatedUser->getLastName());
+        $this->assertSame($userUpdatedData['type'], $updatedUser->getType());
+        $this->assertSame($userUpdatedData['created_at'], $updatedUser->getCreatedAt());
+        $this->assertTrue(PasswordUtils::isPasswordHashed($updatedUser->getPassword()));
         $this->assertCount(1, $userRepository->all());
     }
 
     public function testThrowsExceptionWhenUpdatingUserWithAnIdOfZero(): void
     {
-        $user = new User();
-        $user->setId(0);
         $userRepository = new UserRepository($this->pdo);
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
+        $user = $userRepository->make($this->userData());
+        $user->setId(0);
 
         $this->expectException(LogicException::class);
 
@@ -61,10 +68,9 @@ class UserServiceTest extends IntegrationTestCase
     {
         $userData = $this->userData();
         $userRepository = new UserRepository($this->pdo);
-        $user = $userRepository->make($userData);
-        $user->setId(9999);
-        $user->setEmail('test');
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
+        $user = $userService->createUser($userData);
+        $user->setEmail('invalid-email');
 
         $this->expectException(InvalidArgumentException::class);
 
@@ -97,6 +103,51 @@ class UserServiceTest extends IntegrationTestCase
         $this->assertTrue(PasswordUtils::isPasswordHashed($user->getPassword()));
     }
 
+    public function testSanitizesDataBeforeCreatingAccount(): void
+    {
+        $userRepository = new UserRepository($this->pdo);
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
+
+        $now = "10";
+        $user = $userService->createUser([
+            'email' => '“><svg/onload=confirm(1)>”@gmail.com',
+            'first_name' => 'John $%&',
+            'last_name' => 'Doe <^4Test',
+            'password' => '12345678',
+            'type' => 'member',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $this->assertSame('svgonload=confirm1@gmail.com', $user->getEmail());
+        $this->assertSame('John', $user->getFirstName());
+        $this->assertSame('Doe Test', $user->getLastName());
+        $this->assertSame(10, $user->getCreatedAt());
+        $this->assertSame(10, $user->getUpdatedAt());
+    }
+
+    public function testSanitizesDataBeforeUpdatingAccount(): void
+    {
+        $userRepository = new UserRepository($this->pdo);
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
+        $user = $userService->createUser($this->userData());
+
+        $unsanitizedData = $this->userUnsanitizedData();
+        $user->setEmail($unsanitizedData['email']);
+        $user->setFirstName($unsanitizedData['first_name']);
+        $user->setLastName($unsanitizedData['last_name']);
+        $user->setCreatedAt($unsanitizedData['created_at']);
+
+        $userService->updateUser($user);
+
+        $user = $userRepository->find(1);
+
+        $this->assertSame('svgonload=confirm1@gmail.com', $user->getEmail());
+        $this->assertSame('John', $user->getFirstName());
+        $this->assertSame('Doe Test', $user->getLastName());
+        $this->assertSame(88, $user->getCreatedAt());
+    }
+
     private function userData(): array
     {
         $now = time();
@@ -106,9 +157,37 @@ class UserServiceTest extends IntegrationTestCase
             'first_name' => 'John',
             'last_name' => 'Doe',
             'password' => '12345678',
-            'type' => 'member',
+            'type' => UserType::Member->value,
             'created_at' => $now,
             'updated_at' => $now,
+        ];
+    }
+
+    private function userUpdatedData(): array
+    {
+        $now = time();
+
+        return [
+            'email' => 'another@email.com',
+            'first_name' => 'Emma',
+            'last_name' => 'Ellen',
+            'password' => '987654321',
+            'type' => UserType::Admin->value,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+    }
+
+    private function userUnsanitizedData(): array
+    {
+        return [
+            'email' => '“><svg/onload=confirm(1)>”@gmail.com',
+            'first_name' => 'John $%&',
+            'last_name' => 'Doe <^4Test',
+            'password' => '12345678',
+            'type' => UserType::Member->value,
+            'created_at' => '88',
+            'updated_at' => '111',
         ];
     }
 }

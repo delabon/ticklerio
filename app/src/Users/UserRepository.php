@@ -203,11 +203,12 @@ class UserRepository
     /**
      * Instantiates a User using the data passed
      * @param array|mixed[] $data
+     * @param User|null $user
      * @return User
      */
-    public function make(array $data): User
+    public function make(array $data, null|User $user = null): User
     {
-        $user = new User();
+        $user = is_null($user) ? new User() : $user;
 
         foreach ($data as $key => $value) {
             $method = u('set_' . $key)->camel()->toString();
