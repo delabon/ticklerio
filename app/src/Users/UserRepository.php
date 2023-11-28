@@ -11,8 +11,6 @@ use function Symfony\Component\String\u;
 
 class UserRepository
 {
-    private PDO $pdo;
-
     /** @var array|string[] */
     private array $validColumns = [
         'id',
@@ -25,9 +23,8 @@ class UserRepository
         'updated_at',
     ];
 
-    public function __construct(PDO $pdo)
+    public function __construct(private readonly PDO $pdo)
     {
-        $this->pdo = $pdo;
     }
 
     /**
