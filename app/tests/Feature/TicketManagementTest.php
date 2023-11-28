@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Core\Auth;
 use App\Core\Http\HttpStatusCode;
 use App\Tickets\TicketRepository;
+use App\Tickets\TicketStatus;
 use App\Users\UserFactory;
 use App\Users\UserRepository;
 use Faker\Factory;
@@ -37,7 +38,7 @@ class TicketManagementTest extends FeatureTestCase
         $this->assertCount(1, $tickets);
         $this->assertSame(1, $tickets[0]->getId());
         $this->assertSame(1, $tickets[0]->getUserId());
-        $this->assertSame(TicketStatus::Publish->value, $tickets[0]->getStatus();
+        $this->assertSame(TicketStatus::Publish->value, $tickets[0]->getStatus());
         $this->assertSame('Test ticket', $tickets[0]->getTitle());
         $this->assertSame('Test ticket description', $tickets[0]->getDescription());
         $this->assertGreaterThan(0, $tickets[0]->getCreatedAt());
