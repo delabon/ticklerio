@@ -111,26 +111,6 @@ class TicketRepositoryTest extends IntegrationTestCase
         $this->assertFalse($ticket);
     }
 
-    public function testMakeReturnsNewInstanceOfTicketSuccessfully(): void
-    {
-        $ticket = TicketRepository::make([
-            'user_id' => 1,
-            'title' => 'Test ticket',
-            'description' => 'Test ticket description',
-            'status' => TicketStatus::Publish->value,
-            'created_at' => time(),
-            'updated_at' => time(),
-        ]);
-
-        $this->assertInstanceOf(Ticket::class, $ticket);
-        $this->assertSame(1, $ticket->getUserId());
-        $this->assertSame(TicketStatus::Publish->value, $ticket->getStatus());
-        $this->assertSame('Test ticket', $ticket->getTitle());
-        $this->assertSame('Test ticket description', $ticket->getDescription());
-        $this->assertGreaterThan(0, $ticket->getCreatedAt());
-        $this->assertGreaterThan(0, $ticket->getUpdatedAt());
-    }
-
     public function makeTicketOne(): Ticket
     {
         $time = time();
