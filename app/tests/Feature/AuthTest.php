@@ -53,7 +53,8 @@ class AuthTest extends FeatureTestCase
             [
                 'id' => $user->getId(),
                 'csrf_token' => $this->csrf->generate()
-            ]
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
         );
 
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());

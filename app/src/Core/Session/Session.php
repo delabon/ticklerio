@@ -111,4 +111,9 @@ readonly class Session
     {
         unset($_SESSION[$key]);
     }
+
+    public function regenerateId(): void
+    {
+        session_regenerate_id(true);
+    }
 }

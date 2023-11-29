@@ -78,6 +78,19 @@ class AuthTest extends TestCase
         $this->assertFalse($this->auth->isAuth($user));
     }
 
+    public function testRegeneratesSessionIdAfterLoginSuccessfully(): void
+    {
+        $oldSessionId = session_id();
+        $user = new User();
+        $user->setId(1);
+
+        $this->auth->login($user);
+        $newSessionId = session_id();
+
+        $this->assertTrue(is_string($newSessionId));
+        $this->assertNotSame($newSessionId, $oldSessionId);
+    }
+
     public function testThrowsExceptionWhenLoggingOutUserWhoIsNotLoggedIn(): void
     {
         $user = new User();

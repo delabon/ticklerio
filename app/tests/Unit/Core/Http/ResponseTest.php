@@ -29,7 +29,7 @@ class ResponseTest extends TestCase
         $this->assertArrayHasKey('content-type', $headers);
         $this->assertArrayHasKey('content-length', $headers);
         $this->assertSame('application/json', $headers['content-type']);
-        $this->assertSame(strlen($jsonStr), $headers['content-length']);
+        $this->assertSame((string) strlen($jsonStr), $headers['content-length']);
     }
 
     public function testBasicResponse(): void
@@ -43,7 +43,7 @@ class ResponseTest extends TestCase
         $this->assertArrayHasKey('content-type', $headers);
         $this->assertArrayHasKey('content-length', $headers);
         $this->assertSame('text/html', $headers['content-type']);
-        $this->assertSame(strlen($body), $headers['content-length']);
+        $this->assertSame((string) strlen($body), $headers['content-length']);
     }
 
     public function testNotFoundResponse(): void
@@ -56,7 +56,7 @@ class ResponseTest extends TestCase
         $this->assertArrayHasKey('content-type', $headers);
         $this->assertArrayHasKey('content-length', $headers);
         $this->assertSame('text/html', $headers['content-type']);
-        $this->assertSame(0, $headers['content-length']);
+        $this->assertSame("0", $headers['content-length']);
     }
 
     public function testExceptionThrownWhenEncodingAnArrayWithNonUtf8String(): void
@@ -78,6 +78,18 @@ class ResponseTest extends TestCase
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
         $this->assertArrayHasKey('custom-header', $headers);
         $this->assertSame(5444, $headers['custom-header']);
+    }
+
+    public function testAddsCustomHttpHeaderSuccessfully(): void
+    {
+        $response = new Response("Hello world!");
+        $response->header('Super-Custom-Header', 'my new header');
+
+        $headers = $response->getHeaders();
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertArrayHasKey('super-custom-header', $headers);
+        $this->assertSame('my new header', $headers['super-custom-header']);
     }
 
     /**
