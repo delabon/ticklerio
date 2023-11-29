@@ -66,4 +66,10 @@ if (!isset($response)) {
     $response = new Response('404 Not Found', HttpStatusCode::NotFound);
 }
 
+
+// In-case of testing (Feature tests) we need to return the session id
+if ($_ENV['APP_ENV'] === 'testing') {
+    $response->header('App-Testing-Session-Id', session_id());
+}
+
 $response->send();

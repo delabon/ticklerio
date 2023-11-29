@@ -16,6 +16,7 @@ readonly class Auth
 
     public function login(User $user): void
     {
+        $this->session->regenerateId();
         $this->session->add('auth', [
             'id' => $user->getId()
         ]);
