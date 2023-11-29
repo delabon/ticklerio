@@ -37,7 +37,11 @@ class AuthController
         }
 
         // Log in
-        $auth->login($user);
+        try {
+            $auth->login($user);
+        } catch (LogicException $e) {
+            return new Response($e->getMessage(), HttpStatusCode::Forbidden);
+        }
 
         return new Response([
             'success' => true,

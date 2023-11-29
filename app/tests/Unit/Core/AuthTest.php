@@ -4,14 +4,10 @@ namespace Tests\Unit\Core;
 
 use App\Core\Auth;
 use App\Core\Session\ArraySessionHandler;
-use App\Core\Session\FileSessionHandler;
 use App\Core\Session\Session;
 use App\Core\Session\SessionHandlerType;
 use App\Users\User;
-use App\Users\UserFactory;
-use App\Users\UserRepository;
-use Exception;
-use Faker\Factory;
+use App\Users\UserType;
 use LogicException;
 use PHPUnit\Framework\TestCase;
 use UnexpectedValueException;
@@ -91,6 +87,16 @@ class AuthTest extends TestCase
         $this->assertNotSame($newSessionId, $oldSessionId);
     }
 
+    public function testThrowsExceptionWhenLoggingInUserWithIdOfZero(): void
+    {
+        $user = new User();
+        $user->setId(0);
+
+        $this->expectException(LogicException::class);
+
+        $this->auth->login($user);
+    }
+
     public function testThrowsExceptionWhenLoggingOutUserWhoIsNotLoggedIn(): void
     {
         $user = new User();
@@ -99,5 +105,52 @@ class AuthTest extends TestCase
         $this->expectException(LogicException::class);
 
         $this->auth->logout($user);
+    }
+
+    public function testReturnsLoggedInUserIdSuccessfully(): void
+    {
+        $user = new User();
+        $user->setId(1);
+        $this->auth->login($user);
+
+        $this->assertSame(1, $this->auth->getUserId());
+    }
+
+    public function testGetUserIdThrowsExceptionWhenUserIsNotLoggedIn(): void
+    {
+        $this->expectException(LogicException::class);
+
+        $this->auth->getUserId();
+    }
+
+    public function testGetUserIdThrowsExceptionWhenSessionParamAuthIsNotAnArray(): void
+    {
+        $_SESSION['auth'] = 'not-an-array';
+
+        $this->expectException(UnexpectedValueException::class);
+
+        $this->auth->getUserId();
+    }
+
+    public function testGetUserIdThrowsExceptionWhenSessionParamIdIsNotAvailable(): void
+    {
+        $_SESSION['auth'] = [
+            'test' => 1
+        ];
+
+        $this->expectException(UnexpectedValueException::class);
+
+        $this->auth->getUserId();
+    }
+
+    public function testThrowsExceptionWhenTryingToLoginBannedUser(): void
+    {
+        $user = new User();
+        $user->setId(1);
+        $user->setType(UserType::Banned->value);
+
+        $this->expectException(LogicException::class);
+
+        $this->auth->login($user);
     }
 }

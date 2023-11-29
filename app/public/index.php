@@ -5,6 +5,7 @@
  */
 
 use App\Controllers\AuthController;
+use App\Controllers\BanController;
 use App\Controllers\HomeController;
 use App\Controllers\RegisterController;
 use App\Core\Auth;
@@ -39,7 +40,8 @@ if ($uri === '/') {
         new UserService(
             new UserRepository($container->get(PDO::class)),
             new UserValidator(),
-            new UserSanitizer()
+            new UserSanitizer(),
+            $container->get(Auth::class)
         ),
         $container->get(Csrf::class)
     );
@@ -57,6 +59,18 @@ if ($uri === '/') {
         $container->get(Request::class),
         $container->get(Auth::class),
         new UserRepository($container->get(PDO::class)),
+        $container->get(Csrf::class)
+    );
+} elseif (preg_match("/^\/ajax\/ban\/?$/", $uri)) {
+    // Register a user via ajax
+    $response = (new BanController())->ban(
+        $container->get(Request::class),
+        new UserService(
+            new UserRepository($container->get(PDO::class)),
+            new UserValidator(),
+            new UserSanitizer(),
+            $container->get(Auth::class)
+        ),
         $container->get(Csrf::class)
     );
 }
