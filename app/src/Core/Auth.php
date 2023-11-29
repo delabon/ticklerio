@@ -4,6 +4,7 @@ namespace App\Core;
 
 use App\Core\Session\Session;
 use App\Users\User;
+use App\Users\UserType;
 use Exception;
 use LogicException;
 use UnexpectedValueException;
@@ -18,6 +19,10 @@ readonly class Auth
     {
         if (!$user->getId()) {
             throw new LogicException('Cannot log in a user with an id of 0.');
+        }
+
+        if ($user->getType() === UserType::Banned->value) {
+            throw new LogicException('Cannot log in a banned user.');
         }
 
         $this->session->regenerateId();

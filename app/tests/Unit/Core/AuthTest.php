@@ -7,6 +7,7 @@ use App\Core\Session\ArraySessionHandler;
 use App\Core\Session\Session;
 use App\Core\Session\SessionHandlerType;
 use App\Users\User;
+use App\Users\UserType;
 use LogicException;
 use PHPUnit\Framework\TestCase;
 use UnexpectedValueException;
@@ -140,5 +141,16 @@ class AuthTest extends TestCase
         $this->expectException(UnexpectedValueException::class);
 
         $this->auth->getUserId();
+    }
+
+    public function testThrowsExceptionWhenTryingToLoginBannedUser(): void
+    {
+        $user = new User();
+        $user->setId(1);
+        $user->setType(UserType::Banned->value);
+
+        $this->expectException(LogicException::class);
+
+        $this->auth->login($user);
     }
 }
