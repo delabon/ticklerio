@@ -16,6 +16,10 @@ readonly class Auth
 
     public function login(User $user): void
     {
+        if (!$user->getId()) {
+            throw new LogicException('Cannot log in a user with an id of 0.');
+        }
+
         $this->session->regenerateId();
         $this->session->add('auth', [
             'id' => $user->getId()

@@ -3,6 +3,7 @@
 namespace App\Users;
 
 use App\Core\Auth;
+use App\Exceptions\UserDoesNotExistException;
 use App\Utilities\PasswordUtils;
 use LogicException;
 
@@ -54,10 +55,24 @@ class UserService
         $this->userRepository->save($user);
     }
 
-    public function banUser(User $user): void
+    public function banUser(int $id): User
     {
+        if (!$id) {
+            throw new LogicException("Cannot ban a user with an id of 0.");
+        }
+
         if (!$this->auth->getUserId()) {
             throw new LogicException("Cannot ban a user when not logged in.");
+        }
+
+        $user = $this->userRepository->find($id);
+
+        if (!$user) {
+            throw new UserDoesNotExistException("Cannot ban a user that does not exist.");
+        }
+
+        if ($user->getType() === UserType::Banned->value) {
+            throw new LogicException("Cannot ban a user that is already banned.");
         }
 
         $admin = $this->userRepository->find($this->auth->getUserId());
@@ -66,19 +81,9 @@ class UserService
             throw new LogicException("Cannot ban a user using a non-admin account.");
         }
 
-        if (!$user->getId()) {
-            throw new LogicException("Cannot ban a user with an id of 0.");
-        }
-
-        if (!$this->userRepository->find($user->getId())) {
-            throw new LogicException("Cannot ban a user that does not exist.");
-        }
-
-        if ($user->getType() === UserType::Banned->value) {
-            throw new LogicException("Cannot ban a user that is already banned.");
-        }
-
         $user->setType(UserType::Banned->value);
         $this->userRepository->save($user);
+
+        return $user;
     }
 }

@@ -3,6 +3,7 @@
 namespace Tests\Integration\Users;
 
 use App\Core\Auth;
+use App\Exceptions\UserDoesNotExistException;
 use App\Users\User;
 use App\Users\UserRepository;
 use App\Users\UserSanitizer;
@@ -160,19 +161,17 @@ class UserServiceTest extends IntegrationTestCase
     {
         $userRepository = new UserRepository($this->pdo);
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
-        $user = $userService->createUser($this->userData());
+        $userService->createUser($this->userData());
         $admin = $userService->createUser($this->adminData());
         $auth = new Auth($this->session);
         $auth->login($admin);
 
-        $userService->banUser($user);
+        $userService->banUser(1);
 
-        $refreshedUser = $userRepository->find(1);
+        $bannedUser = $userRepository->find(1);
 
-        $this->assertTrue($user->isBanned());
-        $this->assertSame(UserType::Banned->value, $user->getType());
-        $this->assertTrue($refreshedUser->isBanned());
-        $this->assertSame(UserType::Banned->value, $refreshedUser->getType());
+        $this->assertTrue($bannedUser->isBanned());
+        $this->assertSame(UserType::Banned->value, $bannedUser->getType());
     }
 
     public function testThrowsExceptionWhenBanningUserUsingNonLoggedInAccount(): void
@@ -183,7 +182,7 @@ class UserServiceTest extends IntegrationTestCase
 
         $this->expectException(LogicException::class);
 
-        $userService->banUser($user);
+        $userService->banUser($user->getId());
     }
 
     public function testThrowsExceptionWhenBanningUserUsingNonAdminAccount(): void
@@ -197,7 +196,7 @@ class UserServiceTest extends IntegrationTestCase
 
         $this->expectException(LogicException::class);
 
-        $userService->banUser($user);
+        $userService->banUser($user->getId());
     }
 
     public function testThrowsExceptionWhenBanningUserWithIdOfZero(): void
@@ -211,7 +210,7 @@ class UserServiceTest extends IntegrationTestCase
 
         $this->expectException(LogicException::class);
 
-        $userService->banUser($user);
+        $userService->banUser($user->getId());
     }
 
     public function testThrowsExceptionWhenBanningUserThatIsAlreadyBanned(): void
@@ -226,7 +225,7 @@ class UserServiceTest extends IntegrationTestCase
 
         $this->expectException(LogicException::class);
 
-        $userService->banUser($user);
+        $userService->banUser($user->getId());
     }
 
     public function testThrowsExceptionWhenBanningNonExistentUser(): void
@@ -238,8 +237,8 @@ class UserServiceTest extends IntegrationTestCase
         $auth = new Auth($this->session);
         $auth->login($admin);
 
-        $this->expectException(LogicException::class);
+        $this->expectException(UserDoesNotExistException::class);
 
-        $userService->banUser($user);
+        $userService->banUser($user->getId());
     }
 }

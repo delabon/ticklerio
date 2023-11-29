@@ -425,16 +425,16 @@ class UserServiceTest extends TestCase
             ->with(PDO::FETCH_ASSOC)
             ->willReturnOnConsecutiveCalls(
                 (function () {
-                    $adminData = $this->adminData();
-                    $adminData['id'] = 2;
-
-                    return $adminData;
-                })(),
-                (function () {
                     $userData = $this->userData();
                     $userData['id'] = 1;
 
                     return $userData;
+                })(),
+                (function () {
+                    $adminData = $this->adminData();
+                    $adminData['id'] = 2;
+
+                    return $adminData;
                 })(),
                 (function () {
                     $userData = $this->userData();
@@ -466,16 +466,13 @@ class UserServiceTest extends TestCase
         $auth = new Auth($this->session);
         $auth->login($admin);
 
-        $userService->banUser($user);
+        $userService->banUser($user->getId());
 
-        $refreshedUser = $userRepository->find(1);
+        $bannedUser = $userRepository->find($user->getId());
 
-        $this->assertTrue($user->isBanned());
-        $this->assertSame(UserType::Banned->value, $user->getType());
-        $this->assertTrue($refreshedUser->isBanned());
-        $this->assertSame(UserType::Banned->value, $refreshedUser->getType());
+        $this->assertTrue($bannedUser->isBanned());
+        $this->assertSame(UserType::Banned->value, $bannedUser->getType());
     }
-
 
     public function testThrowsExceptionWhenBanningUserUsingNonLoggedInAccount(): void
     {
@@ -485,82 +482,10 @@ class UserServiceTest extends TestCase
 
         $this->expectException(LogicException::class);
 
-        $userService->banUser($user);
+        $userService->banUser($user->getId());
     }
 
     public function testThrowsExceptionWhenBanningUserUsingNonAdminAccount(): void
-    {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(2))
-            ->method('execute')
-            ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturn((function () {
-                $userData = $this->userTwoData();
-                $userData['id'] = 2;
-
-                return $userData;
-            })());
-
-        $pdoMock = $this->createStub(PDO::class);
-        $pdoMock->expects($this->exactly(2))
-            ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturn("1");
-
-        $userService = new UserService(new UserRepository($pdoMock), new UserValidator(), new UserSanitizer(), new Auth($this->session));
-        $user = new User();
-        $user->setId(1);
-        $userTwo = $userService->createUser($this->userTwoData());
-        $auth = new Auth($this->session);
-        $auth->login($userTwo);
-
-        $this->expectException(LogicException::class);
-
-        $userService->banUser($user);
-    }
-
-    public function testThrowsExceptionWhenBanningUserWithIdOfZero(): void
-    {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(2))
-            ->method('execute')
-            ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturn((function () {
-                $userData = $this->adminData();
-                $userData['id'] = 2;
-
-                return $userData;
-            })());
-
-        $pdoMock = $this->createStub(PDO::class);
-        $pdoMock->expects($this->exactly(2))
-            ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturn("1");
-
-        $userService = new UserService(new UserRepository($pdoMock), new UserValidator(), new UserSanitizer(), new Auth($this->session));
-        $user = new User();
-        $user->setId(0);
-        $admin = $userService->createUser($this->adminData());
-        $auth = new Auth($this->session);
-        $auth->login($admin);
-
-        $this->expectException(LogicException::class);
-
-        $userService->banUser($user);
-    }
-
-    public function testThrowsExceptionWhenBanningUserThatIsAlreadyBanned(): void
     {
         $pdoStatementMock = $this->createMock(PDOStatement::class);
         $pdoStatementMock->expects($this->exactly(3))
@@ -571,15 +496,14 @@ class UserServiceTest extends TestCase
             ->with(PDO::FETCH_ASSOC)
             ->willReturnOnConsecutiveCalls(
                 (function () {
-                    $userData = $this->adminData();
-                    $userData['id'] = 2;
+                    $userData = $this->userData();
+                    $userData['id'] = 999;
 
                     return $userData;
                 })(),
                 (function () {
-                    $userData = $this->userData();
-                    $userData['id'] = 999;
-                    $userData['type'] = UserType::Banned->value;
+                    $userData = $this->userTwoData();
+                    $userData['id'] = 1;
 
                     return $userData;
                 })()
@@ -596,52 +520,92 @@ class UserServiceTest extends TestCase
         $userService = new UserService(new UserRepository($pdoMock), new UserValidator(), new UserSanitizer(), new Auth($this->session));
         $user = new User();
         $user->setId(999);
-        $user->setType(UserType::Banned->value);
-        $admin = $userService->createUser($this->adminData());
+        $userTwo = $userService->createUser($this->userTwoData());
+        $auth = new Auth($this->session);
+        $auth->login($userTwo);
+
+        $this->expectException(LogicException::class);
+
+        $userService->banUser($user->getId());
+    }
+
+    public function testThrowsExceptionWhenBanningUserWithIdOfZero(): void
+    {
+        $userService = new UserService(new UserRepository($this->createStub(PDO::class)), new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $user = new User();
+        $user->setId(0);
+        $admin = new User();
+        $admin->setId(55);
         $auth = new Auth($this->session);
         $auth->login($admin);
 
         $this->expectException(LogicException::class);
 
-        $userService->banUser($user);
+        $userService->banUser($user->getId());
+    }
+
+    public function testThrowsExceptionWhenBanningUserThatIsAlreadyBanned(): void
+    {
+        $pdoStatementMock = $this->createMock(PDOStatement::class);
+        $pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+        $pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () {
+                $userData = $this->userData();
+                $userData['id'] = 999;
+                $userData['type'] = UserType::Banned->value;
+
+                return $userData;
+            });
+
+        $pdoMock = $this->createStub(PDO::class);
+        $pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($pdoStatementMock);
+
+        $userService = new UserService(new UserRepository($pdoMock), new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $user = new User();
+        $user->setId(999);
+        $user->setType(UserType::Banned->value);
+        $admin = new User();
+        $admin->setId(55);
+        $auth = new Auth($this->session);
+        $auth->login($admin);
+
+        $this->expectException(LogicException::class);
+
+        $userService->banUser($user->getId());
     }
 
     public function testThrowsExceptionWhenBanningNonExistentUser(): void
     {
         $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(3))
+        $pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->exactly(2))
+        $pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
-            ->willReturnOnConsecutiveCalls(
-                (function () {
-                    $userData = $this->adminData();
-                    $userData['id'] = 2;
-
-                    return $userData;
-                })(),
-                false
-            );
+            ->willReturn(false);
 
         $pdoMock = $this->createStub(PDO::class);
-        $pdoMock->expects($this->exactly(3))
+        $pdoMock->expects($this->once())
             ->method('prepare')
             ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturn("1");
 
         $userService = new UserService(new UserRepository($pdoMock), new UserValidator(), new UserSanitizer(), new Auth($this->session));
         $user = new User();
         $user->setId(999);
-        $admin = $userService->createUser($this->adminData());
+        $admin = new User();
+        $admin->setId(55);
         $auth = new Auth($this->session);
         $auth->login($admin);
 
         $this->expectException(LogicException::class);
 
-        $userService->banUser($user);
+        $userService->banUser($user->getId());
     }
 }

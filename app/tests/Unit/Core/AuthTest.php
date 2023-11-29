@@ -86,6 +86,16 @@ class AuthTest extends TestCase
         $this->assertNotSame($newSessionId, $oldSessionId);
     }
 
+    public function testThrowsExceptionWhenLoggingInUserWithIdOfZero(): void
+    {
+        $user = new User();
+        $user->setId(0);
+
+        $this->expectException(LogicException::class);
+
+        $this->auth->login($user);
+    }
+
     public function testThrowsExceptionWhenLoggingOutUserWhoIsNotLoggedIn(): void
     {
         $user = new User();
