@@ -201,6 +201,12 @@ class FeatureTestCase extends TestCase
      */
     private function request(RequestType $requestType, string $uri, array $data = [], bool $throwExceptions = true): ResponseInterface
     {
+        // in-case of log in before the request, we need to get the session id from session
+        if ($this->sessionId !== session_id()) {
+            $this->sessionId = session_id();
+            $this->setUpHttpClient();
+        }
+
         // write & close session or the data from the process that will handle the Guzzle request will use an empty session
         session_write_close();
 
@@ -223,7 +229,11 @@ class FeatureTestCase extends TestCase
             );
         }
 
-        // Re-start session with the
+        // In-case of log in, we need to get the new session id from the response
+        $newSessionId = $response->getHeader('app-testing-session-id');
+        $this->sessionId = $newSessionId[0] ?? $this->sessionId;
+
+        // Re-start session
         $this->session->start($this->sessionId);
 
         return $response;

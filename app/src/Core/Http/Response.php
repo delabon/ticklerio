@@ -21,7 +21,7 @@ class Response implements ResponseInterface
         $this->makeHeaderKeysLowerCase();
         $this->ifBodyIsArrayMakeItJsonResponse();
         $this->contentTypeAsHtmlIfNotSet();
-        $this->headers['content-length'] = strlen($this->body);
+        $this->header('content-length', (string) strlen($this->body));
     }
 
     public function getStatusCode(): int
@@ -37,6 +37,11 @@ class Response implements ResponseInterface
     public function getHeaders(): array
     {
         return $this->headers;
+    }
+
+    public function header(string $name, string $value): void
+    {
+        $this->headers[strtolower($name)] = $value;
     }
 
     public function send(): void
@@ -67,7 +72,7 @@ class Response implements ResponseInterface
     private function ifBodyIsArrayMakeItJsonResponse(): void
     {
         if (is_array($this->body)) {
-            $this->headers['content-type'] = 'application/json';
+            $this->header('content-type', 'application/json');
             $this->body = json_encode($this->body);
 
             if (!$this->body) {
@@ -79,7 +84,7 @@ class Response implements ResponseInterface
     private function contentTypeAsHtmlIfNotSet(): void
     {
         if (!isset($this->headers['content-type'])) {
-            $this->headers['content-type'] = 'text/html';
+            $this->header('content-type', 'text/html');
         }
     }
 }
