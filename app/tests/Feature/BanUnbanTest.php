@@ -17,10 +17,12 @@ class BanUnbanTest extends FeatureTestCase
         $auth = new Auth($this->session);
         $userRepository = new UserRepository($this->pdo);
         $userFactory = new UserFactory($userRepository, Factory::create());
-        $user = $userFactory->create()[0];
-        $admin = $userFactory->create()[0];
-        $admin->setType(UserType::Admin->value);
-        $userRepository->save($admin);
+        $user = $userFactory->create([
+            'type' => UserType::Member->value,
+        ])[0];
+        $admin = $userFactory->create([
+            'type' => UserType::Admin->value,
+        ])[0];
 
         $auth->login($admin);
 
@@ -28,8 +30,7 @@ class BanUnbanTest extends FeatureTestCase
             '/ajax/ban',
             [
                 'id' => $user->getId(),
-            ],
-            self::DISABLE_GUZZLE_EXCEPTION
+            ]
         );
 
         $refreshedUser = $userRepository->find($user->getId());
@@ -43,9 +44,9 @@ class BanUnbanTest extends FeatureTestCase
         $auth = new Auth($this->session);
         $userRepository = new UserRepository($this->pdo);
         $userFactory = new UserFactory($userRepository, Factory::create());
-        $admin = $userFactory->create()[0];
-        $admin->setType(UserType::Admin->value);
-        $userRepository->save($admin);
+        $admin = $userFactory->create([
+            'type' => UserType::Admin->value,
+        ])[0];
 
         $auth->login($admin);
 
@@ -65,10 +66,12 @@ class BanUnbanTest extends FeatureTestCase
         $auth = new Auth($this->session);
         $userRepository = new UserRepository($this->pdo);
         $userFactory = new UserFactory($userRepository, Factory::create());
-        $user = $userFactory->create()[0];
-        $adminPretender = $userFactory->create()[0];
-        $adminPretender->setType(UserType::Member->value);
-        $userRepository->save($adminPretender);
+        $user = $userFactory->create([
+            'type' => UserType::Member->value,
+        ])[0];
+        $adminPretender = $userFactory->create([
+            'type' => UserType::Member->value,
+        ])[0];
         $auth->login($adminPretender);
 
         $response = $this->post(
@@ -87,7 +90,9 @@ class BanUnbanTest extends FeatureTestCase
     {
         $userRepository = new UserRepository($this->pdo);
         $userFactory = new UserFactory($userRepository, Factory::create());
-        $user = $userFactory->create()[0];
+        $user = $userFactory->create([
+            'type' => UserType::Member->value,
+        ])[0];
 
         $response = $this->post(
             '/ajax/ban',
