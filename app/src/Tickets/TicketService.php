@@ -8,6 +8,10 @@ class TicketService
     {
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @return void
+     */
     public function createTicket(array $data): void
     {
         if (empty($data['created_at']) || !(int) $data['created_at']) {
