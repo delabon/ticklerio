@@ -2,6 +2,7 @@
 
 namespace Tests\Integration\Users;
 
+use App\Core\Auth;
 use App\Users\User;
 use App\Users\UserRepository;
 use App\Users\UserSanitizer;
@@ -12,13 +13,16 @@ use App\Utilities\PasswordUtils;
 use InvalidArgumentException;
 use LogicException;
 use Tests\IntegrationTestCase;
+use Tests\_data\UserDataProviderTrait;
 
 class UserServiceTest extends IntegrationTestCase
 {
+    use UserDataProviderTrait;
+
     public function testCreatesUserSuccessfully(): void
     {
         $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
 
         $userService->createUser($this->userData());
 
@@ -32,7 +36,7 @@ class UserServiceTest extends IntegrationTestCase
         $userUpdatedData = $this->userUpdatedData();
 
         $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
         $user = $userService->createUser($userData);
 
         $userUpdatedData['id'] = 1;
@@ -55,7 +59,7 @@ class UserServiceTest extends IntegrationTestCase
     public function testThrowsExceptionWhenUpdatingUserWithAnIdOfZero(): void
     {
         $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
         $user = $userRepository->make($this->userData());
         $user->setId(0);
 
@@ -68,7 +72,7 @@ class UserServiceTest extends IntegrationTestCase
     {
         $userData = $this->userData();
         $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
         $user = $userService->createUser($userData);
         $user->setEmail('invalid-email');
 
@@ -81,7 +85,7 @@ class UserServiceTest extends IntegrationTestCase
     {
         $userData = $this->userData();
         $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
         $user = $userService->createUser($userData);
 
         $this->assertNotSame($userData['password'], $user->getPassword());
@@ -92,7 +96,7 @@ class UserServiceTest extends IntegrationTestCase
     {
         $userData = $this->userData();
         $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
         $user = $userService->createUser($userData);
 
         $updatedPassword = 'azerty123456';
@@ -106,7 +110,7 @@ class UserServiceTest extends IntegrationTestCase
     public function testSanitizesDataBeforeCreatingAccount(): void
     {
         $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
 
         $now = "10";
         $user = $userService->createUser([
@@ -129,7 +133,7 @@ class UserServiceTest extends IntegrationTestCase
     public function testSanitizesDataBeforeUpdatingAccount(): void
     {
         $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
         $user = $userService->createUser($this->userData());
 
         $unsanitizedData = $this->userUnsanitizedData();
@@ -148,46 +152,94 @@ class UserServiceTest extends IntegrationTestCase
         $this->assertSame(88, $user->getCreatedAt());
     }
 
-    private function userData(): array
-    {
-        $now = time();
+    //
+    // Ban user
+    //
 
-        return [
-            'email' => 'test@test.com',
-            'first_name' => 'John',
-            'last_name' => 'Doe',
-            'password' => '12345678',
-            'type' => UserType::Member->value,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ];
+    public function testBansUserUsingAdminAccountSuccessfully(): void
+    {
+        $userRepository = new UserRepository($this->pdo);
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $user = $userService->createUser($this->userData());
+        $admin = $userService->createUser($this->adminData());
+        $auth = new Auth($this->session);
+        $auth->login($admin);
+
+        $userService->banUser($user);
+
+        $refreshedUser = $userRepository->find(1);
+
+        $this->assertTrue($user->isBanned());
+        $this->assertSame(UserType::Banned->value, $user->getType());
+        $this->assertTrue($refreshedUser->isBanned());
+        $this->assertSame(UserType::Banned->value, $refreshedUser->getType());
     }
 
-    private function userUpdatedData(): array
+    public function testThrowsExceptionWhenBanningUserUsingNonLoggedInAccount(): void
     {
-        $now = time();
+        $userService = new UserService(new UserRepository($this->pdo), new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $user = new User();
+        $user->setId(1);
 
-        return [
-            'email' => 'another@email.com',
-            'first_name' => 'Emma',
-            'last_name' => 'Ellen',
-            'password' => '987654321',
-            'type' => UserType::Admin->value,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ];
+        $this->expectException(LogicException::class);
+
+        $userService->banUser($user);
     }
 
-    private function userUnsanitizedData(): array
+    public function testThrowsExceptionWhenBanningUserUsingNonAdminAccount(): void
     {
-        return [
-            'email' => '“><svg/onload=confirm(1)>”@gmail.com',
-            'first_name' => 'John $%&',
-            'last_name' => 'Doe <^4Test',
-            'password' => '12345678',
-            'type' => UserType::Member->value,
-            'created_at' => '88',
-            'updated_at' => '111',
-        ];
+        $userService = new UserService(new UserRepository($this->pdo), new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $user = new User();
+        $user->setId(1);
+        $userTwo = $userService->createUser($this->userTwoData());
+        $auth = new Auth($this->session);
+        $auth->login($userTwo);
+
+        $this->expectException(LogicException::class);
+
+        $userService->banUser($user);
+    }
+
+    public function testThrowsExceptionWhenBanningUserWithIdOfZero(): void
+    {
+        $userService = new UserService(new UserRepository($this->pdo), new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $user = new User();
+        $user->setId(0);
+        $admin = $userService->createUser($this->adminData());
+        $auth = new Auth($this->session);
+        $auth->login($admin);
+
+        $this->expectException(LogicException::class);
+
+        $userService->banUser($user);
+    }
+
+    public function testThrowsExceptionWhenBanningUserThatIsAlreadyBanned(): void
+    {
+        $userService = new UserService(new UserRepository($this->pdo), new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $user = new User();
+        $user->setId(999);
+        $user->setType(UserType::Banned->value);
+        $admin = $userService->createUser($this->adminData());
+        $auth = new Auth($this->session);
+        $auth->login($admin);
+
+        $this->expectException(LogicException::class);
+
+        $userService->banUser($user);
+    }
+
+    public function testThrowsExceptionWhenBanningNonExistentUser(): void
+    {
+        $userService = new UserService(new UserRepository($this->pdo), new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $user = new User();
+        $user->setId(999);
+        $admin = $userService->createUser($this->adminData());
+        $auth = new Auth($this->session);
+        $auth->login($admin);
+
+        $this->expectException(LogicException::class);
+
+        $userService->banUser($user);
     }
 }

@@ -45,4 +45,21 @@ readonly class Auth
 
         $this->session->delete('auth');
     }
+
+    public function getUserId(): int
+    {
+        if (!$this->session->has('auth')) {
+            throw new LogicException('The user is not logged in.');
+        }
+
+        if (!is_array($this->session->get('auth'))) {
+            throw new UnexpectedValueException('The auth session variable is not an array.');
+        }
+
+        if (!isset($this->session->get('auth')['id'])) {
+            throw new UnexpectedValueException('The auth session variable does not have an id key.');
+        }
+
+        return $this->session->get('auth')['id'];
+    }
 }

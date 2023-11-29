@@ -108,4 +108,9 @@ class User
 
         return $data;
     }
+
+    public function isBanned(): bool
+    {
+        return $this->getType() === UserType::Banned->value;
+    }
 }

@@ -2,21 +2,18 @@
 
 namespace App\Users;
 
+use App\Core\Auth;
 use App\Utilities\PasswordUtils;
 use LogicException;
-use OutOfBoundsException;
 
 class UserService
 {
-    private UserRepository $userRepository;
-    private UserValidator $userValidator;
-    private UserSanitizer $userSanitizer;
-
-    public function __construct(UserRepository $userRepository, UserValidator $userValidator, UserSanitizer $userSanitizer)
-    {
-        $this->userRepository = $userRepository;
-        $this->userValidator = $userValidator;
-        $this->userSanitizer = $userSanitizer;
+    public function __construct(
+        private UserRepository $userRepository,
+        private UserValidator $userValidator,
+        private UserSanitizer $userSanitizer,
+        private Auth $auth
+    ) {
     }
 
     /**
@@ -54,6 +51,34 @@ class UserService
         $this->userValidator->validate($data);
         $user = $this->userRepository->make($data, $user);
         $user->setPassword(PasswordUtils::hashPasswordIfNotHashed($data['password']));
+        $this->userRepository->save($user);
+    }
+
+    public function banUser(User $user): void
+    {
+        if (!$this->auth->getUserId()) {
+            throw new LogicException("Cannot ban a user when not logged in.");
+        }
+
+        $admin = $this->userRepository->find($this->auth->getUserId());
+
+        if ($admin->getType() !== UserType::Admin->value) {
+            throw new LogicException("Cannot ban a user using a non-admin account.");
+        }
+
+        if (!$user->getId()) {
+            throw new LogicException("Cannot ban a user with an id of 0.");
+        }
+
+        if (!$this->userRepository->find($user->getId())) {
+            throw new LogicException("Cannot ban a user that does not exist.");
+        }
+
+        if ($user->getType() === UserType::Banned->value) {
+            throw new LogicException("Cannot ban a user that is already banned.");
+        }
+
+        $user->setType(UserType::Banned->value);
         $this->userRepository->save($user);
     }
 }
