@@ -39,14 +39,14 @@ class AuthController
         // Log in
         try {
             $auth->login($user);
+
+            return new Response([
+                'success' => true,
+                'message' => 'The user has been logged-in successfully.',
+            ]);
         } catch (LogicException $e) {
             return new Response($e->getMessage(), HttpStatusCode::Forbidden);
         }
-
-        return new Response([
-            'success' => true,
-            'message' => 'The user has been logged-in successfully.',
-        ]);
     }
 
     public function logout(Request $request, Auth $auth, UserRepository $userRepository, Csrf $csrf): Response
@@ -60,15 +60,15 @@ class AuthController
 
         try {
             $auth->logout($user);
+
+            return new Response([
+                'success' => true,
+                'message' => 'The user has been logged-off successfully.',
+            ]);
         } catch (LogicException $e) {
             return new Response($e->getMessage(), HttpStatusCode::BadRequest);
         } catch (UnexpectedValueException $e) {
             return new Response($e->getMessage(), HttpStatusCode::Unauthorized);
         }
-
-        return new Response([
-            'success' => true,
-            'message' => 'The user has been logged-off successfully.',
-        ]);
     }
 }
