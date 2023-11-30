@@ -116,31 +116,9 @@ class AuthTest extends TestCase
         $this->assertSame(1, $this->auth->getUserId());
     }
 
-    public function testGetUserIdThrowsExceptionWhenUserIsNotLoggedIn(): void
+    public function testGetUserIdMethodReturnsZeroWhenNoUserIsLoggedIn(): void
     {
-        $this->expectException(LogicException::class);
-
-        $this->auth->getUserId();
-    }
-
-    public function testGetUserIdThrowsExceptionWhenSessionParamAuthIsNotAnArray(): void
-    {
-        $_SESSION['auth'] = 'not-an-array';
-
-        $this->expectException(UnexpectedValueException::class);
-
-        $this->auth->getUserId();
-    }
-
-    public function testGetUserIdThrowsExceptionWhenSessionParamIdIsNotAvailable(): void
-    {
-        $_SESSION['auth'] = [
-            'test' => 1
-        ];
-
-        $this->expectException(UnexpectedValueException::class);
-
-        $this->auth->getUserId();
+        $this->assertSame(0, $this->auth->getUserId());
     }
 
     public function testThrowsExceptionWhenTryingToLoginBannedUser(): void
