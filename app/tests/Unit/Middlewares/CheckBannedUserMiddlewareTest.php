@@ -79,4 +79,37 @@ class CheckBannedUserMiddlewareTest extends TestCase
         $this->assertSame(0, $this->auth->getUserId());
         $this->assertFalse($this->session->has('auth'));
     }
+
+    public function testDoesNotLogOutNormalUserSuccessfully(): void
+    {
+        $pdoStatementMock = $this->createMock(PDOStatement::class);
+        $pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+        $pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                'id' => 1,
+                'first_name' => 'John',
+                'last_name' => 'Doe',
+                'email' => 'test@gmail.com',
+                'type' => UserType::Member->value,
+            ]);
+
+        $pdoMock = $this->createMock(PDO::class);
+        $pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($pdoStatementMock);
+
+        $user = new User();
+        $user->setId(1);
+        $this->auth->login($user);
+        $middleware = new CheckBannedUserMiddleware($this->auth, new UserRepository($pdoMock));
+
+        $middleware->handle();
+
+        $this->assertSame(1, $this->auth->getUserId());
+        $this->assertTrue($this->session->has('auth'));
+    }
 }
