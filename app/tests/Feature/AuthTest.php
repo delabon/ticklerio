@@ -6,6 +6,7 @@ use App\Core\Auth;
 use App\Core\Http\HttpStatusCode;
 use App\Users\UserFactory;
 use App\Users\UserRepository;
+use App\Users\UserType;
 use Faker\Factory;
 use Tests\FeatureTestCase;
 
@@ -17,6 +18,7 @@ class AuthTest extends FeatureTestCase
         $userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
         $password = '123456789';
         $user = $userFactory->create([
+            'type' => UserType::Member->value,
             'password' => $password
         ])[0];
 
@@ -42,6 +44,7 @@ class AuthTest extends FeatureTestCase
         $userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
         $password = '123456789';
         $user = $userFactory->create([
+            'type' => UserType::Member->value,
             'password' => $password
         ])[0];
 
@@ -106,6 +109,7 @@ class AuthTest extends FeatureTestCase
         );
 
         $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertStringContainsStringIgnoringCase('csrf', $response->getBody()->getContents());
     }
 
     public function testReturnsNotFoundResponseWhenTryingToLogInWithAnEmailThatIsNotRegistered(): void
@@ -144,5 +148,51 @@ class AuthTest extends FeatureTestCase
 
         $this->assertSame(HttpStatusCode::Unauthorized->value, $response->getStatusCode());
         $this->assertArrayNotHasKey('auth', $_SESSION);
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToLoginBannedUser(): void
+    {
+        $userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
+        $user = $userFactory->create([
+            'password' => '123456789',
+            'type' => UserType::Banned->value
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/auth/login',
+            [
+                'email' => $user->getEmail(),
+                'password' => '123456789',
+                'csrf_token' => $this->csrf->generate()
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertStringContainsStringIgnoringCase('banned', $response->getBody()->getContents());
+        $this->assertSame(UserType::Banned->value, $user->getType());
+    }
+
+    public function testAutomaticallyLogsOutBannedUser(): void
+    {
+        $userRepository = new UserRepository($this->pdo);
+        $userFactory = new UserFactory($userRepository, Factory::create());
+        $user = $userFactory->create([
+            'password' => '123456789',
+            'type' => UserType::Member->value
+        ])[0];
+
+        $auth = new Auth($this->session);
+        $auth->login($user);
+
+        $this->assertTrue($auth->isAuth($user));
+
+        $user->setType(UserType::Banned->value);
+        $userRepository->save($user);
+
+        $response = $this->get('/');
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertFalse($auth->isAuth($user));
     }
 }

@@ -38,6 +38,28 @@ class UserTest extends TestCase
         $this->assertArrayHasKey('updated_at', $data);
     }
 
+    public function testIsBannedReturnsTrueWhenTypeEqualsBanned(): void
+    {
+        $user = $this->createUser();
+
+        $user->setType(UserType::Banned->value);
+
+        $this->assertTrue($user->isBanned());
+    }
+
+    public function testIsBannedReturnsFalseWhenTypeIsNotBanned(): void
+    {
+        $user = $this->createUser();
+
+        $user->setType(UserType::Admin->value);
+
+        $this->assertFalse($user->isBanned());
+    }
+
+    //
+    // Data Providers
+    //
+
     private function createUser(int $now = 0): User
     {
         if (!$now) {

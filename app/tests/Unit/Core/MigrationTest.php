@@ -31,7 +31,7 @@ class MigrationTest extends TestCase
 
         $migration = new Migration(
             $pdoMock,
-            __DIR__ . '/migrations/'
+            __DIR__ . '/../../_migrations/Unit/'
         );
         $migration->migrate();
     }
@@ -74,7 +74,7 @@ class MigrationTest extends TestCase
 
         $migration = new Migration(
             $pdoMock,
-            __DIR__ . '/migrations/'
+            __DIR__ . '/../../_migrations/Unit/'
         );
         $migration->migrate();
         $migration->migrate();
@@ -107,7 +107,7 @@ class MigrationTest extends TestCase
 
         $migration = new Migration(
             $pdoMock,
-            __DIR__ . '/migrations/'
+            __DIR__ . '/../../_migrations/Unit/'
         );
         $migration->migrate();
 

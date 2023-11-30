@@ -18,7 +18,7 @@ class MigrationTest extends TestCase
         $this->pdo = new PDO('sqlite::memory:');
         $this->migration = new Migration(
             $this->pdo,
-            __DIR__ . '/migrations/'
+            __DIR__ . '/../../_migrations/Integration/'
         );
         $this->migration->migrate();
     }
