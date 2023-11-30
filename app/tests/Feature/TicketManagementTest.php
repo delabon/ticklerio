@@ -8,6 +8,7 @@ use App\Tickets\TicketRepository;
 use App\Tickets\TicketStatus;
 use App\Users\UserFactory;
 use App\Users\UserRepository;
+use App\Users\UserType;
 use Faker\Factory;
 use Tests\FeatureTestCase;
 
@@ -16,7 +17,9 @@ class TicketManagementTest extends FeatureTestCase
     public function testAddsTicketSuccessfully(): void
     {
         $userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
-        $user = $userFactory->create()[0];
+        $user = $userFactory->create([
+            'type' => UserType::Member->value,
+        ])[0];
         $auth = new Auth($this->session);
         $auth->login($user);
         $ticketRepository = new TicketRepository($this->pdo);
