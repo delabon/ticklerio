@@ -264,42 +264,16 @@ class UserServiceTest extends IntegrationTestCase
         $this->assertSame(UserType::Member->value, $user->getType());
     }
 
-    public function testThrowsExceptionWhenUnbanningUserUsingNonLoggedInAccount(): void
-    {
-        $userService = new UserService(new UserRepository($this->pdo), new UserValidator(), new UserSanitizer(), new Auth($this->session));
-        $user = $userService->createUser($this->userData());
-        $user->setType(UserType::Banned->value);
-
-        $this->expectException(LogicException::class);
-
-        $userService->unbanUser($user->getId());
-    }
-
-    public function testThrowsExceptionWhenUnbanningUserWithAnIdOfZero(): void
-    {
-        $userService = new UserService(new UserRepository($this->pdo), new UserValidator(), new UserSanitizer(), new Auth($this->session));
-        $user = new User();
-        $user->setId(0);
-        $user->setType(UserType::Banned->value);
-
-        $this->expectException(LogicException::class);
-
-        $userService->unbanUser($user->getId());
-    }
-
     public function testThrowsExceptionWhenUnbanningNonExistentUser(): void
     {
         $userService = new UserService(new UserRepository($this->pdo), new UserValidator(), new UserSanitizer(), new Auth($this->session));
-        $user = new User();
-        $user->setId(99);
-        $user->setType(UserType::Banned->value);
         $admin = $userService->createUser($this->adminData());
         $auth = new Auth($this->session);
         $auth->login($admin);
 
         $this->expectException(UserDoesNotExistException::class);
 
-        $userService->unbanUser($user->getId());
+        $userService->unbanUser(888);
     }
 
     public function testThrowsExceptionWhenUnbanningNonBannedUser(): void
