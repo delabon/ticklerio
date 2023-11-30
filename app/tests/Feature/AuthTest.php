@@ -173,7 +173,7 @@ class AuthTest extends FeatureTestCase
         $this->assertSame(UserType::Banned->value, $user->getType());
     }
 
-    public function testLogsOutBannedUser(): void
+    public function testAutomaticallyLogsOutBannedUser(): void
     {
         $userRepository = new UserRepository($this->pdo);
         $userFactory = new UserFactory($userRepository, Factory::create());

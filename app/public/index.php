@@ -5,7 +5,7 @@
  */
 
 use App\Controllers\AuthController;
-use App\Controllers\BanController;
+use App\Controllers\BanUnbanController;
 use App\Controllers\HomeController;
 use App\Controllers\RegisterController;
 use App\Core\Auth;
@@ -56,7 +56,7 @@ if ($uri === '/') {
         $container->get(Csrf::class)
     );
 } elseif (preg_match("/^\/ajax\/auth\/login\/?$/", $uri)) {
-    // Register a user via ajax
+    // Log in a user via ajax
     $response = (new AuthController())->login(
         $container->get(Request::class),
         $container->get(Auth::class),
@@ -64,7 +64,7 @@ if ($uri === '/') {
         $container->get(Csrf::class)
     );
 } elseif (preg_match("/^\/ajax\/auth\/logout\/?$/", $uri)) {
-    // Register a user via ajax
+    // Log out a user via ajax
     $response = (new AuthController())->logout(
         $container->get(Request::class),
         $container->get(Auth::class),
@@ -72,8 +72,20 @@ if ($uri === '/') {
         $container->get(Csrf::class)
     );
 } elseif (preg_match("/^\/ajax\/ban\/?$/", $uri)) {
-    // Register a user via ajax
-    $response = (new BanController())->ban(
+    // Ban a user via ajax
+    $response = (new BanUnbanController())->ban(
+        $container->get(Request::class),
+        new UserService(
+            new UserRepository($container->get(PDO::class)),
+            new UserValidator(),
+            new UserSanitizer(),
+            $container->get(Auth::class)
+        ),
+        $container->get(Csrf::class)
+    );
+} elseif (preg_match("/^\/ajax\/unban\/?$/", $uri)) {
+    // Unban a user via ajax
+    $response = (new BanUnbanController())->unban(
         $container->get(Request::class),
         new UserService(
             new UserRepository($container->get(PDO::class)),
@@ -85,13 +97,18 @@ if ($uri === '/') {
     );
 }
 
+//
 // In-case of no response
+//
+
 if (!isset($response)) {
     $response = new Response('404 Not Found', HttpStatusCode::NotFound);
 }
 
-
+//
 // In-case of testing (Feature tests) we need to return the session id
+//
+
 if ($_ENV['APP_ENV'] === 'testing') {
     $response->header('App-Testing-Session-Id', session_id());
 }

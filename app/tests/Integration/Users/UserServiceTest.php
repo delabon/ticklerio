@@ -241,4 +241,66 @@ class UserServiceTest extends IntegrationTestCase
 
         $userService->banUser($user->getId());
     }
+
+    //
+    // Unban user
+    //
+
+    public function testUnbanUserSuccessfully(): void
+    {
+        $userRepository = new UserRepository($this->pdo);
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $userData = $this->userData();
+        $userData['type'] = UserType::Banned->value;
+        $bannedUser = $userService->createUser($userData);
+        $admin = $userService->createUser($this->adminData());
+        $auth = new Auth($this->session);
+        $auth->login($admin);
+
+        $userService->unbanUser($bannedUser->getId());
+
+        $user = $userRepository->find($bannedUser->getId());
+
+        $this->assertSame(UserType::Member->value, $user->getType());
+    }
+
+    public function testThrowsExceptionWhenUnbanningNonExistentUser(): void
+    {
+        $userService = new UserService(new UserRepository($this->pdo), new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $admin = $userService->createUser($this->adminData());
+        $auth = new Auth($this->session);
+        $auth->login($admin);
+
+        $this->expectException(UserDoesNotExistException::class);
+
+        $userService->unbanUser(888);
+    }
+
+    public function testThrowsExceptionWhenUnbanningNonBannedUser(): void
+    {
+        $userService = new UserService(new UserRepository($this->pdo), new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $user = $userService->createUser($this->userData());
+        $admin = $userService->createUser($this->adminData());
+        $auth = new Auth($this->session);
+        $auth->login($admin);
+
+        $this->expectException(LogicException::class);
+
+        $userService->unbanUser($user->getId());
+    }
+
+    public function testThrowsExceptionWhenUnbanningUserWithNonAdminAccount(): void
+    {
+        $userService = new UserService(new UserRepository($this->pdo), new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $userData = $this->userData();
+        $userData['type'] = UserType::Banned->value;
+        $user = $userService->createUser($userData);
+        $adminPretender = $userService->createUser($this->userTwoData());
+        $auth = new Auth($this->session);
+        $auth->login($adminPretender);
+
+        $this->expectException(LogicException::class);
+
+        $userService->unbanUser($user->getId());
+    }
 }
