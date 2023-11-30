@@ -18,6 +18,7 @@ class AuthTest extends FeatureTestCase
         $userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
         $password = '123456789';
         $user = $userFactory->create([
+            'type' => UserType::Member->value,
             'password' => $password
         ])[0];
 
@@ -43,6 +44,7 @@ class AuthTest extends FeatureTestCase
         $userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
         $password = '123456789';
         $user = $userFactory->create([
+            'type' => UserType::Member->value,
             'password' => $password
         ])[0];
 
@@ -169,5 +171,28 @@ class AuthTest extends FeatureTestCase
         $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
         $this->assertStringContainsStringIgnoringCase('banned', $response->getBody()->getContents());
         $this->assertSame(UserType::Banned->value, $user->getType());
+    }
+
+    public function testLogsOutBannedUser(): void
+    {
+        $userRepository = new UserRepository($this->pdo);
+        $userFactory = new UserFactory($userRepository, Factory::create());
+        $user = $userFactory->create([
+            'password' => '123456789',
+            'type' => UserType::Member->value
+        ])[0];
+
+        $auth = new Auth($this->session);
+        $auth->login($user);
+
+        $this->assertTrue($auth->isAuth($user));
+
+        $user->setType(UserType::Banned->value);
+        $userRepository->save($user);
+
+        $response = $this->get('/');
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertFalse($auth->isAuth($user));
     }
 }

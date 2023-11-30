@@ -57,16 +57,12 @@ readonly class Auth
 
     public function getUserId(): int
     {
-        if (!$this->session->has('auth')) {
-            throw new LogicException('The user is not logged in.');
-        }
-
-        if (!is_array($this->session->get('auth'))) {
-            throw new UnexpectedValueException('The auth session variable is not an array.');
+        if (!$this->session->get('auth')) {
+            return 0;
         }
 
         if (!isset($this->session->get('auth')['id'])) {
-            throw new UnexpectedValueException('The auth session variable does not have an id key.');
+            return 0;
         }
 
         return $this->session->get('auth')['id'];
