@@ -14,6 +14,7 @@ use App\Core\Http\HttpStatusCode;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Middlewares\CheckBannedUserMiddleware;
+use App\Users\AdminService;
 use App\Users\UserRepository;
 use App\Users\UserSanitizer;
 use App\Users\UserService;
@@ -50,8 +51,7 @@ if ($uri === '/') {
         new UserService(
             new UserRepository($container->get(PDO::class)),
             new UserValidator(),
-            new UserSanitizer(),
-            $container->get(Auth::class)
+            new UserSanitizer()
         ),
         $container->get(Csrf::class)
     );
@@ -75,10 +75,8 @@ if ($uri === '/') {
     // Ban a user via ajax
     $response = (new BanUnbanController())->ban(
         $container->get(Request::class),
-        new UserService(
+        new AdminService(
             new UserRepository($container->get(PDO::class)),
-            new UserValidator(),
-            new UserSanitizer(),
             $container->get(Auth::class)
         ),
         $container->get(Csrf::class)
@@ -87,10 +85,8 @@ if ($uri === '/') {
     // Unban a user via ajax
     $response = (new BanUnbanController())->unban(
         $container->get(Request::class),
-        new UserService(
+        new AdminService(
             new UserRepository($container->get(PDO::class)),
-            new UserValidator(),
-            new UserSanitizer(),
             $container->get(Auth::class)
         ),
         $container->get(Csrf::class)
