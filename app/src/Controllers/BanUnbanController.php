@@ -7,20 +7,21 @@ use App\Core\Http\HttpStatusCode;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Exceptions\UserDoesNotExistException;
+use App\Users\AdminService;
 use App\Users\UserService;
 use Exception;
 use LogicException;
 
 class BanUnbanController
 {
-    public function ban(Request $request, UserService $userService, Csrf $csrf): Response
+    public function ban(Request $request, AdminService $adminService, Csrf $csrf): Response
     {
         if ($csrf->validate($request->postParams['csrf_token'] ?? '') === false) {
             return new Response('Invalid CSRF token.', HttpStatusCode::Forbidden);
         }
 
         try {
-            $userService->banUser(isset($request->postParams['id']) ? (int) $request->postParams['id'] : 0);
+            $adminService->banUser(isset($request->postParams['id']) ? (int) $request->postParams['id'] : 0);
 
             return new Response('The user has been banned.', HttpStatusCode::OK);
         } catch (UserDoesNotExistException $e) {
@@ -32,14 +33,14 @@ class BanUnbanController
         }
     }
 
-    public function unban(Request $request, UserService $userService, Csrf $csrf): Response
+    public function unban(Request $request, AdminService $adminService, Csrf $csrf): Response
     {
         if ($csrf->validate($request->postParams['csrf_token'] ?? '') === false) {
             return new Response('Invalid CSRF token.', HttpStatusCode::Forbidden);
         }
 
         try {
-            $userService->unbanUser(isset($request->postParams['id']) ? (int)$request->postParams['id'] : 0);
+            $adminService->unbanUser(isset($request->postParams['id']) ? (int)$request->postParams['id'] : 0);
 
             return new Response('The user has been banned.', HttpStatusCode::OK);
         } catch (UserDoesNotExistException $e) {
