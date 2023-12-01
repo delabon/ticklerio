@@ -26,35 +26,6 @@ class UserServiceTest extends TestCase
 {
     use UserDataProviderTrait;
 
-    private ?Session $session;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->session = new Session(
-            handler: new ArraySessionHandler(),
-            handlerType: SessionHandlerType::Array,
-            name: 'my_session_name',
-            lifeTime: 3600,
-            ssl: false,
-            useCookies: false,
-            httpOnly: false,
-            path: '/',
-            domain: '.test.com',
-            savePath: '/tmp'
-        );
-        $this->session->start();
-    }
-
-    protected function tearDown(): void
-    {
-        $this->session->end();
-        $this->session = null;
-
-        parent::tearDown();
-    }
-
     public function testCreatesUserSuccessfully(): void
     {
         $userData = $this->userData();
@@ -88,7 +59,7 @@ class UserServiceTest extends TestCase
             ->willReturn("1");
 
         $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $userService->createUser($userData);
 
         $this->assertSame(1, $userRepository->find(1)->getId());
@@ -137,7 +108,7 @@ class UserServiceTest extends TestCase
             ->willReturn("1");
 
         $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $user = $userService->createUser($userData);
         $user = $userRepository->make($userUpdatedData, $user);
 
@@ -160,7 +131,7 @@ class UserServiceTest extends TestCase
         $user = new User();
         $user->setId(0);
         $userRepository = new UserRepository($this->createStub(PDO::class));
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
 
         $this->expectException(LogicException::class);
 
@@ -185,7 +156,7 @@ class UserServiceTest extends TestCase
         $userRepository = new UserRepository($pdoMock);
         $user = $userRepository->make($this->userData());
         $user->setId(999999);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
 
         $this->expectException(OutOfBoundsException::class);
 
@@ -195,7 +166,7 @@ class UserServiceTest extends TestCase
     public function testThrowsExceptionWhenAddingUserWithInvalidEmail(): void
     {
         $userRepository = new UserRepository($this->createStub(PDO::class));
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $userData = $this->userData();
         $userData['email'] = 'test';
 
@@ -207,7 +178,7 @@ class UserServiceTest extends TestCase
     public function testThrowsExceptionWhenAddingUserWithInvalidFirstName(): void
     {
         $userRepository = new UserRepository($this->createStub(PDO::class));
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $userData = $this->userData();
         $userData['first_name'] = '';
 
@@ -219,7 +190,7 @@ class UserServiceTest extends TestCase
     public function testThrowsExceptionWhenAddingUserWithInvalidLastName(): void
     {
         $userRepository = new UserRepository($this->createStub(PDO::class));
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $userData = $this->userData();
         $userData['last_name'] = '';
 
@@ -231,7 +202,7 @@ class UserServiceTest extends TestCase
     public function testThrowsExceptionWhenAddingUserWithInvalidPassword(): void
     {
         $userRepository = new UserRepository($this->createStub(PDO::class));
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $userData = $this->userData();
         $userData['password'] = '123';
 
@@ -243,7 +214,7 @@ class UserServiceTest extends TestCase
     public function testThrowsExceptionWhenAddingUserWithInvalidType(): void
     {
         $userRepository = new UserRepository($this->createStub(PDO::class));
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $userData = $this->userData();
         $userData['type'] = 'superfantasticmember';
 
@@ -259,7 +230,7 @@ class UserServiceTest extends TestCase
         $user = $userRepository->make($userData);
         $user->setId(9999);
         $user->setEmail('test');
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
 
         $this->expectException(InvalidArgumentException::class);
 
@@ -283,7 +254,7 @@ class UserServiceTest extends TestCase
             ->willReturn("1");
 
         $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $user = $userService->createUser($userData);
 
         $this->assertNotSame($userData['password'], $user->getPassword());
@@ -323,7 +294,7 @@ class UserServiceTest extends TestCase
             ->willReturn("1");
 
         $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $user = $userService->createUser($userData);
 
         $user->setPassword($updatedPassword);
@@ -349,7 +320,7 @@ class UserServiceTest extends TestCase
 
         $userData = $this->userUnsanitizedData();
         $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $user = $userService->createUser($userData);
 
         $this->assertSame("John", $user->getFirstName());
@@ -396,7 +367,7 @@ class UserServiceTest extends TestCase
             ->willReturn("1");
 
         $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
+        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $user = $userService->createUser($userData);
 
         $user = $userRepository->make($unsanitizedData, $user);
@@ -409,400 +380,5 @@ class UserServiceTest extends TestCase
         $this->assertSame('Sam', $user->getLastName());
         $this->assertSame('svgonload=confirm1@gmail.com', $user->getEmail());
         $this->assertSame(88, $user->getCreatedAt());
-    }
-
-    //
-    // Ban user
-    //
-
-    public function testBansUserUsingAdminAccountSuccessfully(): void
-    {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(7))
-            ->method('execute')
-            ->willReturn(true);
-        $pdoStatementMock->expects($this->exactly(4))
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturnOnConsecutiveCalls(
-                (function () {
-                    $userData = $this->userData();
-                    $userData['id'] = 1;
-
-                    return $userData;
-                })(),
-                (function () {
-                    $adminData = $this->adminData();
-                    $adminData['id'] = 2;
-
-                    return $adminData;
-                })(),
-                (function () {
-                    $userData = $this->userData();
-                    $userData['id'] = 1;
-
-                    return $userData;
-                })(),
-                (function () {
-                    $userData = $this->userData();
-                    $userData['id'] = 1;
-                    $userData['type'] = UserType::Banned->value;
-
-                    return $userData;
-                })()
-            );
-
-        $pdoMock = $this->createStub(PDO::class);
-        $pdoMock->expects($this->exactly(7))
-            ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->exactly(2))
-            ->method('lastInsertId')
-            ->willReturn("1", "2");
-
-        $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
-        $user = $userService->createUser($this->userData());
-        $admin = $userService->createUser($this->adminData());
-        $auth = new Auth($this->session);
-        $auth->login($admin);
-
-        $userService->banUser($user->getId());
-
-        $bannedUser = $userRepository->find($user->getId());
-
-        $this->assertTrue($bannedUser->isBanned());
-        $this->assertSame(UserType::Banned->value, $bannedUser->getType());
-    }
-
-    public function testThrowsExceptionWhenBanningUserUsingNonLoggedInAccount(): void
-    {
-        $userService = new UserService(new UserRepository($this->createStub(PDO::class)), new UserValidator(), new UserSanitizer(), new Auth($this->session));
-        $user = new User();
-        $user->setId(1);
-
-        $this->expectException(LogicException::class);
-
-        $userService->banUser($user->getId());
-    }
-
-    public function testThrowsExceptionWhenBanningUserUsingNonAdminAccount(): void
-    {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(3))
-            ->method('execute')
-            ->willReturn(true);
-        $pdoStatementMock->expects($this->exactly(2))
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturnOnConsecutiveCalls(
-                (function () {
-                    $userData = $this->userData();
-                    $userData['id'] = 999;
-
-                    return $userData;
-                })(),
-                (function () {
-                    $userData = $this->userTwoData();
-                    $userData['id'] = 1;
-
-                    return $userData;
-                })()
-            );
-
-        $pdoMock = $this->createStub(PDO::class);
-        $pdoMock->expects($this->exactly(3))
-            ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturn("1");
-
-        $userService = new UserService(new UserRepository($pdoMock), new UserValidator(), new UserSanitizer(), new Auth($this->session));
-        $user = new User();
-        $user->setId(999);
-        $userTwo = $userService->createUser($this->userTwoData());
-        $auth = new Auth($this->session);
-        $auth->login($userTwo);
-
-        $this->expectException(LogicException::class);
-
-        $userService->banUser($user->getId());
-    }
-
-    public function testThrowsExceptionWhenBanningUserWithIdOfZero(): void
-    {
-        $userService = new UserService(new UserRepository($this->createStub(PDO::class)), new UserValidator(), new UserSanitizer(), new Auth($this->session));
-        $user = new User();
-        $user->setId(0);
-        $admin = new User();
-        $admin->setId(55);
-        $auth = new Auth($this->session);
-        $auth->login($admin);
-
-        $this->expectException(LogicException::class);
-
-        $userService->banUser($user->getId());
-    }
-
-    public function testThrowsExceptionWhenBanningUserThatIsAlreadyBanned(): void
-    {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturnCallback(function () {
-                $userData = $this->userData();
-                $userData['id'] = 999;
-                $userData['type'] = UserType::Banned->value;
-
-                return $userData;
-            });
-
-        $pdoMock = $this->createStub(PDO::class);
-        $pdoMock->expects($this->once())
-            ->method('prepare')
-            ->willReturn($pdoStatementMock);
-
-        $userService = new UserService(new UserRepository($pdoMock), new UserValidator(), new UserSanitizer(), new Auth($this->session));
-        $user = new User();
-        $user->setId(999);
-        $user->setType(UserType::Banned->value);
-        $admin = new User();
-        $admin->setId(55);
-        $auth = new Auth($this->session);
-        $auth->login($admin);
-
-        $this->expectException(LogicException::class);
-
-        $userService->banUser($user->getId());
-    }
-
-    public function testThrowsExceptionWhenBanningNonExistentUser(): void
-    {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturn(false);
-
-        $pdoMock = $this->createStub(PDO::class);
-        $pdoMock->expects($this->once())
-            ->method('prepare')
-            ->willReturn($pdoStatementMock);
-
-        $userService = new UserService(new UserRepository($pdoMock), new UserValidator(), new UserSanitizer(), new Auth($this->session));
-        $user = new User();
-        $user->setId(999);
-        $admin = new User();
-        $admin->setId(55);
-        $auth = new Auth($this->session);
-        $auth->login($admin);
-
-        $this->expectException(LogicException::class);
-
-        $userService->banUser($user->getId());
-    }
-
-    //
-    // Unban user
-    //
-
-    public function testUnbanUserSuccessfully(): void
-    {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(7))
-            ->method('execute')
-            ->willReturn(true);
-        $pdoStatementMock->expects($this->exactly(4))
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturnOnConsecutiveCalls(
-                (function () {
-                    $userData = $this->userData();
-                    $userData['id'] = 1;
-                    $userData['type'] = UserType::Banned->value;
-
-                    return $userData;
-                })(),
-                (function () {
-                    $userData = $this->adminData();
-                    $userData['id'] = 2;
-
-                    return $userData;
-                })(),
-                (function () {
-                    $userData = $this->userData();
-                    $userData['id'] = 1;
-                    $userData['type'] = UserType::Banned->value;
-
-                    return $userData;
-                })(),
-                (function () {
-                    $userData = $this->userData();
-                    $userData['id'] = 1;
-                    $userData['type'] = UserType::Member->value;
-
-                    return $userData;
-                })(),
-            );
-
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(7))
-            ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->exactly(2))
-            ->method('lastInsertId')
-            ->willReturnOnConsecutiveCalls("1", "2");
-
-        $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer(), new Auth($this->session));
-        $userData = $this->userData();
-        $userData['type'] = UserType::Banned->value;
-        $bannedUser = $userService->createUser($userData);
-        $admin = $userService->createUser($this->adminData());
-        $auth = new Auth($this->session);
-        $auth->login($admin);
-
-        $userService->unbanUser($bannedUser->getId());
-
-        $user = $userRepository->find($bannedUser->getId());
-
-        $this->assertSame(UserType::Member->value, $user->getType());
-    }
-
-    public function testThrowsExceptionWhenUnbanningUserWhenNonLoggedIn(): void
-    {
-        $userService = new UserService(new UserRepository($this->createStub(PDO::class)), new UserValidator(), new UserSanitizer(), new Auth($this->session));
-
-        $this->expectException(LogicException::class);
-
-        $userService->unbanUser(99);
-    }
-
-    public function testThrowsExceptionWhenUnbanningUserWithAnIdOfZero(): void
-    {
-        $userService = new UserService(new UserRepository($this->createStub(PDO::class)), new UserValidator(), new UserSanitizer(), new Auth($this->session));
-
-        $this->expectException(LogicException::class);
-
-        $userService->unbanUser(0);
-    }
-
-    public function testThrowsExceptionWhenUnbanningNonExistentUser(): void
-    {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(2))
-            ->method('execute')
-            ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturn(false);
-
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(2))
-            ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturn("1");
-
-        $userService = new UserService(new UserRepository($pdoMock), new UserValidator(), new UserSanitizer(), new Auth($this->session));
-        $admin = $userService->createUser($this->adminData());
-        $auth = new Auth($this->session);
-        $auth->login($admin);
-
-        $this->expectException(UserDoesNotExistException::class);
-
-        $userService->unbanUser(888);
-    }
-
-    public function testThrowsExceptionWhenUnbanningNonBannedUser(): void
-    {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(3))
-            ->method('execute')
-            ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturnCallback(function () {
-                $userData = $this->userData();
-                $userData['id'] = 1;
-                $userData['type'] = UserType::Member->value;
-
-                return $userData;
-            });
-
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(3))
-            ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->exactly(2))
-            ->method('lastInsertId')
-            ->willReturnOnConsecutiveCalls("1", "2");
-
-        $userService = new UserService(new UserRepository($pdoMock), new UserValidator(), new UserSanitizer(), new Auth($this->session));
-        $user = $userService->createUser($this->userData());
-        $admin = $userService->createUser($this->adminData());
-        $auth = new Auth($this->session);
-        $auth->login($admin);
-
-        $this->expectException(LogicException::class);
-
-        $userService->unbanUser($user->getId());
-    }
-
-    public function testThrowsExceptionWhenUnbanningUserWithNonAdminAccount(): void
-    {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(4))
-            ->method('execute')
-            ->willReturn(true);
-        $pdoStatementMock->expects($this->exactly(2))
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturnOnConsecutiveCalls(
-                (function () {
-                    $userData = $this->userData();
-                    $userData['id'] = 1;
-                    $userData['type'] = UserType::Banned->value;
-
-                    return $userData;
-                })(),
-                (function () {
-                    $userData = $this->userTwoData();
-                    $userData['id'] = 2;
-
-                    return $userData;
-                })()
-            );
-
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(4))
-            ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->exactly(2))
-            ->method('lastInsertId')
-            ->willReturnOnConsecutiveCalls("1", "2");
-
-        $userService = new UserService(new UserRepository($pdoMock), new UserValidator(), new UserSanitizer(), new Auth($this->session));
-        $userData = $this->userData();
-        $userData['type'] = UserType::Banned->value;
-        $user = $userService->createUser($userData);
-        $adminPretender = $userService->createUser($this->userTwoData());
-        $auth = new Auth($this->session);
-        $auth->login($adminPretender);
-
-        $this->expectException(LogicException::class);
-
-        $userService->unbanUser($user->getId());
     }
 }
