@@ -6,6 +6,7 @@
 
 use App\Controllers\AuthController;
 use App\Controllers\BanUnbanController;
+use App\Controllers\DeleteUserController;
 use App\Controllers\HomeController;
 use App\Controllers\RegisterController;
 use App\Core\Auth;
@@ -89,6 +90,18 @@ if ($uri === '/') {
             new UserRepository($container->get(PDO::class)),
             $container->get(Auth::class)
         ),
+        $container->get(Csrf::class)
+    );
+} elseif (preg_match("/^\/ajax\/delete-user\/?$/", $uri)) {
+    // Delete a user via ajax
+    $response = (new DeleteUserController())->delete(
+        $container->get(Request::class),
+        new UserService(
+            new UserRepository($container->get(PDO::class)),
+            new UserValidator(),
+            new UserSanitizer()
+        ),
+        $container->get(Auth::class),
         $container->get(Csrf::class)
     );
 }

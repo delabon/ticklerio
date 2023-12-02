@@ -8,7 +8,6 @@ use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Exceptions\UserDoesNotExistException;
 use App\Users\AdminService;
-use App\Users\UserService;
 use Exception;
 use LogicException;
 

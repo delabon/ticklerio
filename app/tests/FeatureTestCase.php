@@ -101,6 +101,8 @@ class FeatureTestCase extends TestCase
         } else {
             throw new RuntimeException('No .env file found "' . self::TMP_DIR . '/.env' . '".');
         }
+
+        dd($_ENV);
     }
 
     private function setUpPdo(): void

@@ -2,15 +2,24 @@
 
 namespace Tests\Unit\Users;
 
+use App\Exceptions\UserDoesNotExistException;
+use InvalidArgumentException;
+use LogicException;
 use PDO;
 use App\Users\User;
 use App\Users\UserRepository;
-use OutOfBoundsException;
 use PDOStatement;
 use PHPUnit\Framework\TestCase;
+use Tests\_data\UserDataProviderTrait;
 
 class UserRepositoryTest extends TestCase
 {
+    use UserDataProviderTrait;
+
+    //
+    // Create user
+    //
+
     public function testAddsUserSuccessfully(): void
     {
         $now = time();
@@ -51,6 +60,79 @@ class UserRepositoryTest extends TestCase
         $this->assertSame($now, $user->getCreatedAt());
         $this->assertSame($now, $user->getUpdatedAt());
     }
+
+    public function testAddsMultipleUsersSuccessfully(): void
+    {
+        $now = time();
+        $userOneData = [
+            'email' => 'test_one@gmail.com',
+            'first_name' => 'John',
+            'last_name' => 'Doe',
+            'password' => '12345678',
+            'type' => 'member',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+        $userTwoData = [
+            'email' => 'ahmed@example.com',
+            'first_name' => 'Ahmed',
+            'last_name' => 'Ben Sol',
+            'password' => '963852741',
+            'type' => 'admin',
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+
+        $pdoStatementMock = $this->createMock(PDOStatement::class);
+        $pdoStatementMock->expects($this->exactly(3))
+            ->method('execute')
+            ->willReturn(true);
+        $pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () use ($userOneData, $userTwoData) {
+                $userOneData['id'] = 1;
+                $userTwoData['id'] = 2;
+
+                return [$userOneData, $userTwoData];
+            });
+        $pdoMock = $this->createMock(PDO::class);
+        $pdoMock->expects($this->exactly(3))
+            ->method('prepare')
+            ->willReturn($pdoStatementMock);
+        $pdoMock->expects($this->exactly(2))
+            ->method('lastInsertId')
+            ->willReturnOnConsecutiveCalls("1", "2");
+
+        $user = new User();
+        $user->setEmail($userOneData['email']);
+        $user->setFirstName($userOneData['first_name']);
+        $user->setLastName($userOneData['last_name']);
+        $user->setPassword($userOneData['password']);
+        $user->setType($userOneData['type']);
+        $user->setCreatedAt($userOneData['created_at']);
+        $user->setUpdatedAt($userOneData['updated_at']);
+        $user2 = new User();
+        $user2->setEmail($userTwoData['email']);
+        $user2->setFirstName($userTwoData['first_name']);
+        $user2->setLastName($userTwoData['last_name']);
+        $user2->setPassword($userTwoData['password']);
+        $user2->setType($userTwoData['type']);
+        $user2->setCreatedAt($userTwoData['created_at']);
+        $user2->setUpdatedAt($userTwoData['updated_at']);
+
+        $userRepository = new UserRepository($pdoMock);
+        $userRepository->save($user);
+        $userRepository->save($user2);
+
+        $this->assertSame(1, $user->getId());
+        $this->assertSame(2, $user2->getId());
+        $this->assertCount(2, $userRepository->all());
+    }
+
+    //
+    // Update user
+    //
 
     public function testUpdatesUserSuccessfully(): void
     {
@@ -142,10 +224,14 @@ class UserRepositoryTest extends TestCase
         $user->setEmail('test@test.com');
         $userRepository = new UserRepository($pdoMock);
 
-        $this->expectException(OutOfBoundsException::class);
+        $this->expectException(UserDoesNotExistException::class);
 
         $userRepository->save($user);
     }
+
+    //
+    // Find user
+    //
 
     public function testFindsUserByIdSuccessfully(): void
     {
@@ -221,75 +307,6 @@ class UserRepositoryTest extends TestCase
         $this->assertFalse($userFound);
     }
 
-    public function testAddsMultipleUsersSuccessfully(): void
-    {
-        $now = time();
-        $userOneData = [
-            'email' => 'test_one@gmail.com',
-            'first_name' => 'John',
-            'last_name' => 'Doe',
-            'password' => '12345678',
-            'type' => 'member',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ];
-        $userTwoData = [
-            'email' => 'ahmed@example.com',
-            'first_name' => 'Ahmed',
-            'last_name' => 'Ben Sol',
-            'password' => '963852741',
-            'type' => 'admin',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ];
-
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(3))
-            ->method('execute')
-            ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
-            ->method('fetchAll')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturnCallback(function () use ($userOneData, $userTwoData) {
-                $userOneData['id'] = 1;
-                $userTwoData['id'] = 2;
-
-                return [$userOneData, $userTwoData];
-            });
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(3))
-            ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->exactly(2))
-            ->method('lastInsertId')
-            ->willReturnOnConsecutiveCalls("1", "2");
-
-        $user = new User();
-        $user->setEmail($userOneData['email']);
-        $user->setFirstName($userOneData['first_name']);
-        $user->setLastName($userOneData['last_name']);
-        $user->setPassword($userOneData['password']);
-        $user->setType($userOneData['type']);
-        $user->setCreatedAt($userOneData['created_at']);
-        $user->setUpdatedAt($userOneData['updated_at']);
-        $user2 = new User();
-        $user2->setEmail($userTwoData['email']);
-        $user2->setFirstName($userTwoData['first_name']);
-        $user2->setLastName($userTwoData['last_name']);
-        $user2->setPassword($userTwoData['password']);
-        $user2->setType($userTwoData['type']);
-        $user2->setCreatedAt($userTwoData['created_at']);
-        $user2->setUpdatedAt($userTwoData['updated_at']);
-
-        $userRepository = new UserRepository($pdoMock);
-        $userRepository->save($user);
-        $userRepository->save($user2);
-
-        $this->assertSame(1, $user->getId());
-        $this->assertSame(2, $user2->getId());
-        $this->assertCount(2, $userRepository->all());
-    }
-
     public function testFindsUserByEmailSuccessfully(): void
     {
         $now = time();
@@ -345,7 +362,7 @@ class UserRepositoryTest extends TestCase
     {
         $userRepository = new UserRepository($this->createStub(PDO::class));
 
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
 
         $userRepository->findBy('not_a_valid_column_name', 1);
     }
@@ -372,6 +389,19 @@ class UserRepositoryTest extends TestCase
         $this->assertCount(0, $usersFound);
     }
 
+    public function testThrowsExceptionWhenFindUserWithAnIdOfZero(): void
+    {
+        $userRepository = new UserRepository($this->createStub(PDO::class));
+
+        $this->expectException(LogicException::class);
+
+        $userRepository->find(0);
+    }
+
+    //
+    // Make user
+    //
+
     public function testMakesUserFromAnArrayOfData(): void
     {
         $userData = $this->userData();
@@ -394,20 +424,5 @@ class UserRepositoryTest extends TestCase
         $userRepository = new UserRepository($this->createStub(PDO::class));
 
         $this->assertSame($user, $userRepository->make($this->userData(), $user));
-    }
-
-    public function userData(): array
-    {
-        $now = time();
-
-        return [
-            'email' => 'test@test.com',
-            'first_name' => 'John',
-            'last_name' => 'Doe',
-            'password' => '12345678',
-            'type' => 'member',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ];
     }
 }
