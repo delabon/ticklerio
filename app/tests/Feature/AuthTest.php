@@ -12,12 +12,23 @@ use Tests\FeatureTestCase;
 
 class AuthTest extends FeatureTestCase
 {
+    private Auth $auth;
+    private UserRepository $userRepository;
+    private UserFactory $userFactory;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->auth = new Auth($this->session);
+        $this->userRepository = new UserRepository($this->pdo);
+        $this->userFactory = new UserFactory($this->userRepository, Factory::create());
+    }
+
     public function testLogsInUserSuccessfully(): void
     {
-        $auth = new Auth($this->session);
-        $userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
         $password = '123456789';
-        $user = $userFactory->create([
+        $user = $this->userFactory->create([
             'type' => UserType::Member->value,
             'password' => $password
         ])[0];
@@ -32,7 +43,7 @@ class AuthTest extends FeatureTestCase
         );
 
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
-        $this->assertTrue($auth->isAuth($user));
+        $this->assertTrue($this->auth->isAuth($user));
         $this->assertArrayHasKey('auth', $_SESSION);
         $this->assertIsArray($_SESSION['auth']);
         $this->assertArrayHasKey('id', $_SESSION['auth']);
@@ -40,16 +51,14 @@ class AuthTest extends FeatureTestCase
 
     public function testLogsOutUserSuccessfully(): void
     {
-        $auth = new Auth($this->session);
-        $userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
         $password = '123456789';
-        $user = $userFactory->create([
+        $user = $this->userFactory->create([
             'type' => UserType::Member->value,
             'password' => $password
         ])[0];
 
-        $auth->login($user);
-        $this->assertTrue($auth->isAuth($user));
+        $this->auth->login($user);
+        $this->assertTrue($this->auth->isAuth($user));
 
         $response = $this->post(
             '/ajax/auth/logout',
@@ -61,14 +70,13 @@ class AuthTest extends FeatureTestCase
         );
 
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
-        $this->assertFalse($auth->isAuth($user));
+        $this->assertFalse($this->auth->isAuth($user));
         $this->assertArrayNotHasKey('auth', $_SESSION);
     }
 
     public function testReturnsBadRequestResponseWhenLoggingOutUserWhoIsNotLoggedIn(): void
     {
-        $userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
-        $user = $userFactory->create()[0];
+        $user = $this->userFactory->create()[0];
 
         $response = $this->post(
             '/ajax/auth/logout',
@@ -130,9 +138,8 @@ class AuthTest extends FeatureTestCase
 
     public function testReturnsInvalidResponseWhenTryingToLogInWithInvalidPassword(): void
     {
-        $userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
         $password = '123456789';
-        $user = $userFactory->create([
+        $user = $this->userFactory->create([
             'password' => $password
         ])[0];
 
@@ -152,8 +159,7 @@ class AuthTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToLoginBannedUser(): void
     {
-        $userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
-        $user = $userFactory->create([
+        $user = $this->userFactory->create([
             'password' => '123456789',
             'type' => UserType::Banned->value
         ])[0];
@@ -175,9 +181,7 @@ class AuthTest extends FeatureTestCase
 
     public function testAutomaticallyLogsOutBannedUser(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-        $user = $userFactory->create([
+        $user = $this->userFactory->create([
             'password' => '123456789',
             'type' => UserType::Member->value
         ])[0];
@@ -188,7 +192,7 @@ class AuthTest extends FeatureTestCase
         $this->assertTrue($auth->isAuth($user));
 
         $user->setType(UserType::Banned->value);
-        $userRepository->save($user);
+        $this->userRepository->save($user);
 
         $response = $this->get('/');
 
@@ -198,9 +202,7 @@ class AuthTest extends FeatureTestCase
 
     public function testAutomaticallyLogsOutDeletedUser(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-        $user = $userFactory->create([
+        $user = $this->userFactory->create([
             'password' => '123456789',
             'type' => UserType::Member->value
         ])[0];
@@ -211,7 +213,7 @@ class AuthTest extends FeatureTestCase
         $this->assertTrue($auth->isAuth($user));
 
         $user->setType(UserType::Deleted->value);
-        $userRepository->save($user);
+        $this->userRepository->save($user);
 
         $response = $this->get('/');
 
