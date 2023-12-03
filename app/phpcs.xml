@@ -4,6 +4,7 @@
 
     <!-- ignore warnings and display ERRORS only -->
     <arg value="np"/>
+
     <!-- Strip the filepaths down to the relevant bit. -->
     <arg name="basepath" value="."/>
 
@@ -16,6 +17,7 @@
 
     <!-- the standard that should be used -->
     <rule ref="Squiz.NamingConventions.ValidVariableName.NotCamelCaps"/>
+
     <rule ref="PSR12">
         <exclude name="Generic.Files.LineLength"/>
     </rule>

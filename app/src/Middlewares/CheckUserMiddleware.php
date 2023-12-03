@@ -7,10 +7,9 @@ use App\Users\UserRepository;
 use App\Users\UserType;
 
 /**
- * Class CheckBannedUserMiddleware
- * Logs out a banned user.
+ * Logs out a banned or deleted user.
  */
-class CheckBannedUserMiddleware
+class CheckUserMiddleware
 {
     public function __construct(private Auth $auth, private UserRepository $userRepository)
     {
@@ -21,7 +20,9 @@ class CheckBannedUserMiddleware
         if ($this->auth->getUserId()) {
             $user = $this->userRepository->find($this->auth->getUserId());
 
-            if ($user->getType() === UserType::Banned->value) {
+            if (!$user) {
+                $this->auth->forceLogout();
+            } elseif (in_array($user->getType(), [UserType::Banned->value, UserType::Deleted->value])) {
                 $this->auth->logout($user);
             }
         }

@@ -19,12 +19,16 @@ class IntegrationTestCase extends TestCase
     {
         parent::setUp();
 
+        $_ENV['APP_DOMAIN'] = 'test.com';
+
         $this->pdo = new PDO('sqlite::memory:');
+
         $this->migration = new Migration(
             $this->pdo,
             __DIR__ . '/../database/migrations/'
         );
         $this->migration->migrate();
+
         $this->session = new Session(
             handler: new ArraySessionHandler(),
             handlerType: SessionHandlerType::Array,
@@ -44,7 +48,9 @@ class IntegrationTestCase extends TestCase
     {
         $this->migration->rollback();
         $this->migration = null;
+
         $this->pdo = null;
+
         $this->session->end();
         $this->session = null;
 
