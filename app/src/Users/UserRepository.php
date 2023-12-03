@@ -2,8 +2,9 @@
 
 namespace App\Users;
 
+use App\Exceptions\UserDoesNotExistException;
 use InvalidArgumentException;
-use OutOfBoundsException;
+use LogicException;
 use PDOException;
 use PDO;
 
@@ -49,7 +50,7 @@ class UserRepository
         $result = $this->find($user->getId());
 
         if (!$result) {
-            throw new OutOfBoundsException("The user with the id {$user->getId()} does not exist in the database.");
+            throw new UserDoesNotExistException("The user with the id {$user->getId()} does not exist in the database.");
         }
 
         $stmt = $this->pdo->prepare("
@@ -128,6 +129,10 @@ class UserRepository
 
     public function find(int $id): false|User
     {
+        if (!$id) {
+            throw new LogicException("Cannot find a user with an id of 0.");
+        }
+
         $stmt = $this->pdo->prepare("
             SELECT
                 *

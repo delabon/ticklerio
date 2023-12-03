@@ -2,9 +2,10 @@
 
 namespace App\Users;
 
-use App\Core\Auth;
+use App\Exceptions\EmailAlreadyExistsException;
 use App\Exceptions\UserDoesNotExistException;
 use App\Utilities\PasswordUtils;
+use Exception;
 use LogicException;
 
 readonly class UserService
@@ -19,6 +20,7 @@ readonly class UserService
     /**
      * @param mixed[]|array $data
      * @return User
+     * @throws EmailAlreadyExistsException
      */
     public function createUser(array $data): User
     {
@@ -34,11 +36,14 @@ readonly class UserService
         $this->userValidator->validate($data);
         $data['password'] = PasswordUtils::hashPasswordIfNotHashed($data['password']);
         $user = $this->userRepository->make($data);
-        $this->userRepository->save($user);
+        $this->saveUser($user, $data['email']);
 
         return $user;
     }
 
+    /**
+     * @throws EmailAlreadyExistsException
+     */
     public function updateUser(User $user): void
     {
         if (!$user->getId()) {
@@ -51,6 +56,50 @@ readonly class UserService
         $this->userValidator->validate($data);
         $user = $this->userRepository->make($data, $user);
         $user->setPassword(PasswordUtils::hashPasswordIfNotHashed($data['password']));
+        $this->saveUser($user, $data['email']);
+    }
+
+    public function softDeleteUser(int $id): User
+    {
+        if (!$id) {
+            throw new LogicException("Cannot delete a user with an id of 0.");
+        }
+
+        $user = $this->userRepository->find($id);
+
+        if (!$user) {
+            throw new UserDoesNotExistException("Cannot delete a user that does not exist.");
+        }
+
+        if ($user->getType() === UserType::Deleted->value) {
+            throw new LogicException("Cannot delete a user that already has been deleted.");
+        }
+
+        $user->setEmail('deleted-' . $user->getId() . '@' . $_ENV['APP_DOMAIN']);
+        $user->setFirstName('deleted');
+        $user->setLastName('deleted');
+        $user->setType(UserType::Deleted->value);
         $this->userRepository->save($user);
+
+        return $user;
+    }
+
+    /**
+     * @param User $user
+     * @param string $email
+     * @return void
+     * @throws EmailAlreadyExistsException
+     */
+    private function saveUser(User $user, string $email): void
+    {
+        try {
+            $this->userRepository->save($user);
+        } catch (Exception $e) {
+            if (preg_match("/UNIQUE constraint failed:.+users.email/i", $e->getMessage())) {
+                throw new EmailAlreadyExistsException($email, $e->getCode(), $e);
+            }
+
+            throw $e;
+        }
     }
 }

@@ -6,16 +6,19 @@ use App\Core\Auth;
 use App\Core\Session\ArraySessionHandler;
 use App\Core\Session\Session;
 use App\Core\Session\SessionHandlerType;
-use App\Middlewares\CheckBannedUserMiddleware;
+use App\Middlewares\CheckUserMiddleware;
 use App\Users\User;
 use App\Users\UserRepository;
 use App\Users\UserType;
 use PDO;
 use PDOStatement;
 use PHPUnit\Framework\TestCase;
+use Tests\_data\UserDataProviderTrait;
 
-class CheckBannedUserMiddlewareTest extends TestCase
+class CheckUserMiddlewareTest extends TestCase
 {
+    use UserDataProviderTrait;
+
     private ?Auth $auth;
     private ?Session $session;
 
@@ -72,7 +75,7 @@ class CheckBannedUserMiddlewareTest extends TestCase
         $user = new User();
         $user->setId(1);
         $this->auth->login($user);
-        $middleware = new CheckBannedUserMiddleware($this->auth, new UserRepository($pdoMock));
+        $middleware = new CheckUserMiddleware($this->auth, new UserRepository($pdoMock));
 
         $middleware->handle();
 
@@ -80,7 +83,7 @@ class CheckBannedUserMiddlewareTest extends TestCase
         $this->assertFalse($this->session->has('auth'));
     }
 
-    public function testDoesNotLogOutNormalUserSuccessfully(): void
+    public function testLogsOutDeletedUserSuccessfully(): void
     {
         $pdoStatementMock = $this->createMock(PDOStatement::class);
         $pdoStatementMock->expects($this->once())
@@ -94,7 +97,7 @@ class CheckBannedUserMiddlewareTest extends TestCase
                 'first_name' => 'John',
                 'last_name' => 'Doe',
                 'email' => 'test@gmail.com',
-                'type' => UserType::Member->value,
+                'type' => UserType::Deleted->value,
             ]);
 
         $pdoMock = $this->createMock(PDO::class);
@@ -105,7 +108,67 @@ class CheckBannedUserMiddlewareTest extends TestCase
         $user = new User();
         $user->setId(1);
         $this->auth->login($user);
-        $middleware = new CheckBannedUserMiddleware($this->auth, new UserRepository($pdoMock));
+        $middleware = new CheckUserMiddleware($this->auth, new UserRepository($pdoMock));
+
+        $middleware->handle();
+
+        $this->assertSame(0, $this->auth->getUserId());
+        $this->assertFalse($this->session->has('auth'));
+    }
+
+    public function testForceLogsOutUserThatDoesNotExistAnymore(): void
+    {
+        $pdoStatementMock = $this->createMock(PDOStatement::class);
+        $pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+        $pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn(false);
+
+        $pdoMock = $this->createMock(PDO::class);
+        $pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($pdoStatementMock);
+
+        $user = new User();
+        $user->setId(1);
+        $this->auth->login($user);
+        $middleware = new CheckUserMiddleware($this->auth, new UserRepository($pdoMock));
+
+        $middleware->handle();
+
+        $this->assertFalse($this->session->has('auth'));
+    }
+
+    public function testDoesNotLogOutNormalUserSuccessfully(): void
+    {
+        $pdoStatementMock = $this->createMock(PDOStatement::class);
+        $pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+        $pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () {
+                $userData = $this->userData();
+                $userData['id'] = 1;
+                $userData['type'] = UserType::Member->value;
+
+                return $userData;
+            });
+
+        $pdoMock = $this->createMock(PDO::class);
+        $pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($pdoStatementMock);
+
+        $user = new User();
+        $user->setId(1);
+
+        $this->auth->login($user);
+        $middleware = new CheckUserMiddleware($this->auth, new UserRepository($pdoMock));
 
         $middleware->handle();
 

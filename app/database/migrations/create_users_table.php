@@ -9,7 +9,7 @@ final class CreateUsersTable extends AbstractMigration // phpcs:ignore
         $this->pdo->exec("
             CREATE TABLE users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                email VARCHAR(255),
+                email VARCHAR(255) UNIQUE,
                 first_name VARCHAR(50),
                 last_name VARCHAR(50),
                 type VARCHAR(50),
