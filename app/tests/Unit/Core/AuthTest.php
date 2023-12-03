@@ -57,6 +57,17 @@ class AuthTest extends TestCase
         $this->assertSame(1, $this->session->get('auth')['id']);
     }
 
+    public function testForceLogsOutUser(): void
+    {
+        $user = new User();
+        $user->setId(1);
+        $this->auth->login($user);
+
+        $this->auth->forceLogout();
+
+        $this->assertArrayNotHasKey('auth', $_SESSION);
+    }
+
     public function testIsUserLoggedIn(): void
     {
         $user = new User();

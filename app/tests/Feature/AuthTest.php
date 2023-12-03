@@ -195,4 +195,27 @@ class AuthTest extends FeatureTestCase
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
         $this->assertFalse($auth->isAuth($user));
     }
+
+    public function testAutomaticallyLogsOutDeletedUser(): void
+    {
+        $userRepository = new UserRepository($this->pdo);
+        $userFactory = new UserFactory($userRepository, Factory::create());
+        $user = $userFactory->create([
+            'password' => '123456789',
+            'type' => UserType::Member->value
+        ])[0];
+
+        $auth = new Auth($this->session);
+        $auth->login($user);
+
+        $this->assertTrue($auth->isAuth($user));
+
+        $user->setType(UserType::Deleted->value);
+        $userRepository->save($user);
+
+        $response = $this->get('/');
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertFalse($auth->isAuth($user));
+    }
 }

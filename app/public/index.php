@@ -14,7 +14,7 @@ use App\Core\Csrf;
 use App\Core\Http\HttpStatusCode;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
-use App\Middlewares\CheckBannedUserMiddleware;
+use App\Middlewares\CheckUserMiddleware;
 use App\Users\AdminService;
 use App\Users\UserRepository;
 use App\Users\UserSanitizer;
@@ -31,7 +31,7 @@ $container = require __DIR__ . '/../src/bootstrap.php';
 // Middlewares before the request
 //
 
-(new CheckBannedUserMiddleware(
+(new CheckUserMiddleware(
     $container->get(Auth::class),
     new UserRepository($container->get(PDO::class))
 ))->handle();

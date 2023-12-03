@@ -55,6 +55,11 @@ readonly class Auth
         $this->session->delete('auth');
     }
 
+    public function forceLogout(): void
+    {
+        $this->session->delete('auth');
+    }
+
     public function getUserId(): int
     {
         if (!$this->session->get('auth')) {
