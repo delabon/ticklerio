@@ -20,13 +20,6 @@ class UserServiceTest extends IntegrationTestCase
 {
     use UserDataProviderTrait;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $_ENV['APP_DOMAIN'] = 'test.com';
-    }
-
     //
     // Create user
     //

@@ -30,9 +30,6 @@ class DeleteUserTest extends FeatureTestCase
             ]
         );
 
-        $this->assertTrue(true);
-        return;
-
         $deletedUser = $userRepository->find($user->getId());
 
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
