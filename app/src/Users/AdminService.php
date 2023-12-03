@@ -6,7 +6,7 @@ use App\Core\Auth;
 use App\Exceptions\UserDoesNotExistException;
 use LogicException;
 
-class AdminService
+readonly class AdminService
 {
     public function __construct(
         private UserRepository $userRepository,
