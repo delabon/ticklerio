@@ -12,6 +12,7 @@ use App\Users\UserRepository;
 use App\Users\UserType;
 use PDO;
 use PDOStatement;
+use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\TestCase;
 use Tests\_data\UserData;
 
@@ -48,98 +49,6 @@ class CheckUserMiddlewareTest extends TestCase
         parent::tearDown();
     }
 
-    public function testLogsOutBannedUserSuccessfully(): void
-    {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturn([
-                'id' => 1,
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'email' => 'test@gmail.com',
-                'type' => UserType::Banned->value,
-            ]);
-
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->once())
-            ->method('prepare')
-            ->willReturn($pdoStatementMock);
-
-        $user = new User();
-        $user->setId(1);
-        $this->auth->login($user);
-        $middleware = new CheckUserMiddleware($this->auth, new UserRepository($pdoMock));
-
-        $middleware->handle();
-
-        $this->assertSame(0, $this->auth->getUserId());
-        $this->assertFalse($this->session->has('auth'));
-    }
-
-    public function testLogsOutDeletedUserSuccessfully(): void
-    {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturn([
-                'id' => 1,
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'email' => 'test@gmail.com',
-                'type' => UserType::Deleted->value,
-            ]);
-
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->once())
-            ->method('prepare')
-            ->willReturn($pdoStatementMock);
-
-        $user = new User();
-        $user->setId(1);
-        $this->auth->login($user);
-        $middleware = new CheckUserMiddleware($this->auth, new UserRepository($pdoMock));
-
-        $middleware->handle();
-
-        $this->assertSame(0, $this->auth->getUserId());
-        $this->assertFalse($this->session->has('auth'));
-    }
-
-    public function testForceLogsOutUserThatDoesNotExistAnymore(): void
-    {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturn(false);
-
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->once())
-            ->method('prepare')
-            ->willReturn($pdoStatementMock);
-
-        $user = new User();
-        $user->setId(1);
-        $this->auth->login($user);
-        $middleware = new CheckUserMiddleware($this->auth, new UserRepository($pdoMock));
-
-        $middleware->handle();
-
-        $this->assertFalse($this->session->has('auth'));
-    }
-
     public function testDoesNotLogOutNormalUserSuccessfully(): void
     {
         $pdoStatementMock = $this->createMock(PDOStatement::class);
@@ -172,5 +81,63 @@ class CheckUserMiddlewareTest extends TestCase
 
         $this->assertSame(1, $this->auth->getUserId());
         $this->assertTrue($this->session->has('auth'));
+    }
+
+    /**
+     * @dataProvider userStatusDataProvider
+     * @param $userData
+     * @param $expectedUserId
+     * @param $expectedSessionAuth
+     * @return void
+     * @throws Exception
+     */
+    public function testMiddlewareLogsOutUser($userData, $expectedUserId, $expectedSessionAuth): void
+    {
+        $pdoStatementMock = $this->createMock(PDOStatement::class);
+        $pdoStatementMock->method('execute')->willReturn(true);
+        $pdoStatementMock->method('fetch')->with(PDO::FETCH_ASSOC)->willReturn($userData);
+
+        $pdoMock = $this->createMock(PDO::class);
+        $pdoMock->method('prepare')->willReturn($pdoStatementMock);
+
+        $user = new User();
+        $user->setId(1);
+        $user->setType(UserType::Member->value);
+        $this->auth->login($user);
+
+        $middleware = new CheckUserMiddleware($this->auth, new UserRepository($pdoMock));
+        $middleware->handle();
+
+        $this->assertSame($expectedUserId, $this->auth->getUserId());
+        $this->assertSame($expectedSessionAuth, $this->session->has('auth'));
+    }
+
+    public static function userStatusDataProvider(): array
+    {
+        $userData = UserData::memberOne();
+        $bannedUserData = $userData;
+        $bannedUserData['id'] = 1;
+        $bannedUserData['type'] = UserType::Banned->value;
+        $deletedUserData = $userData;
+        $deletedUserData['id'] = 1;
+        $deletedUserData['type'] = UserType::Deleted->value;
+
+        return [
+            'Banned User' => [
+                $bannedUserData,
+                0,
+                false
+            ],
+            'Deleted User' => [
+                $deletedUserData,
+                0,
+                false
+            ],
+            'Non-existent User' => [
+                false,
+                0,
+                false
+            ],
+        ];
     }
 }
