@@ -1,14 +1,15 @@
 <?php
 
+/**
+ * Logs out a banned or deleted user.
+ */
+
 namespace App\Middlewares;
 
 use App\Core\Auth;
 use App\Users\UserRepository;
 use App\Users\UserType;
 
-/**
- * Logs out a banned or deleted user.
- */
 readonly class CheckUserMiddleware
 {
     public function __construct(private Auth $auth, private UserRepository $userRepository)
