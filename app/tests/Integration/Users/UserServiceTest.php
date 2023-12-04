@@ -13,13 +13,11 @@ use App\Users\UserValidator;
 use App\Utilities\PasswordUtils;
 use InvalidArgumentException;
 use LogicException;
+use Tests\_data\UserData;
 use Tests\IntegrationTestCase;
-use Tests\_data\UserDataProviderTrait;
 
 class UserServiceTest extends IntegrationTestCase
 {
-    use UserDataProviderTrait;
-
     //
     // Create user
     //
@@ -29,7 +27,7 @@ class UserServiceTest extends IntegrationTestCase
         $userRepository = new UserRepository($this->pdo);
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
 
-        $userService->createUser($this->userData());
+        $userService->createUser(UserData::memberOne());
 
         $this->assertSame(1, $userRepository->find(1)->getId());
         $this->assertCount(1, $userRepository->all());
@@ -37,7 +35,7 @@ class UserServiceTest extends IntegrationTestCase
 
     public function testPasswordShouldBeHashedBeforeCreatingUser(): void
     {
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userRepository = new UserRepository($this->pdo);
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $user = $userService->createUser($userData);
@@ -73,9 +71,9 @@ class UserServiceTest extends IntegrationTestCase
     {
         $userRepository = new UserRepository($this->pdo);
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userService->createUser($userData);
-        $userTwoData = $this->userTwoData();
+        $userTwoData = UserData::memberTwo();
         $userTwoData['email'] = $userData['email'];
 
         $this->expectException(EmailAlreadyExistsException::class);
@@ -90,8 +88,8 @@ class UserServiceTest extends IntegrationTestCase
 
     public function testUpdatesUserSuccessfully(): void
     {
-        $userData = $this->userData();
-        $userUpdatedData = $this->userUpdatedData();
+        $userData = UserData::memberOne();
+        $userUpdatedData = UserData::updatedData();
 
         $userRepository = new UserRepository($this->pdo);
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
@@ -116,8 +114,8 @@ class UserServiceTest extends IntegrationTestCase
 
     public function testUpdatesUserButKeepsTheEmailSuccessfully(): void
     {
-        $userData = $this->userData();
-        $userUpdatedData = $this->userUpdatedData();
+        $userData = UserData::memberOne();
+        $userUpdatedData = UserData::updatedData();
 
         $userRepository = new UserRepository($this->pdo);
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
@@ -145,7 +143,7 @@ class UserServiceTest extends IntegrationTestCase
     {
         $userRepository = new UserRepository($this->pdo);
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $user = $userRepository->make($this->userData());
+        $user = $userRepository->make(UserData::memberOne());
         $user->setId(0);
 
         $this->expectException(LogicException::class);
@@ -155,7 +153,7 @@ class UserServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenUpdatingUserWithInvalidData(): void
     {
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userRepository = new UserRepository($this->pdo);
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $user = $userService->createUser($userData);
@@ -168,7 +166,7 @@ class UserServiceTest extends IntegrationTestCase
 
     public function testPasswordShouldBeHashedBeforeUpdatingUser(): void
     {
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userRepository = new UserRepository($this->pdo);
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $user = $userService->createUser($userData);
@@ -185,9 +183,9 @@ class UserServiceTest extends IntegrationTestCase
     {
         $userRepository = new UserRepository($this->pdo);
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $user = $userService->createUser($this->userData());
+        $user = $userService->createUser(UserData::memberOne());
 
-        $unsanitizedData = $this->userUnsanitizedData();
+        $unsanitizedData = UserData::userUnsanitizedData();
         $user->setEmail($unsanitizedData['email']);
         $user->setFirstName($unsanitizedData['first_name']);
         $user->setLastName($unsanitizedData['last_name']);
@@ -207,9 +205,9 @@ class UserServiceTest extends IntegrationTestCase
     {
         $userRepository = new UserRepository($this->pdo);
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userService->createUser($userData);
-        $userTwoData = $this->userTwoData();
+        $userTwoData = UserData::memberTwo();
         $userTwo = $userService->createUser($userTwoData);
 
         $userTwo->setEmail($userData['email']);
@@ -232,7 +230,7 @@ class UserServiceTest extends IntegrationTestCase
             new UserValidator(),
             new UserSanitizer()
         );
-        $user = $userService->createUser($this->userData());
+        $user = $userService->createUser(UserData::memberOne());
 
         $deletedUser = $userService->softDeleteUser($user->getId());
 
@@ -268,8 +266,8 @@ class UserServiceTest extends IntegrationTestCase
             new UserValidator(),
             new UserSanitizer()
         );
-        $userOne = $userService->createUser($this->userData());
-        $userTwo = $userService->createUser($this->userTwoData());
+        $userOne = $userService->createUser(UserData::memberOne());
+        $userTwo = $userService->createUser(UserData::memberTwo());
 
         $userService->softDeleteUser($userOne->getId());
         $userService->softDeleteUser($userTwo->getId());

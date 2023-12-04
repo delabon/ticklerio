@@ -12,13 +12,11 @@ use App\Users\UserType;
 use App\Users\UserValidator;
 use Exception;
 use Faker\Factory;
-use Tests\_data\UserDataProviderTrait;
+use Tests\_data\UserData;
 use Tests\FeatureTestCase;
 
 class DeleteUserTest extends FeatureTestCase
 {
-    use UserDataProviderTrait;
-
     private Auth $auth;
     private UserRepository $userRepository;
     private UserFactory $userFactory;
@@ -173,7 +171,7 @@ class DeleteUserTest extends FeatureTestCase
      */
     public function testReturnsForbiddenResponseWhenTryingToSoftDeleteUserThatDoesNotExist(): void
     {
-        $user = $this->userRepository->make($this->userData());
+        $user = $this->userRepository->make(UserData::memberOne());
         $user->setId(999);
         $this->auth->login($user);
 

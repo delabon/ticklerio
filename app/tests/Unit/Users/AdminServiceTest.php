@@ -18,12 +18,10 @@ use LogicException;
 use PDO;
 use PDOStatement;
 use PHPUnit\Framework\TestCase;
-use Tests\_data\UserDataProviderTrait;
+use Tests\_data\UserData;
 
 class AdminServiceTest extends TestCase
 {
-    use UserDataProviderTrait;
-
     private ?Session $session;
 
     protected function setUp(): void
@@ -68,25 +66,25 @@ class AdminServiceTest extends TestCase
             ->with(PDO::FETCH_ASSOC)
             ->willReturnOnConsecutiveCalls(
                 (function () {
-                    $userData = $this->userData();
+                    $userData = UserData::memberOne();
                     $userData['id'] = 1;
 
                     return $userData;
                 })(),
                 (function () {
-                    $adminData = $this->adminData();
+                    $adminData = UserData::adminData();
                     $adminData['id'] = 2;
 
                     return $adminData;
                 })(),
                 (function () {
-                    $userData = $this->userData();
+                    $userData = UserData::memberOne();
                     $userData['id'] = 1;
 
                     return $userData;
                 })(),
                 (function () {
-                    $userData = $this->userData();
+                    $userData = UserData::memberOne();
                     $userData['id'] = 1;
                     $userData['type'] = UserType::Banned->value;
 
@@ -105,8 +103,8 @@ class AdminServiceTest extends TestCase
         $userRepository = new UserRepository($pdoMock);
         $adminService = new AdminService($userRepository, new Auth($this->session));
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $user = $userService->createUser($this->userData());
-        $admin = $userService->createUser($this->adminData());
+        $user = $userService->createUser(UserData::memberOne());
+        $admin = $userService->createUser(UserData::adminData());
         $auth = new Auth($this->session);
         $auth->login($admin);
 
@@ -138,13 +136,13 @@ class AdminServiceTest extends TestCase
             ->with(PDO::FETCH_ASSOC)
             ->willReturnOnConsecutiveCalls(
                 (function () {
-                    $userData = $this->userData();
+                    $userData = UserData::memberOne();
                     $userData['id'] = 999;
 
                     return $userData;
                 })(),
                 (function () {
-                    $userData = $this->userTwoData();
+                    $userData = UserData::memberTwo();
                     $userData['id'] = 1;
 
                     return $userData;
@@ -164,7 +162,7 @@ class AdminServiceTest extends TestCase
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $user = new User();
         $user->setId(999);
-        $userTwo = $userService->createUser($this->userTwoData());
+        $userTwo = $userService->createUser(UserData::memberTwo());
         $auth = new Auth($this->session);
         $auth->login($userTwo);
 
@@ -198,7 +196,7 @@ class AdminServiceTest extends TestCase
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturnCallback(function () {
-                $userData = $this->userData();
+                $userData = UserData::memberOne();
                 $userData['id'] = 999;
                 $userData['type'] = UserType::Banned->value;
 
@@ -268,27 +266,27 @@ class AdminServiceTest extends TestCase
             ->with(PDO::FETCH_ASSOC)
             ->willReturnOnConsecutiveCalls(
                 (function () {
-                    $userData = $this->userData();
+                    $userData = UserData::memberOne();
                     $userData['id'] = 1;
                     $userData['type'] = UserType::Banned->value;
 
                     return $userData;
                 })(),
                 (function () {
-                    $userData = $this->adminData();
+                    $userData = UserData::adminData();
                     $userData['id'] = 2;
 
                     return $userData;
                 })(),
                 (function () {
-                    $userData = $this->userData();
+                    $userData = UserData::memberOne();
                     $userData['id'] = 1;
                     $userData['type'] = UserType::Banned->value;
 
                     return $userData;
                 })(),
                 (function () {
-                    $userData = $this->userData();
+                    $userData = UserData::memberOne();
                     $userData['id'] = 1;
                     $userData['type'] = UserType::Member->value;
 
@@ -307,10 +305,10 @@ class AdminServiceTest extends TestCase
         $userRepository = new UserRepository($pdoMock);
         $adminService = new AdminService($userRepository, new Auth($this->session));
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userData['type'] = UserType::Banned->value;
         $bannedUser = $userService->createUser($userData);
-        $admin = $userService->createUser($this->adminData());
+        $admin = $userService->createUser(UserData::adminData());
         $auth = new Auth($this->session);
         $auth->login($admin);
 
@@ -361,7 +359,7 @@ class AdminServiceTest extends TestCase
         $userRepository = new UserRepository($pdoMock);
         $adminService = new AdminService($userRepository, new Auth($this->session));
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $admin = $userService->createUser($this->adminData());
+        $admin = $userService->createUser(UserData::adminData());
         $auth = new Auth($this->session);
         $auth->login($admin);
 
@@ -380,7 +378,7 @@ class AdminServiceTest extends TestCase
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturnCallback(function () {
-                $userData = $this->userData();
+                $userData = UserData::memberOne();
                 $userData['id'] = 1;
                 $userData['type'] = UserType::Member->value;
 
@@ -398,8 +396,8 @@ class AdminServiceTest extends TestCase
         $userRepository = new UserRepository($pdoMock);
         $adminService = new AdminService($userRepository, new Auth($this->session));
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $user = $userService->createUser($this->userData());
-        $admin = $userService->createUser($this->adminData());
+        $user = $userService->createUser(UserData::memberOne());
+        $admin = $userService->createUser(UserData::adminData());
         $auth = new Auth($this->session);
         $auth->login($admin);
 
@@ -419,14 +417,14 @@ class AdminServiceTest extends TestCase
             ->with(PDO::FETCH_ASSOC)
             ->willReturnOnConsecutiveCalls(
                 (function () {
-                    $userData = $this->userData();
+                    $userData = UserData::memberOne();
                     $userData['id'] = 1;
                     $userData['type'] = UserType::Banned->value;
 
                     return $userData;
                 })(),
                 (function () {
-                    $userData = $this->userTwoData();
+                    $userData = UserData::memberTwo();
                     $userData['id'] = 2;
 
                     return $userData;
@@ -444,10 +442,10 @@ class AdminServiceTest extends TestCase
         $userRepository = new UserRepository($pdoMock);
         $adminService = new AdminService($userRepository, new Auth($this->session));
         $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userData['type'] = UserType::Banned->value;
         $user = $userService->createUser($userData);
-        $adminPretender = $userService->createUser($this->userTwoData());
+        $adminPretender = $userService->createUser(UserData::memberTwo());
         $auth = new Auth($this->session);
         $auth->login($adminPretender);
 

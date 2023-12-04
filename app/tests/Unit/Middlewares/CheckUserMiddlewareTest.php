@@ -13,12 +13,10 @@ use App\Users\UserType;
 use PDO;
 use PDOStatement;
 use PHPUnit\Framework\TestCase;
-use Tests\_data\UserDataProviderTrait;
+use Tests\_data\UserData;
 
 class CheckUserMiddlewareTest extends TestCase
 {
-    use UserDataProviderTrait;
-
     private ?Auth $auth;
     private ?Session $session;
 
@@ -152,7 +150,7 @@ class CheckUserMiddlewareTest extends TestCase
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturnCallback(function () {
-                $userData = $this->userData();
+                $userData = UserData::memberOne();
                 $userData['id'] = 1;
                 $userData['type'] = UserType::Member->value;
 

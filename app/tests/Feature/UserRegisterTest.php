@@ -6,16 +6,14 @@ use App\Core\Http\HttpStatusCode;
 use App\Users\UserRepository;
 use App\Users\UserType;
 use Exception;
-use Tests\_data\UserDataProviderTrait;
+use Tests\_data\UserData;
 use Tests\FeatureTestCase;
 
 class UserRegisterTest extends FeatureTestCase
 {
-    use UserDataProviderTrait;
-
     public function testRegistersUserSuccessfully(): void
     {
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userData['csrf_token'] = $this->csrf->generate();
         $response = $this->post(
             '/ajax/register',
@@ -35,7 +33,7 @@ class UserRegisterTest extends FeatureTestCase
 
     public function testRegistersTwoUsersSuccessfully(): void
     {
-        $userOneData = $this->userData();
+        $userOneData = UserData::memberOne();
         $userOneData['csrf_token'] = $this->csrf->generate();
 
         $response1 = $this->post(
@@ -43,7 +41,7 @@ class UserRegisterTest extends FeatureTestCase
             $userOneData
         );
 
-        $userTwoData = $this->userTwoData();
+        $userTwoData = UserData::memberTwo();
         $userTwoData['csrf_token'] = $this->csrf->generate();
 
         $response2 = $this->post(
@@ -88,7 +86,7 @@ class UserRegisterTest extends FeatureTestCase
      */
     public function testUserTypeShouldAlwaysBeMemberWhenRegistering(): void
     {
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userData['csrf_token'] = $this->csrf->generate();
         $response = $this->post(
             '/ajax/register',
@@ -106,7 +104,7 @@ class UserRegisterTest extends FeatureTestCase
     public function testReturnsForbiddenResponseWhenCsrfTokenIsInvalid(): void
     {
         $this->csrf->generate();
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userData['csrf_token'] = 'invalid-csrf-token';
 
         $response = $this->post(

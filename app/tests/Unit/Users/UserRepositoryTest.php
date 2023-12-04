@@ -10,12 +10,10 @@ use App\Users\User;
 use App\Users\UserRepository;
 use PDOStatement;
 use PHPUnit\Framework\TestCase;
-use Tests\_data\UserDataProviderTrait;
+use Tests\_data\UserData;
 
 class UserRepositoryTest extends TestCase
 {
-    use UserDataProviderTrait;
-
     //
     // Create user
     //
@@ -23,7 +21,7 @@ class UserRepositoryTest extends TestCase
     public function testAddsUserSuccessfully(): void
     {
         $now = time();
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $pdoStatementMock = $this->createMock(PDOStatement::class);
         $pdoStatementMock->expects($this->exactly(2))
             ->method('execute')
@@ -137,7 +135,7 @@ class UserRepositoryTest extends TestCase
     public function testUpdatesUserSuccessfully(): void
     {
         $now = time();
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userData['id'] = 1;
         $userUpdatedData = [
             'id' => 1,
@@ -404,7 +402,7 @@ class UserRepositoryTest extends TestCase
 
     public function testMakesUserFromAnArrayOfData(): void
     {
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userRepository = new UserRepository($this->createStub(PDO::class));
         $user = $userRepository->make($userData);
 
@@ -423,6 +421,6 @@ class UserRepositoryTest extends TestCase
         $user = new User();
         $userRepository = new UserRepository($this->createStub(PDO::class));
 
-        $this->assertSame($user, $userRepository->make($this->userData(), $user));
+        $this->assertSame($user, $userRepository->make(UserData::memberOne(), $user));
     }
 }

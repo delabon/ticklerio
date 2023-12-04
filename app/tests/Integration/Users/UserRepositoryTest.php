@@ -6,7 +6,6 @@ use App\Exceptions\UserDoesNotExistException;
 use App\Users\User;
 use App\Users\UserRepository;
 use Tests\_data\UserData;
-use Tests\_data\UserDataProviderTrait;
 use Tests\IntegrationTestCase;
 
 use function Symfony\Component\String\u;

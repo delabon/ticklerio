@@ -12,13 +12,11 @@ use App\Users\UserService;
 use App\Users\UserType;
 use App\Users\UserValidator;
 use LogicException;
-use Tests\_data\UserDataProviderTrait;
+use Tests\_data\UserData;
 use Tests\IntegrationTestCase;
 
 class AdminServiceTest extends IntegrationTestCase
 {
-    use UserDataProviderTrait;
-
     private UserRepository $userRepository;
     private UserService $userService;
     private Auth $auth;
@@ -40,8 +38,8 @@ class AdminServiceTest extends IntegrationTestCase
 
     public function testBansUserUsingAdminAccountSuccessfully(): void
     {
-        $this->userService->createUser($this->userData());
-        $admin = $this->userService->createUser($this->adminData());
+        $this->userService->createUser(UserData::memberOne());
+        $admin = $this->userService->createUser(UserData::adminData());
         $this->auth->login($admin);
 
         $this->adminService->banUser(1);
@@ -55,7 +53,7 @@ class AdminServiceTest extends IntegrationTestCase
     {
         $user = new User();
         $user->setId(1);
-        $userTwo = $this->userService->createUser($this->userTwoData());
+        $userTwo = $this->userService->createUser(UserData::memberTwo());
         $this->auth->login($userTwo);
 
         $this->expectException(LogicException::class);
@@ -68,7 +66,7 @@ class AdminServiceTest extends IntegrationTestCase
         $user = new User();
         $user->setId(999);
         $user->setType(UserType::Banned->value);
-        $admin = $this->userService->createUser($this->adminData());
+        $admin = $this->userService->createUser(UserData::adminData());
         $this->auth->login($admin);
 
         $this->expectException(LogicException::class);
@@ -80,7 +78,7 @@ class AdminServiceTest extends IntegrationTestCase
     {
         $user = new User();
         $user->setId(999);
-        $admin = $this->userService->createUser($this->adminData());
+        $admin = $this->userService->createUser(UserData::adminData());
         $this->auth->login($admin);
 
         $this->expectException(UserDoesNotExistException::class);
@@ -94,10 +92,10 @@ class AdminServiceTest extends IntegrationTestCase
 
     public function testUnbanUserSuccessfully(): void
     {
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userData['type'] = UserType::Banned->value;
         $bannedUser = $this->userService->createUser($userData);
-        $admin = $this->userService->createUser($this->adminData());
+        $admin = $this->userService->createUser(UserData::adminData());
         $this->auth->login($admin);
 
         $this->adminService->unbanUser($bannedUser->getId());
@@ -108,7 +106,7 @@ class AdminServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenUnbanningNonExistentUser(): void
     {
-        $admin = $this->userService->createUser($this->adminData());
+        $admin = $this->userService->createUser(UserData::adminData());
         $this->auth->login($admin);
 
         $this->expectException(UserDoesNotExistException::class);
@@ -118,8 +116,8 @@ class AdminServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenUnbanningNonBannedUser(): void
     {
-        $user = $this->userService->createUser($this->userData());
-        $admin = $this->userService->createUser($this->adminData());
+        $user = $this->userService->createUser(UserData::memberOne());
+        $admin = $this->userService->createUser(UserData::adminData());
         $this->auth->login($admin);
 
         $this->expectException(LogicException::class);
@@ -129,10 +127,10 @@ class AdminServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenUnbanningUserWithNonAdminAccount(): void
     {
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userData['type'] = UserType::Banned->value;
         $user = $this->userService->createUser($userData);
-        $adminPretender = $this->userService->createUser($this->userTwoData());
+        $adminPretender = $this->userService->createUser(UserData::memberTwo());
         $this->auth->login($adminPretender);
 
         $this->expectException(LogicException::class);
