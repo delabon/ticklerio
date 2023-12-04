@@ -9,16 +9,26 @@ use App\Users\UserType;
 use App\Users\UserValidator;
 use App\Utilities\PasswordUtils;
 use Faker\Factory;
+use Tests\_data\UserDataProviderTrait;
 use Tests\IntegrationTestCase;
 
 class UserFactoryTest extends IntegrationTestCase
 {
+    private UserRepository $userRepository;
+    private UserFactory $userFactory;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->userRepository = new UserRepository($this->pdo);
+        $this->userFactory = new UserFactory($this->userRepository, Factory::create());
+    }
+
     public function testMakesUsersSuccessfully(): void
     {
+        $users = $this->userFactory->count(2)->make();
         $userValidator = new UserValidator();
-        $userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
-
-        $users = $userFactory->count(2)->make();
         $userValidator->validate($users[0]->toArray());
         $userValidator->validate($users[1]->toArray());
 
@@ -33,21 +43,16 @@ class UserFactoryTest extends IntegrationTestCase
      */
     public function testMakesNoUsersWhenHowManyParamIsZero(): void
     {
-        $userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
-
-        $users = $userFactory->count(0)->make();
+        $users = $this->userFactory->count(0)->make();
 
         $this->assertCount(0, $users);
     }
 
     public function testCreatesUsersAndPersistsThemToDatabaseSuccessfully(): void
     {
+        $users = $this->userFactory->count(2)->create();
+        $usersFromRepository = $this->userRepository->all();
         $userValidator = new UserValidator();
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-
-        $users = $userFactory->count(2)->create();
-        $usersFromRepository = $userRepository->all();
         $userValidator->validate($users[0]->toArray());
         $userValidator->validate($users[1]->toArray());
 
@@ -63,12 +68,9 @@ class UserFactoryTest extends IntegrationTestCase
 
     public function testOverridesAttributesWhenMakingUser(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-
         $password = PasswordUtils::hashPasswordIfNotHashed('123456789');
         $now = time();
-        $user = $userFactory->count(1)->make([
+        $user = $this->userFactory->count(1)->make([
             'first_name' => 'Sam',
             'last_name' => 'Doe',
             'password' => $password,
@@ -90,12 +92,9 @@ class UserFactoryTest extends IntegrationTestCase
 
     public function testOverridesAttributesWhenCreatingUser(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-
         $password = PasswordUtils::hashPasswordIfNotHashed('123456789');
         $now = time();
-        $user = $userFactory->count(1)->create([
+        $user = $this->userFactory->count(1)->create([
             'first_name' => 'Ahmed Bay',
             'last_name' => 'Mohammed',
             'password' => $password,
