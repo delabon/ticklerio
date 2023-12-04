@@ -7,6 +7,10 @@
       displayDetailsOnTestsThatTriggerWarnings="true"
       displayDetailsOnTestsThatTriggerErrors="true"
       displayDetailsOnTestsThatTriggerDeprecations="true"
+      testdox="true"
+      stopOnFailure="true"
+      stopOnError="true"
+      stopOnWarning="true"
 >
   <testsuites>
     <testsuite name="Feature">

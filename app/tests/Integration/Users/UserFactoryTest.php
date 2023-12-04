@@ -9,7 +9,6 @@ use App\Users\UserType;
 use App\Users\UserValidator;
 use App\Utilities\PasswordUtils;
 use Faker\Factory;
-use Tests\_data\UserDataProviderTrait;
 use Tests\IntegrationTestCase;
 
 class UserFactoryTest extends IntegrationTestCase

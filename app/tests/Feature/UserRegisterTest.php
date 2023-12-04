@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Core\Http\HttpStatusCode;
 use App\Users\UserRepository;
 use App\Users\UserType;
+use Exception;
 use Tests\_data\UserDataProviderTrait;
 use Tests\FeatureTestCase;
 
@@ -63,12 +64,11 @@ class UserRegisterTest extends FeatureTestCase
         $this->assertCount(2, $userRepository->all());
     }
 
-
     /**
      * @dataProvider invalidUserDataProvider
      * @param array $userData
      * @return void
-     * @throws \Exception
+     * @throws Exception
      */
     public function testReturnsBadRequestResponseWhenRegisteringWithInvalidData(array $userData): void
     {
