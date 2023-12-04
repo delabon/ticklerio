@@ -12,6 +12,8 @@ use PDOStatement;
 use PHPUnit\Framework\TestCase;
 use Tests\_data\UserData;
 
+use function Symfony\Component\String\u;
+
 class UserRepositoryTest extends TestCase
 {
     private UserRepository $userRepository;
@@ -229,11 +231,16 @@ class UserRepositoryTest extends TestCase
         $this->assertFalse($userFound);
     }
 
-    public function testFindsUserByEmailSuccessfully(): void
+    /**
+     * @dataProvider validUserDataProvider
+     * @param array $findData
+     * @return void
+     */
+    public function testFindsUserByKeyAndValueSuccessfully(array $findData): void
     {
         $userData = UserData::memberOne();
 
-        $this->pdoStatementMock->expects($this->exactly(2))
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
         $this->pdoStatementMock->expects($this->once())
@@ -245,21 +252,16 @@ class UserRepositoryTest extends TestCase
                 return [$userData];
             });
 
-        $this->pdoMock->expects($this->exactly(2))
+        $this->pdoMock->expects($this->once())
             ->method('prepare')
             ->willReturn($this->pdoStatementMock);
-        $this->pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturnOnConsecutiveCalls("1");
 
-        $user = $this->userRepository->make($userData);
-        $this->userRepository->save($user);
-
-        $usersFound = $this->userRepository->findBy('email', $userData['email']);
+        $usersFound = $this->userRepository->findBy($findData['key'], $findData['value']);
+        $method = 'get' . u($findData['key'])->camel()->toString();
 
         $this->assertCount(1, $usersFound);
         $this->assertSame(1, $usersFound[0]->getId());
-        $this->assertSame($userData['email'], $usersFound[0]->getEmail());
+        $this->assertSame($findData['value'], $usersFound[0]->$method());
     }
 
     public function testThrowsExceptionWhenFindUserWithAnInvalidColumnName(): void
@@ -293,6 +295,38 @@ class UserRepositoryTest extends TestCase
         $this->expectException(LogicException::class);
 
         $this->userRepository->find(0);
+    }
+
+    public static function validUserDataProvider(): array
+    {
+        $userData = UserData::memberOne();
+
+        return [
+            'Find by email' => [
+                [
+                    'key' => 'email',
+                    'value' => $userData['email'],
+                ]
+            ],
+            'Find by first_name' => [
+                [
+                    'key' => 'first_name',
+                    'value' => $userData['first_name'],
+                ]
+            ],
+            'Find by last_name' => [
+                [
+                    'key' => 'last_name',
+                    'value' => $userData['last_name'],
+                ]
+            ],
+            'Find by type' => [
+                [
+                    'key' => 'type',
+                    'value' => $userData['type'],
+                ]
+            ],
+        ];
     }
 
     //
