@@ -9,7 +9,7 @@ use App\Users\UserType;
 /**
  * Logs out a banned or deleted user.
  */
-class CheckUserMiddleware
+readonly class CheckUserMiddleware
 {
     public function __construct(private Auth $auth, private UserRepository $userRepository)
     {
