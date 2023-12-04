@@ -179,6 +179,28 @@ class AuthTest extends FeatureTestCase
         $this->assertSame(UserType::Banned->value, $user->getType());
     }
 
+    public function testReturnsForbiddenResponseWhenTryingToLoginDeletedUser(): void
+    {
+        $user = $this->userFactory->create([
+            'password' => '123456789',
+            'type' => UserType::Deleted->value
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/auth/login',
+            [
+                'email' => $user->getEmail(),
+                'password' => '123456789',
+                'csrf_token' => $this->csrf->generate()
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertStringContainsStringIgnoringCase('deleted', $response->getBody()->getContents());
+        $this->assertSame(UserType::Deleted->value, $user->getType());
+    }
+
     public function testAutomaticallyLogsOutBannedUser(): void
     {
         $user = $this->userFactory->create([
