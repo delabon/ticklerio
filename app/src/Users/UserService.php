@@ -71,8 +71,8 @@ readonly class UserService
             throw new UserDoesNotExistException("Cannot delete a user that does not exist.");
         }
 
-        if ($user->getType() === UserType::Deleted->value) {
-            throw new LogicException("Cannot delete a user that already has been deleted.");
+        if (in_array($user->getType(), [UserType::Deleted->value, UserType::Banned->value])) {
+            throw new LogicException("Cannot delete a user that already has been {$user->getType()}.");
         }
 
         $user->setEmail('deleted-' . $user->getId() . '@' . $_ENV['APP_DOMAIN']);

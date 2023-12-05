@@ -241,4 +241,28 @@ class UserServiceTest extends IntegrationTestCase
         $this->assertSame('deleted', $userTwoDeleted->getLastName());
         $this->assertSame(UserType::Deleted->value, $userTwoDeleted->getType());
     }
+
+    public function testThrowsExceptionWhenTryingToSoftDeleteUserThatAlreadySoftDeleted(): void
+    {
+        $user = $this->userRepository->make(UserData::memberOne());
+        $user->setType(UserType::Deleted->value);
+        $this->userRepository->save($user);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("Cannot delete a user that already has been deleted.");
+
+        $this->userService->softDeleteUser($user->getId());
+    }
+
+    public function testThrowsExceptionWhenTryingToSoftDeleteUserThatHasBeenBanned(): void
+    {
+        $user = $this->userRepository->make(UserData::memberOne());
+        $user->setType(UserType::Banned->value);
+        $this->userRepository->save($user);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("Cannot delete a user that already has been banned.");
+
+        $this->userService->softDeleteUser($user->getId());
+    }
 }
