@@ -77,7 +77,7 @@ class AuthTest extends TestCase
         $this->assertTrue($this->auth->isAuth($user));
     }
 
-    public function testIsUserNoTLoggedIn(): void
+    public function testIsUserNotLoggedIn(): void
     {
         $user = new User();
         $user->setId(99);
@@ -137,6 +137,17 @@ class AuthTest extends TestCase
         $user = new User();
         $user->setId(1);
         $user->setType(UserType::Banned->value);
+
+        $this->expectException(LogicException::class);
+
+        $this->auth->login($user);
+    }
+
+    public function testThrowsExceptionWhenTryingToLoginDeletedUser(): void
+    {
+        $user = new User();
+        $user->setId(1);
+        $user->setType(UserType::Deleted->value);
 
         $this->expectException(LogicException::class);
 

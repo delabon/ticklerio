@@ -13,12 +13,21 @@ use App\Users\UserValidator;
 use App\Utilities\PasswordUtils;
 use InvalidArgumentException;
 use LogicException;
+use Tests\_data\UserData;
 use Tests\IntegrationTestCase;
-use Tests\_data\UserDataProviderTrait;
 
 class UserServiceTest extends IntegrationTestCase
 {
-    use UserDataProviderTrait;
+    private UserRepository $userRepository;
+    private UserService $userService;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->userRepository = new UserRepository($this->pdo);
+        $this->userService = new UserService($this->userRepository, new UserValidator(), new UserSanitizer());
+    }
 
     //
     // Create user
@@ -26,21 +35,16 @@ class UserServiceTest extends IntegrationTestCase
 
     public function testCreatesUserSuccessfully(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
+        $this->userService->createUser(UserData::memberOne());
 
-        $userService->createUser($this->userData());
-
-        $this->assertSame(1, $userRepository->find(1)->getId());
-        $this->assertCount(1, $userRepository->all());
+        $this->assertSame(1, $this->userRepository->find(1)->getId());
+        $this->assertCount(1, $this->userRepository->all());
     }
 
     public function testPasswordShouldBeHashedBeforeCreatingUser(): void
     {
-        $userData = $this->userData();
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $user = $userService->createUser($userData);
+        $userData = UserData::memberOne();
+        $user = $this->userService->createUser($userData);
 
         $this->assertNotSame($userData['password'], $user->getPassword());
         $this->assertTrue(PasswordUtils::isPasswordHashed($user->getPassword()));
@@ -48,40 +52,26 @@ class UserServiceTest extends IntegrationTestCase
 
     public function testSanitizesDataBeforeCreatingAccount(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-
-        $now = "10";
-        $user = $userService->createUser([
-            'email' => '“><svg/onload=confirm(1)>”@gmail.com',
-            'first_name' => 'John $%&',
-            'last_name' => 'Doe <^4Test',
-            'password' => '12345678',
-            'type' => 'member',
-            'created_at' => $now,
-            'updated_at' => $now,
-        ]);
+        $user = $this->userService->createUser(UserData::userUnsanitizedData());
 
         $this->assertSame('svgonload=confirm1@gmail.com', $user->getEmail());
         $this->assertSame('John', $user->getFirstName());
         $this->assertSame('Doe Test', $user->getLastName());
-        $this->assertSame(10, $user->getCreatedAt());
-        $this->assertSame(10, $user->getUpdatedAt());
+        $this->assertSame(88, $user->getCreatedAt());
+        $this->assertSame(111, $user->getUpdatedAt());
     }
 
     public function testThrowsExceptionWhenTryingToCreateUserWithAnEmailThatAlreadyExists(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $userData = $this->userData();
-        $userService->createUser($userData);
-        $userTwoData = $this->userTwoData();
+        $userData = UserData::memberOne();
+        $this->userService->createUser($userData);
+        $userTwoData = UserData::memberTwo();
         $userTwoData['email'] = $userData['email'];
 
         $this->expectException(EmailAlreadyExistsException::class);
         $this->expectExceptionMessage("A user with the email '{$userData['email']}' already exists.");
 
-        $userService->createUser($userTwoData);
+        $this->userService->createUser($userTwoData);
     }
 
     //
@@ -90,19 +80,15 @@ class UserServiceTest extends IntegrationTestCase
 
     public function testUpdatesUserSuccessfully(): void
     {
-        $userData = $this->userData();
-        $userUpdatedData = $this->userUpdatedData();
-
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $user = $userService->createUser($userData);
-
+        $userData = UserData::memberOne();
+        $userUpdatedData = UserData::updatedData();
+        $user = $this->userService->createUser($userData);
         $userUpdatedData['id'] = 1;
-        $user = $userRepository->make($userUpdatedData, $user);
+        $user = $this->userRepository->make($userUpdatedData, $user);
 
-        $userService->updateUser($user);
+        $this->userService->updateUser($user);
 
-        $updatedUser = $userRepository->find(1);
+        $updatedUser = $this->userRepository->find(1);
 
         $this->assertSame(1, $updatedUser->getId());
         $this->assertSame($userUpdatedData['email'], $updatedUser->getEmail());
@@ -111,25 +97,22 @@ class UserServiceTest extends IntegrationTestCase
         $this->assertSame($userUpdatedData['type'], $updatedUser->getType());
         $this->assertSame($userUpdatedData['created_at'], $updatedUser->getCreatedAt());
         $this->assertTrue(PasswordUtils::isPasswordHashed($updatedUser->getPassword()));
-        $this->assertCount(1, $userRepository->all());
+        $this->assertCount(1, $this->userRepository->all());
     }
 
     public function testUpdatesUserButKeepsTheEmailSuccessfully(): void
     {
-        $userData = $this->userData();
-        $userUpdatedData = $this->userUpdatedData();
-
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $user = $userService->createUser($userData);
+        $userData = UserData::memberOne();
+        $userUpdatedData = UserData::updatedData();
+        $user = $this->userService->createUser($userData);
 
         $userUpdatedData['id'] = 1;
         $userUpdatedData['email'] = $userData['email'];
-        $user = $userRepository->make($userUpdatedData, $user);
+        $user = $this->userRepository->make($userUpdatedData, $user);
 
-        $userService->updateUser($user);
+        $this->userService->updateUser($user);
 
-        $updatedUser = $userRepository->find(1);
+        $updatedUser = $this->userRepository->find(1);
 
         $this->assertSame(1, $updatedUser->getId());
         $this->assertSame($userUpdatedData['email'], $updatedUser->getEmail());
@@ -138,44 +121,38 @@ class UserServiceTest extends IntegrationTestCase
         $this->assertSame($userUpdatedData['type'], $updatedUser->getType());
         $this->assertSame($userUpdatedData['created_at'], $updatedUser->getCreatedAt());
         $this->assertTrue(PasswordUtils::isPasswordHashed($updatedUser->getPassword()));
-        $this->assertCount(1, $userRepository->all());
+        $this->assertCount(1, $this->userRepository->all());
     }
 
     public function testThrowsExceptionWhenUpdatingUserWithAnIdOfZero(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $user = $userRepository->make($this->userData());
+        $user = $this->userRepository->make(UserData::memberOne());
         $user->setId(0);
 
         $this->expectException(LogicException::class);
 
-        $userService->updateUser($user);
+        $this->userService->updateUser($user);
     }
 
     public function testThrowsExceptionWhenUpdatingUserWithInvalidData(): void
     {
-        $userData = $this->userData();
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $user = $userService->createUser($userData);
+        $userData = UserData::memberOne();
+        $user = $this->userService->createUser($userData);
         $user->setEmail('invalid-email');
 
         $this->expectException(InvalidArgumentException::class);
 
-        $userService->updateUser($user);
+        $this->userService->updateUser($user);
     }
 
     public function testPasswordShouldBeHashedBeforeUpdatingUser(): void
     {
-        $userData = $this->userData();
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $user = $userService->createUser($userData);
+        $userData = UserData::memberOne();
+        $user = $this->userService->createUser($userData);
 
         $updatedPassword = 'azerty123456';
         $user->setPassword($updatedPassword);
-        $userService->updateUser($user);
+        $this->userService->updateUser($user);
 
         $this->assertNotSame($updatedPassword, $user->getPassword());
         $this->assertTrue(PasswordUtils::isPasswordHashed($user->getPassword()));
@@ -183,19 +160,16 @@ class UserServiceTest extends IntegrationTestCase
 
     public function testSanitizesDataBeforeUpdatingAccount(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $user = $userService->createUser($this->userData());
-
-        $unsanitizedData = $this->userUnsanitizedData();
+        $user = $this->userService->createUser(UserData::memberOne());
+        $unsanitizedData = UserData::userUnsanitizedData();
         $user->setEmail($unsanitizedData['email']);
         $user->setFirstName($unsanitizedData['first_name']);
         $user->setLastName($unsanitizedData['last_name']);
         $user->setCreatedAt($unsanitizedData['created_at']);
 
-        $userService->updateUser($user);
+        $this->userService->updateUser($user);
 
-        $user = $userRepository->find(1);
+        $user = $this->userRepository->find(1);
 
         $this->assertSame('svgonload=confirm1@gmail.com', $user->getEmail());
         $this->assertSame('John', $user->getFirstName());
@@ -205,19 +179,17 @@ class UserServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenTryingToUpdateUserWithAnEmailThatAlreadyExists(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $userData = $this->userData();
-        $userService->createUser($userData);
-        $userTwoData = $this->userTwoData();
-        $userTwo = $userService->createUser($userTwoData);
+        $userData = UserData::memberOne();
+        $this->userService->createUser($userData);
+        $userTwoData = UserData::memberTwo();
+        $userTwo = $this->userService->createUser($userTwoData);
 
         $userTwo->setEmail($userData['email']);
 
         $this->expectException(EmailAlreadyExistsException::class);
         $this->expectExceptionMessage("A user with the email '{$userData['email']}' already exists.");
 
-        $userService->updateUser($userTwo);
+        $this->userService->updateUser($userTwo);
     }
 
     //
@@ -226,17 +198,11 @@ class UserServiceTest extends IntegrationTestCase
 
     public function testSoftDeletesUserSuccessfully(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService(
-            $userRepository,
-            new UserValidator(),
-            new UserSanitizer()
-        );
-        $user = $userService->createUser($this->userData());
+        $user = $this->userService->createUser(UserData::memberOne());
 
-        $deletedUser = $userService->softDeleteUser($user->getId());
+        $deletedUser = $this->userService->softDeleteUser($user->getId());
 
-        $this->assertCount(1, $userRepository->all());
+        $this->assertCount(1, $this->userRepository->all());
         $this->assertSame('deleted-1@' . $_ENV['APP_DOMAIN'], $deletedUser->getEmail());
         $this->assertSame('deleted', $deletedUser->getFirstName());
         $this->assertSame('deleted', $deletedUser->getLastName());
@@ -245,39 +211,27 @@ class UserServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenSoftDeletingNonExistentUser(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService(
-            $userRepository,
-            new UserValidator(),
-            new UserSanitizer()
-        );
         $user = new User();
         $user->setId(999);
 
         $this->expectException(UserDoesNotExistException::class);
         $this->expectExceptionMessage("Cannot delete a user that does not exist.");
 
-        $userService->softDeleteUser($user->getId());
+        $this->userService->softDeleteUser($user->getId());
     }
 
     public function testSoftDeletesMultipleUsersSuccessfully(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService(
-            $userRepository,
-            new UserValidator(),
-            new UserSanitizer()
-        );
-        $userOne = $userService->createUser($this->userData());
-        $userTwo = $userService->createUser($this->userTwoData());
+        $userOne = $this->userService->createUser(UserData::memberOne());
+        $userTwo = $this->userService->createUser(UserData::memberTwo());
 
-        $userService->softDeleteUser($userOne->getId());
-        $userService->softDeleteUser($userTwo->getId());
+        $this->userService->softDeleteUser($userOne->getId());
+        $this->userService->softDeleteUser($userTwo->getId());
 
-        $userOneDeleted = $userRepository->find($userOne->getId());
-        $userTwoDeleted = $userRepository->find($userTwo->getId());
+        $userOneDeleted = $this->userRepository->find($userOne->getId());
+        $userTwoDeleted = $this->userRepository->find($userTwo->getId());
 
-        $this->assertCount(2, $userRepository->all());
+        $this->assertCount(2, $this->userRepository->all());
         $this->assertSame('deleted-' . $userOneDeleted->getId() . '@' . $_ENV['APP_DOMAIN'], $userOneDeleted->getEmail());
         $this->assertSame('deleted', $userOneDeleted->getFirstName());
         $this->assertSame('deleted', $userOneDeleted->getLastName());

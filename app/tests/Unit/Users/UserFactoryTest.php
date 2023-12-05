@@ -9,25 +9,38 @@ use App\Users\UserType;
 use App\Users\UserValidator;
 use App\Utilities\PasswordUtils;
 use Faker\Factory;
-use Faker\Generator;
 use PDO;
 use PDOStatement;
 use PHPUnit\Framework\TestCase;
 
 class UserFactoryTest extends TestCase
 {
+    private object $pdoStatementMock;
+    private object $pdoMock;
+    private UserValidator $userValidator;
+    private UserRepository $userRepository;
+    private UserFactory $userFactory;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->pdoStatementMock = $this->createMock(PDOStatement::class);
+        $this->pdoMock = $this->createMock(PDO::class);
+        $this->userValidator = new UserValidator();
+        $this->userRepository = new UserRepository($this->pdoMock);
+        $this->userFactory = new UserFactory($this->userRepository, Factory::create());
+    }
+
     /**
      * I decided to not mock the Generator::class (Factory::create()) to keep the test simple
      * @return void
      */
     public function testMakesUsersSuccessfully(): void
     {
-        $userValidator = new UserValidator();
-        $userFactory = new UserFactory(new UserRepository($this->createStub(PDO::class)), Factory::create());
-
-        $users = $userFactory->count(2)->make();
-        $userValidator->validate($users[0]->toArray());
-        $userValidator->validate($users[1]->toArray());
+        $users = $this->userFactory->count(2)->make();
+        $this->userValidator->validate($users[0]->toArray());
+        $this->userValidator->validate($users[1]->toArray());
 
         $this->assertCount(2, $users);
         $this->assertInstanceOf(User::class, $users[0]);
@@ -40,9 +53,7 @@ class UserFactoryTest extends TestCase
      */
     public function testMakesNoUsersWhenHowManyParamIsZero(): void
     {
-        $userFactory = new UserFactory(new UserRepository($this->createStub(PDO::class)), Factory::create());
-
-        $users = $userFactory->count(0)->make();
+        $users = $this->userFactory->count(0)->make();
 
         $this->assertCount(0, $users);
     }
@@ -53,11 +64,10 @@ class UserFactoryTest extends TestCase
      */
     public function testCreatesUsersAndPersistsThemToDatabaseSuccessfully(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(3))
+        $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetchAll')
             ->willReturn([
                 [
@@ -68,22 +78,17 @@ class UserFactoryTest extends TestCase
                 ],
             ]);
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(3))
+        $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->exactly(2))
+            ->willReturn($this->pdoStatementMock);
+        $this->pdoMock->expects($this->exactly(2))
             ->method('lastInsertId')
             ->willReturnOnConsecutiveCalls("1", "2");
 
-        $userValidator = new UserValidator();
-        $userRepository = new UserRepository($pdoMock);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-
-        $users = $userFactory->count(2)->create();
-        $usersFromRepository = $userRepository->all();
-        $userValidator->validate($users[0]->toArray());
-        $userValidator->validate($users[1]->toArray());
+        $users = $this->userFactory->count(2)->create();
+        $usersFromRepository = $this->userRepository->all();
+        $this->userValidator->validate($users[0]->toArray());
+        $this->userValidator->validate($users[1]->toArray());
 
         $this->assertCount(2, $users);
         $this->assertCount(2, $usersFromRepository);
@@ -97,12 +102,9 @@ class UserFactoryTest extends TestCase
 
     public function testOverridesAttributesWhenMakingUser(): void
     {
-        $userRepository = new UserRepository($this->createStub(PDO::class));
-        $userFactory = new UserFactory($userRepository, Factory::create());
-
         $password = PasswordUtils::hashPasswordIfNotHashed('123456789');
         $now = time();
-        $user = $userFactory->count(1)->make([
+        $user = $this->userFactory->count(1)->make([
             'first_name' => 'Sam',
             'last_name' => 'Doe',
             'password' => $password,
@@ -124,25 +126,21 @@ class UserFactoryTest extends TestCase
 
     public function testOverridesAttributesWhenCreatingUser(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->once())
+        $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->once())
+            ->willReturn($this->pdoStatementMock);
+        $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturnOnConsecutiveCalls("1");
 
-        $userRepository = new UserRepository($pdoMock);
-        $userFactory = new UserFactory($userRepository, Factory::create());
 
         $password = PasswordUtils::hashPasswordIfNotHashed('123456789');
         $now = time();
-        $user = $userFactory->count(1)->create([
+        $user = $this->userFactory->count(1)->create([
             'first_name' => 'Ahmed Bay',
             'last_name' => 'Mohammed',
             'password' => $password,

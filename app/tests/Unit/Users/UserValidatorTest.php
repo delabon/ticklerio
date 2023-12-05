@@ -2,267 +2,200 @@
 
 namespace Tests\Unit\Users;
 
-use App\Users\UserType;
 use App\Users\UserValidator;
 use App\Utilities\PasswordUtils;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use Tests\_data\UserData;
 
 class UserValidatorTest extends TestCase
 {
+    private array $userData;
+    private UserValidator $userValidator;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->userData = UserData::memberOne();
+        $this->userValidator = new UserValidator();
+    }
+
     public function testValidAllData(): void
     {
-        $userData = $this->userData();
-        $userValidator = new UserValidator();
-
-        $userValidator->validate($userData);
+        $this->userValidator->validate($this->userData);
 
         $this->expectNotToPerformAssertions();
-    }
-
-    public function testExceptionThrownWhenEmailIsInvalid(): void
-    {
-        $userData = $this->userData();
-        $userData['email'] = 'test';
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
-    }
-
-    public function testExceptionThrownWhenEmailIsMissing(): void
-    {
-        $userData = $this->userData();
-        unset($userData['email']);
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
-    }
-
-    public function testExceptionThrownWhenFirstNameIsEmpty(): void
-    {
-        $userData = $this->userData();
-        $userData['first_name'] = '';
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
-    }
-
-    public function testExceptionThrownWhenFirstNameIsMissing(): void
-    {
-        $userData = $this->userData();
-        unset($userData['first_name']);
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
-    }
-
-    public function testExceptionThrownWhenFirstNameIsInvalid(): void
-    {
-        $userData = $this->userData();
-        $userData['first_name'] = '$test1~é';
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
-    }
-
-    public function testThrowsExceptionWhenFirstNameLengthIsLongerThanFiftyAlphabeticalChars(): void
-    {
-        $userData = $this->userData();
-        $userData['first_name'] = 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzMoreHere';
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
-    }
-
-    public function testExceptionThrownWhenLastNameIsEmpty(): void
-    {
-        $userData = $this->userData();
-        $userData['last_name'] = '';
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
-    }
-
-    public function testExceptionThrownWhenLastNameIsMissing(): void
-    {
-        $userData = $this->userData();
-        unset($userData['last_name']);
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
-    }
-
-    public function testExceptionThrownWhenLastNameIsInvalid(): void
-    {
-        $userData = $this->userData();
-        $userData['last_name'] = ' 88 test1~é';
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
-    }
-
-    public function testThrowsExceptionWhenLastNameLengthIsLongerThanFiftyAlphabeticalChars(): void
-    {
-        $userData = $this->userData();
-        $userData['last_name'] = 'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzMoreHere';
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
-    }
-
-    public function testExceptionThrownWhenTypeIsEmpty(): void
-    {
-        $userData = $this->userData();
-        $userData['type'] = '';
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
-    }
-
-    public function testExceptionThrownWhenTypeDoesNotExist(): void
-    {
-        $userData = $this->userData();
-        $userData['type'] = 'nonExistentType';
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
-    }
-
-    public function testExceptionThrownWhenPasswordIsMissing(): void
-    {
-        $userData = $this->userData();
-        unset($userData['password']);
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
-    }
-
-    public function testExceptionThrownWhenPasswordIsOfInvalidType(): void
-    {
-        $userData = $this->userData();
-        $userData['password'] = false;
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
-    }
-
-    public function testExceptionThrownWhenPasswordLengthIsLowerThanEightChars(): void
-    {
-        $userData = $this->userData();
-        $userData['password'] = '111';
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
-    }
-
-    public function testExceptionThrownWhenPasswordLengthIsGreaterThanTwentyChars(): void
-    {
-        $userData = $this->userData();
-        $userData['password'] = '1111111111111111111111';
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
-    }
-
-    public function testExceptionThrownWhenCreatedAtIsMissing(): void
-    {
-        $userData = $this->userData();
-        unset($userData['created_at']);
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
-    }
-
-    public function testExceptionThrownWhenCreatedAtIsOfInvalidType(): void
-    {
-        $userData = $this->userData();
-        $userData['created_at'] = false;
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
-    }
-
-    public function testExceptionThrownWhenUpdatedAtIsMissing(): void
-    {
-        $userData = $this->userData();
-        unset($userData['updated_at']);
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
-    }
-
-    public function testExceptionThrownWhenUpdatedAtIsOfInvalidType(): void
-    {
-        $userData = $this->userData();
-        $userData['created_at'] = false;
-        $userValidator = new UserValidator();
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $userValidator->validate($userData);
     }
 
     public function testHashedPasswordShouldPassTheValidationSuccessfully(): void
     {
-        $userData = $this->userData();
-        $userData['password'] = PasswordUtils::hashPasswordIfNotHashed('123456789');
-        $userValidator = new UserValidator();
+        $this->userData['password'] = PasswordUtils::hashPasswordIfNotHashed('123456789');
 
-        $userValidator->validate($userData);
+        $this->userValidator->validate($this->userData);
 
         $this->expectNotToPerformAssertions();
     }
 
-    private function userData(): array
+    /**
+     * @dataProvider invalidDataProvider
+     * @param $key
+     * @param $value
+     * @param $expectedException
+     * @return void
+     */
+    public function testThrowsExceptionWhenInvalidData($key, $value, $expectedException): void
     {
-        $now = time();
+        $this->userData[$key] = $value;
 
+        $this->expectException($expectedException);
+
+        $this->userValidator->validate($this->userData);
+    }
+
+    public static function invalidDataProvider(): array
+    {
         return [
-            'email' => 'test@test.com',
-            'first_name' => 'John',
-            'last_name' => "Doe O'Alley",
-            'password' => '12345678',
-            'type' => UserType::Member->value,
-            'created_at' => $now,
-            'updated_at' => $now,
+            'Email is invalid' => [
+                'email',
+                'test',
+                InvalidArgumentException::class
+            ],
+            'Email is missing' => [
+                'email',
+                null,
+                InvalidArgumentException::class
+            ],
+            'Email is empty' => [
+                'email',
+                '',
+                InvalidArgumentException::class
+            ],
+            'Email is not a string' => [
+                'email',
+                false,
+                InvalidArgumentException::class
+            ],
+            'Email is longer than 255 chars' => [
+                'email',
+                str_repeat('a', 64) . '@' . str_repeat('b', 187) . '.com',
+                InvalidArgumentException::class
+            ],
+            'First name is empty' => [
+                'first_name',
+                '',
+                InvalidArgumentException::class
+            ],
+            'First name is missing' => [
+                'first_name',
+                null,
+                InvalidArgumentException::class
+            ],
+            'First name is not a string' => [
+                'first_name',
+                false,
+                InvalidArgumentException::class
+            ],
+            'First name is longer than 50 chars' => [
+                'first_name',
+                'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzMoreHere',
+                InvalidArgumentException::class
+            ],
+            'First name is invalid' => [
+                'first_name',
+                '$test1~é',
+                InvalidArgumentException::class
+            ],
+            'Last name is empty' => [
+                'last_name',
+                '',
+                InvalidArgumentException::class
+            ],
+            'Last name is missing' => [
+                'last_name',
+                null,
+                InvalidArgumentException::class
+            ],
+            'Last name is not a string' => [
+                'last_name',
+                false,
+                InvalidArgumentException::class
+            ],
+            'Last name is longer than 50 chars' => [
+                'last_name',
+                'abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzMoreHere',
+                InvalidArgumentException::class
+            ],
+            'Last name is invalid' => [
+                'last_name',
+                '$test1~é',
+                InvalidArgumentException::class
+            ],
+            'Type is empty' => [
+                'type',
+                '',
+                InvalidArgumentException::class
+            ],
+            'Type is missing' => [
+                'type',
+                null,
+                InvalidArgumentException::class
+            ],
+            'Type is not a string' => [
+                'type',
+                false,
+                InvalidArgumentException::class
+            ],
+            'Type does not exist' => [
+                'type',
+                'nonExistentType',
+                InvalidArgumentException::class
+            ],
+            'Password is missing' => [
+                'password',
+                null,
+                InvalidArgumentException::class
+            ],
+            'Password is empty' => [
+                'password',
+                '',
+                InvalidArgumentException::class
+            ],
+            'Password is not a string' => [
+                'password',
+                false,
+                InvalidArgumentException::class
+            ],
+            'Password is shorter than 8 chars' => [
+                'password',
+                '1234567',
+                InvalidArgumentException::class
+            ],
+            'Password is longer than 20 chars' => [
+                'password',
+                '123456789012345678901',
+                InvalidArgumentException::class
+            ],
+            'Created at is missing' => [
+                'created_at',
+                null,
+                InvalidArgumentException::class
+            ],
+            'Created at is not an integer' => [
+                'created_at',
+                false,
+                InvalidArgumentException::class
+            ],
+            'Updated at is missing' => [
+                'updated_at',
+                null,
+                InvalidArgumentException::class
+            ],
+            'Updated at is not an integer' => [
+                'updated_at',
+                false,
+                InvalidArgumentException::class
+            ],
         ];
     }
 }

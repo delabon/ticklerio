@@ -12,12 +12,25 @@ use App\Users\UserService;
 use App\Users\UserType;
 use App\Users\UserValidator;
 use LogicException;
-use Tests\_data\UserDataProviderTrait;
+use Tests\_data\UserData;
 use Tests\IntegrationTestCase;
 
 class AdminServiceTest extends IntegrationTestCase
 {
-    use UserDataProviderTrait;
+    private UserRepository $userRepository;
+    private UserService $userService;
+    private Auth $auth;
+    private AdminService $adminService;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->userRepository = new UserRepository($this->pdo);
+        $this->userService = new UserService($this->userRepository, new UserValidator(), new UserSanitizer());
+        $this->auth = new Auth($this->session);
+        $this->adminService = new AdminService($this->userRepository, new Auth($this->session));
+    }
 
     //
     // Ban user
@@ -25,69 +38,52 @@ class AdminServiceTest extends IntegrationTestCase
 
     public function testBansUserUsingAdminAccountSuccessfully(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $userService->createUser($this->userData());
-        $admin = $userService->createUser($this->adminData());
-        $auth = new Auth($this->session);
-        $auth->login($admin);
+        $this->userService->createUser(UserData::memberOne());
+        $admin = $this->userService->createUser(UserData::adminData());
+        $this->auth->login($admin);
 
-        $adminService = new AdminService($userRepository, new Auth($this->session));
-        $adminService->banUser(1);
+        $this->adminService->banUser(1);
 
-        $bannedUser = $userRepository->find(1);
-
+        $bannedUser = $this->userRepository->find(1);
         $this->assertTrue($bannedUser->isBanned());
         $this->assertSame(UserType::Banned->value, $bannedUser->getType());
     }
 
     public function testThrowsExceptionWhenBanningUserUsingNonAdminAccount(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $user = new User();
         $user->setId(1);
-        $userTwo = $userService->createUser($this->userTwoData());
-        $auth = new Auth($this->session);
-        $auth->login($userTwo);
-        $adminService = new AdminService($userRepository, new Auth($this->session));
+        $userTwo = $this->userService->createUser(UserData::memberTwo());
+        $this->auth->login($userTwo);
 
         $this->expectException(LogicException::class);
 
-        $adminService->banUser($user->getId());
+        $this->adminService->banUser($user->getId());
     }
 
     public function testThrowsExceptionWhenBanningUserThatIsAlreadyBanned(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $adminService = new AdminService($userRepository, new Auth($this->session));
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $user = new User();
         $user->setId(999);
         $user->setType(UserType::Banned->value);
-        $admin = $userService->createUser($this->adminData());
-        $auth = new Auth($this->session);
-        $auth->login($admin);
+        $admin = $this->userService->createUser(UserData::adminData());
+        $this->auth->login($admin);
 
         $this->expectException(LogicException::class);
 
-        $adminService->banUser($user->getId());
+        $this->adminService->banUser($user->getId());
     }
 
     public function testThrowsExceptionWhenBanningNonExistentUser(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
         $user = new User();
         $user->setId(999);
-        $admin = $userService->createUser($this->adminData());
-        $auth = new Auth($this->session);
-        $auth->login($admin);
-        $adminService = new AdminService($userRepository, new Auth($this->session));
+        $admin = $this->userService->createUser(UserData::adminData());
+        $this->auth->login($admin);
 
         $this->expectException(UserDoesNotExistException::class);
 
-        $adminService->banUser($user->getId());
+        $this->adminService->banUser($user->getId());
     }
 
     //
@@ -96,66 +92,49 @@ class AdminServiceTest extends IntegrationTestCase
 
     public function testUnbanUserSuccessfully(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userData['type'] = UserType::Banned->value;
-        $bannedUser = $userService->createUser($userData);
-        $admin = $userService->createUser($this->adminData());
-        $auth = new Auth($this->session);
-        $auth->login($admin);
-        $adminService = new AdminService($userRepository, new Auth($this->session));
+        $bannedUser = $this->userService->createUser($userData);
+        $admin = $this->userService->createUser(UserData::adminData());
+        $this->auth->login($admin);
 
-        $adminService->unbanUser($bannedUser->getId());
+        $this->adminService->unbanUser($bannedUser->getId());
 
-        $user = $userRepository->find($bannedUser->getId());
-
+        $user = $this->userRepository->find($bannedUser->getId());
         $this->assertSame(UserType::Member->value, $user->getType());
     }
 
     public function testThrowsExceptionWhenUnbanningNonExistentUser(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $admin = $userService->createUser($this->adminData());
-        $auth = new Auth($this->session);
-        $auth->login($admin);
-        $adminService = new AdminService($userRepository, new Auth($this->session));
+        $admin = $this->userService->createUser(UserData::adminData());
+        $this->auth->login($admin);
 
         $this->expectException(UserDoesNotExistException::class);
 
-        $adminService->unbanUser(888);
+        $this->adminService->unbanUser(888);
     }
 
     public function testThrowsExceptionWhenUnbanningNonBannedUser(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $user = $userService->createUser($this->userData());
-        $admin = $userService->createUser($this->adminData());
-        $auth = new Auth($this->session);
-        $auth->login($admin);
-        $adminService = new AdminService($userRepository, new Auth($this->session));
+        $user = $this->userService->createUser(UserData::memberOne());
+        $admin = $this->userService->createUser(UserData::adminData());
+        $this->auth->login($admin);
 
         $this->expectException(LogicException::class);
 
-        $adminService->unbanUser($user->getId());
+        $this->adminService->unbanUser($user->getId());
     }
 
     public function testThrowsExceptionWhenUnbanningUserWithNonAdminAccount(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userData['type'] = UserType::Banned->value;
-        $user = $userService->createUser($userData);
-        $adminPretender = $userService->createUser($this->userTwoData());
-        $auth = new Auth($this->session);
-        $auth->login($adminPretender);
-        $adminService = new AdminService($userRepository, new Auth($this->session));
+        $user = $this->userService->createUser($userData);
+        $adminPretender = $this->userService->createUser(UserData::memberTwo());
+        $this->auth->login($adminPretender);
 
         $this->expectException(LogicException::class);
 
-        $adminService->unbanUser($user->getId());
+        $this->adminService->unbanUser($user->getId());
     }
 }

@@ -16,17 +16,24 @@ use LogicException;
 use PDO;
 use PDOStatement;
 use PHPUnit\Framework\TestCase;
-use Tests\_data\UserDataProviderTrait;
+use Tests\_data\UserData;
 
 class UserServiceTest extends TestCase
 {
-    use UserDataProviderTrait;
+    private object $pdoStatementMock;
+    private object $pdoMock;
+    private UserRepository $userRepository;
+    private UserService $userService;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $_ENV['APP_DOMAIN'] = 'test.com';
+        $this->pdoStatementMock = $this->createMock(PDOStatement::class);
+        $this->pdoMock = $this->createMock(PDO::class);
+        $this->userRepository = new UserRepository($this->pdoMock);
+        $this->userService = new UserService($this->userRepository, new UserValidator(), new UserSanitizer());
     }
 
     //
@@ -35,13 +42,11 @@ class UserServiceTest extends TestCase
 
     public function testCreatesUserSuccessfully(): void
     {
-        $userData = $this->userData();
-
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(3))
+        $userData = UserData::memberOne();
+        $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturnCallback(function () use ($userData) {
@@ -49,7 +54,7 @@ class UserServiceTest extends TestCase
 
                 return $userData;
             });
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetchAll')
             ->with(PDO::FETCH_ASSOC)
             ->willReturnCallback(function () use ($userData) {
@@ -57,111 +62,96 @@ class UserServiceTest extends TestCase
 
                 return [$userData];
             });
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(3))
+
+        $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->once())
+            ->willReturn($this->pdoStatementMock);
+        $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $userService->createUser($userData);
+        $this->userService->createUser($userData);
 
-        $this->assertSame(1, $userRepository->find(1)->getId());
-        $this->assertCount(1, $userRepository->all());
+        $this->assertSame(1, $this->userRepository->find(1)->getId());
+        $this->assertCount(1, $this->userRepository->all());
     }
 
     public function testThrowsExceptionWhenAddingUserWithInvalidEmail(): void
     {
-        $userRepository = new UserRepository($this->createStub(PDO::class));
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userData['email'] = 'test';
 
         $this->expectException(InvalidArgumentException::class);
 
-        $userService->createUser($userData);
+        $this->userService->createUser($userData);
     }
 
     public function testThrowsExceptionWhenAddingUserWithInvalidFirstName(): void
     {
-        $userRepository = new UserRepository($this->createStub(PDO::class));
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userData['first_name'] = '';
 
         $this->expectException(InvalidArgumentException::class);
 
-        $userService->createUser($userData);
+        $this->userService->createUser($userData);
     }
 
     public function testThrowsExceptionWhenAddingUserWithInvalidLastName(): void
     {
-        $userRepository = new UserRepository($this->createStub(PDO::class));
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userData['last_name'] = '';
 
         $this->expectException(InvalidArgumentException::class);
 
-        $userService->createUser($userData);
+        $this->userService->createUser($userData);
     }
 
     public function testThrowsExceptionWhenAddingUserWithInvalidPassword(): void
     {
-        $userRepository = new UserRepository($this->createStub(PDO::class));
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userData['password'] = '123';
 
         $this->expectException(InvalidArgumentException::class);
 
-        $userService->createUser($userData);
+        $this->userService->createUser($userData);
     }
 
     public function testThrowsExceptionWhenAddingUserWithInvalidType(): void
     {
-        $userRepository = new UserRepository($this->createStub(PDO::class));
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
         $userData['type'] = 'superfantasticmember';
 
         $this->expectException(InvalidArgumentException::class);
 
-        $userService->createUser($userData);
+        $this->userService->createUser($userData);
     }
 
     public function testThrowsExceptionWhenTryingToCreateUserWithAnEmailThatAlreadyExists(): void
     {
-        $userData = $this->userData();
-        $userTwoData = $this->userTwoData();
+        $userData = UserData::memberOne();
+        $userTwoData = UserData::memberTwo();
         $userTwoData['email'] = $userData['email'];
 
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(2))
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('execute')
             ->willReturnOnConsecutiveCalls(
                 true,
                 $this->throwException(new LogicException("UNIQUE constraint failed: users.email"))
             );
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(2))
+
+        $this->pdoMock->expects($this->exactly(2))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->once())
+            ->willReturn($this->pdoStatementMock);
+        $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $userService->createUser($userData);
+        $this->userService->createUser($userData);
 
         $this->expectException(EmailAlreadyExistsException::class);
         $this->expectExceptionMessage("A user with the email '{$userData['email']}' already exists.");
 
-        $userService->createUser($userTwoData);
+        $this->userService->createUser($userTwoData);
     }
 
     //
@@ -170,14 +160,13 @@ class UserServiceTest extends TestCase
 
     public function testUpdatesUserSuccessfully(): void
     {
-        $userData = $this->userData();
-        $userUpdatedData = $this->userUpdatedData();
+        $userData = UserData::memberOne();
+        $userUpdatedData = UserData::updatedData();
 
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(5))
+        $this->pdoStatementMock->expects($this->exactly(5))
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->exactly(2))
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturnOnConsecutiveCalls(
@@ -193,7 +182,7 @@ class UserServiceTest extends TestCase
                     return $userUpdatedData;
                 })()
             );
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetchAll')
             ->with(PDO::FETCH_ASSOC)
             ->willReturnCallback(function () use ($userData) {
@@ -201,23 +190,22 @@ class UserServiceTest extends TestCase
 
                 return [$userData];
             });
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(5))
+
+        $this->pdoMock->expects($this->exactly(5))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->once())
+            ->willReturn($this->pdoStatementMock);
+        $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $user = $userService->createUser($userData);
-        $user = $userRepository->make($userUpdatedData, $user);
+        $user = $this->userService->createUser($userData);
+        $user = $this->userRepository->make($userUpdatedData, $user);
 
-        $userService->updateUser($user);
+        $this->userService->updateUser($user);
 
-        $updatedUser = $userRepository->find(1);
+        $updatedUser = $this->userRepository->find(1);
 
+        $this->assertCount(1, $this->userRepository->all());
         $this->assertSame(1, $updatedUser->getId());
         $this->assertSame($userUpdatedData['email'], $updatedUser->getEmail());
         $this->assertSame($userUpdatedData['first_name'], $updatedUser->getFirstName());
@@ -225,64 +213,55 @@ class UserServiceTest extends TestCase
         $this->assertSame($userUpdatedData['type'], $updatedUser->getType());
         $this->assertSame($userUpdatedData['created_at'], $updatedUser->getCreatedAt());
         $this->assertTrue(PasswordUtils::isPasswordHashed($updatedUser->getPassword()));
-        $this->assertCount(1, $userRepository->all());
     }
 
     public function testThrowsExceptionWhenUpdatingUserWithAnIdOfZero(): void
     {
         $user = new User();
         $user->setId(0);
-        $userRepository = new UserRepository($this->createStub(PDO::class));
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
 
         $this->expectException(LogicException::class);
 
-        $userService->updateUser($user);
+        $this->userService->updateUser($user);
     }
 
     public function testThrowsExceptionWhenUpdatingNonExistentUser(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturn(false);
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->once())
-            ->method('prepare')
-            ->willReturn($pdoStatementMock);
 
-        $userRepository = new UserRepository($pdoMock);
-        $user = $userRepository->make($this->userData());
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $user = $this->userRepository->make(UserData::memberOne());
         $user->setId(999999);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
 
         $this->expectException(UserDoesNotExistException::class);
 
-        $userService->updateUser($user);
+        $this->userService->updateUser($user);
     }
 
     public function testThrowsExceptionWhenUpdatingUserWithInvalidData(): void
     {
-        $userData = $this->userData();
-        $userRepository = new UserRepository($this->createStub(PDO::class));
-        $user = $userRepository->make($userData);
+        $userData = UserData::memberOne();
+        $user = $this->userRepository->make($userData);
         $user->setId(9999);
         $user->setEmail('test');
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
 
         $this->expectException(InvalidArgumentException::class);
 
-        $userService->updateUser($user);
+        $this->userService->updateUser($user);
     }
 
     public function testThrowsExceptionWhenTryingToUpdateUserWithAnEmailThatAlreadyExists(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(4))
+        $this->pdoStatementMock->expects($this->exactly(4))
             ->method('execute')
             ->willReturnOnConsecutiveCalls(
                 true,
@@ -290,36 +269,34 @@ class UserServiceTest extends TestCase
                 true,
                 $this->throwException(new LogicException("UNIQUE constraint failed: users.email"))
             );
-        $pdoStatementMock->expects($this->exactly(1))
+        $this->pdoStatementMock->expects($this->exactly(1))
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturnCallback(function () {
-                $userData = $this->userTwoData();
+                $userData = UserData::memberTwo();
                 $userData['id'] = 2;
 
                 return $userData;
             });
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(4))
+
+        $this->pdoMock->expects($this->exactly(4))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->exactly(2))
+            ->willReturn($this->pdoStatementMock);
+        $this->pdoMock->expects($this->exactly(2))
             ->method('lastInsertId')
             ->willReturn("1", "2");
 
-        $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $userData = $this->userData();
-        $userService->createUser($userData);
-        $userTwoData = $this->userTwoData();
-        $userTwo = $userService->createUser($userTwoData);
+        $userData = UserData::memberOne();
+        $this->userService->createUser($userData);
+        $userTwoData = UserData::memberTwo();
+        $userTwo = $this->userService->createUser($userTwoData);
 
         $userTwo->setEmail($userData['email']);
 
         $this->expectException(EmailAlreadyExistsException::class);
         $this->expectExceptionMessage("A user with the email '{$userData['email']}' already exists.");
 
-        $userService->updateUser($userTwo);
+        $this->userService->updateUser($userTwo);
     }
 
     //
@@ -328,23 +305,20 @@ class UserServiceTest extends TestCase
 
     public function testPasswordShouldBeHashedBeforeAddingUser(): void
     {
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
 
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->once())
+
+        $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->once())
+            ->willReturn($this->pdoStatementMock);
+        $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $user = $userService->createUser($userData);
+        $user = $this->userService->createUser($userData);
 
         $this->assertNotSame($userData['password'], $user->getPassword());
         $this->assertTrue(PasswordUtils::isPasswordHashed($user->getPassword()));
@@ -353,13 +327,12 @@ class UserServiceTest extends TestCase
     public function testPasswordShouldBeHashedBeforeUpdatingUser(): void
     {
         $updatedPassword = 'azerty123456';
-        $userData = $this->userData();
+        $userData = UserData::memberOne();
 
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(3))
+        $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturnOnConsecutiveCalls(
@@ -374,20 +347,18 @@ class UserServiceTest extends TestCase
                     return $userData;
                 })()
             );
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(3))
+
+        $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->once())
+            ->willReturn($this->pdoStatementMock);
+        $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $user = $userService->createUser($userData);
+        $user = $this->userService->createUser($userData);
 
         $user->setPassword($updatedPassword);
-        $userService->updateUser($user);
+        $this->userService->updateUser($user);
 
         $this->assertNotSame($updatedPassword, $user->getPassword());
         $this->assertTrue(PasswordUtils::isPasswordHashed($user->getPassword()));
@@ -399,22 +370,19 @@ class UserServiceTest extends TestCase
 
     public function testSanitizesDataBeforeCreatingAccount(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->once())
+
+        $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->once())
+            ->willReturn($this->pdoStatementMock);
+        $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $userData = $this->userUnsanitizedData();
-        $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $user = $userService->createUser($userData);
+        $userData = UserData::userUnsanitizedData();
+        $user = $this->userService->createUser($userData);
 
         $this->assertSame("John", $user->getFirstName());
         $this->assertSame('Doe Test', $user->getLastName());
@@ -425,14 +393,13 @@ class UserServiceTest extends TestCase
 
     public function testSanitizesDataBeforeUpdatingAccount(): void
     {
-        $userData = $this->userData();
-        $unsanitizedData = $this->userUnsanitizedData();
+        $userData = UserData::memberOne();
+        $unsanitizedData = UserData::userUnsanitizedData();
 
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(4))
+        $this->pdoStatementMock->expects($this->exactly(4))
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->exactly(2))
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturnOnConsecutiveCalls(
@@ -451,23 +418,21 @@ class UserServiceTest extends TestCase
                     return $unsanitizedData;
                 })()
             );
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(4))
+
+        $this->pdoMock->expects($this->exactly(4))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->once())
+            ->willReturn($this->pdoStatementMock);
+        $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService($userRepository, new UserValidator(), new UserSanitizer());
-        $user = $userService->createUser($userData);
+        $user = $this->userService->createUser($userData);
 
-        $user = $userRepository->make($unsanitizedData, $user);
+        $user = $this->userRepository->make($unsanitizedData, $user);
 
-        $userService->updateUser($user);
+        $this->userService->updateUser($user);
 
-        $user = $userRepository->find(1);
+        $user = $this->userRepository->find(1);
 
         $this->assertSame("scriptalert'XSS'script", $user->getFirstName());
         $this->assertSame('Sam', $user->getLastName());
@@ -481,25 +446,24 @@ class UserServiceTest extends TestCase
 
     public function testSoftDeletesUserSuccessfully(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(5))
+        $this->pdoStatementMock->expects($this->exactly(5))
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->exactly(2))
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturnCallback(function () {
-                    $userData = $this->userData();
+                    $userData = UserData::memberOne();
                     $userData['id'] = 1;
 
                     return $userData;
                 });
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetchAll')
             ->with(PDO::FETCH_ASSOC)
             ->willReturn([
                 (function () {
-                    $userData = $this->userData();
+                    $userData = UserData::memberOne();
                     $userData['id'] = 1;
                     $userData['email'] = 'deleted';
                     $userData['first_name'] = 'deleted';
@@ -509,25 +473,19 @@ class UserServiceTest extends TestCase
                     return $userData;
                 })()
             ]);
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(5))
+
+        $this->pdoMock->expects($this->exactly(5))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->once())
+            ->willReturn($this->pdoStatementMock);
+        $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService(
-            $userRepository,
-            new UserValidator(),
-            new UserSanitizer()
-        );
-        $user = $userService->createUser($this->userData());
+        $user = $this->userService->createUser(UserData::memberOne());
 
-        $deletedUser = $userService->softDeleteUser($user->getId());
+        $deletedUser = $this->userService->softDeleteUser($user->getId());
 
-        $this->assertCount(1, $userRepository->all());
+        $this->assertCount(1, $this->userRepository->all());
         $this->assertSame('deleted-1@' . $_ENV['APP_DOMAIN'], $deletedUser->getEmail());
         $this->assertSame('deleted', $deletedUser->getFirstName());
         $this->assertSame('deleted', $deletedUser->getLastName());
@@ -536,27 +494,20 @@ class UserServiceTest extends TestCase
 
     public function testThrowsExceptionWhenSoftDeletingUserWithAnIdOfZero(): void
     {
-        $userRepository = new UserRepository($this->createStub(PDO::class));
-        $userService = new UserService(
-            $userRepository,
-            new UserValidator(),
-            new UserSanitizer()
-        );
         $user = new User();
         $user->setId(0);
 
         $this->expectException(LogicException::class);
 
-        $userService->softDeleteUser($user->getId());
+        $this->userService->softDeleteUser($user->getId());
     }
 
     public function testThrowsExceptionWhenTryingToSoftDeleteUserThatAlreadySoftDeleted(): void
     {
-        $pdoStatmentMock = $this->createMock(PDOStatement::class);
-        $pdoStatmentMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
-        $pdoStatmentMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturn([
@@ -566,17 +517,11 @@ class UserServiceTest extends TestCase
                 'last_name' => 'deleted',
                 'type' => UserType::Deleted->value,
             ]);
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->once())
-            ->method('prepare')
-            ->willReturn($pdoStatmentMock);
 
-        $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService(
-            $userRepository,
-            new UserValidator(),
-            new UserSanitizer()
-        );
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
         $user = new User();
         $user->setId(1);
         $user->setType(UserType::Deleted->value);
@@ -584,75 +529,67 @@ class UserServiceTest extends TestCase
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage("Cannot delete a user that already has been deleted.");
 
-        $userService->softDeleteUser($user->getId());
+        $this->userService->softDeleteUser($user->getId());
     }
 
     public function testThrowsExceptionWhenSoftDeletingNonExistentUser(): void
     {
-        $pdoStatmentMock = $this->createMock(PDOStatement::class);
-        $pdoStatmentMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
-        $pdoStatmentMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturn(false);
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->once())
-            ->method('prepare')
-            ->willReturn($pdoStatmentMock);
 
-        $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService(
-            $userRepository,
-            new UserValidator(),
-            new UserSanitizer()
-        );
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
         $user = new User();
         $user->setId(999);
 
         $this->expectException(UserDoesNotExistException::class);
         $this->expectExceptionMessage("Cannot delete a user that does not exist.");
 
-        $userService->softDeleteUser($user->getId());
+        $this->userService->softDeleteUser($user->getId());
     }
 
     public function testSoftDeletesMultipleUsersSuccessfully(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(11))
+        $this->pdoStatementMock->expects($this->exactly(11))
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->exactly(6))
+        $this->pdoStatementMock->expects($this->exactly(6))
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturnOnConsecutiveCalls(
                 (function () {
-                    $userData = $this->userData();
+                    $userData = UserData::memberOne();
                     $userData['id'] = 1;
 
                     return $userData;
                 })(),
                 (function () {
-                    $userData = $this->userData();
+                    $userData = UserData::memberOne();
                     $userData['id'] = 1;
 
                     return $userData;
                 })(),
                 (function () {
-                    $userData = $this->userTwoData();
+                    $userData = UserData::memberTwo();
                     $userData['id'] = 2;
 
                     return $userData;
                 })(),
                 (function () {
-                    $userData = $this->userTwoData();
+                    $userData = UserData::memberTwo();
                     $userData['id'] = 2;
 
                     return $userData;
                 })(),
                 (function () {
-                    $userData = $this->userData();
+                    $userData = UserData::memberOne();
                     $userData['id'] = 1;
                     $userData['email'] = 'deleted-1@' . $_ENV['APP_DOMAIN'];
                     $userData['first_name'] = 'deleted';
@@ -662,7 +599,7 @@ class UserServiceTest extends TestCase
                     return $userData;
                 })(),
                 (function () {
-                    $userData = $this->userTwoData();
+                    $userData = UserData::memberTwo();
                     $userData['id'] = 2;
                     $userData['email'] = 'deleted-2@' . $_ENV['APP_DOMAIN'];
                     $userData['first_name'] = 'deleted';
@@ -672,12 +609,12 @@ class UserServiceTest extends TestCase
                     return $userData;
                 })()
             );
-        $pdoStatementMock->expects($this->exactly(1))
+        $this->pdoStatementMock->expects($this->exactly(1))
             ->method('fetchAll')
             ->with(PDO::FETCH_ASSOC)
             ->willReturn([
                 (function () {
-                    $userData = $this->userData();
+                    $userData = UserData::memberOne();
                     $userData['id'] = 1;
                     $userData['email'] = 'deleted-1@' . $_ENV['APP_DOMAIN'];
                     $userData['first_name'] = 'deleted';
@@ -687,7 +624,7 @@ class UserServiceTest extends TestCase
                     return $userData;
                 })(),
                 (function () {
-                    $userData = $this->userTwoData();
+                    $userData = UserData::memberTwo();
                     $userData['id'] = 2;
                     $userData['email'] = 'deleted-2@' . $_ENV['APP_DOMAIN'];
                     $userData['first_name'] = 'deleted';
@@ -698,30 +635,23 @@ class UserServiceTest extends TestCase
                 })()
             ]);
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(11))
+        $this->pdoMock->expects($this->exactly(11))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->exactly(2))
+            ->willReturn($this->pdoStatementMock);
+        $this->pdoMock->expects($this->exactly(2))
             ->method('lastInsertId')
             ->willReturn("1", "2");
 
-        $userRepository = new UserRepository($pdoMock);
-        $userService = new UserService(
-            $userRepository,
-            new UserValidator(),
-            new UserSanitizer()
-        );
-        $userOne = $userService->createUser($this->userData());
-        $userTwo = $userService->createUser($this->userTwoData());
+        $userOne = $this->userService->createUser(UserData::memberOne());
+        $userTwo = $this->userService->createUser(UserData::memberTwo());
 
-        $userService->softDeleteUser($userOne->getId());
-        $userService->softDeleteUser($userTwo->getId());
+        $this->userService->softDeleteUser($userOne->getId());
+        $this->userService->softDeleteUser($userTwo->getId());
 
-        $userOneDeleted = $userRepository->find($userOne->getId());
-        $userTwoDeleted = $userRepository->find($userTwo->getId());
+        $userOneDeleted = $this->userRepository->find($userOne->getId());
+        $userTwoDeleted = $this->userRepository->find($userTwo->getId());
 
-        $this->assertCount(2, $userRepository->all());
+        $this->assertCount(2, $this->userRepository->all());
         $this->assertSame('deleted-' . $userOneDeleted->getId() . '@' . $_ENV['APP_DOMAIN'], $userOneDeleted->getEmail());
         $this->assertSame('deleted', $userOneDeleted->getFirstName());
         $this->assertSame('deleted', $userOneDeleted->getLastName());
@@ -731,5 +661,4 @@ class UserServiceTest extends TestCase
         $this->assertSame('deleted', $userTwoDeleted->getLastName());
         $this->assertSame(UserType::Deleted->value, $userTwoDeleted->getType());
     }
-
 }

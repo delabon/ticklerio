@@ -5,23 +5,19 @@ namespace Tests\Feature;
 use App\Core\Http\HttpStatusCode;
 use App\Users\UserRepository;
 use App\Users\UserType;
+use Exception;
+use Tests\_data\UserData;
 use Tests\FeatureTestCase;
 
 class UserRegisterTest extends FeatureTestCase
 {
     public function testRegistersUserSuccessfully(): void
     {
-        $email = 'test@test.com';
+        $userData = UserData::memberOne();
+        $userData['csrf_token'] = $this->csrf->generate();
         $response = $this->post(
             '/ajax/register',
-            [
-                'email' => $email,
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'password' => '12345678',
-                'type' => UserType::Member->value,
-                'csrf_token' => $this->csrf->generate(),
-            ]
+            $userData
         );
 
         $userRepository = new UserRepository($this->pdo);
@@ -29,32 +25,24 @@ class UserRegisterTest extends FeatureTestCase
 
         $this->assertSame(200, $response->getStatusCode());
         $this->assertSame(1, $user->getId());
-        $this->assertSame($email, $user->getEmail());
+        $this->assertSame($userData['email'], $user->getEmail());
+        $this->assertSame($userData['first_name'], $user->getFirstName());
+        $this->assertSame($userData['last_name'], $user->getLastName());
+        $this->assertSame(UserType::Member->value, $user->getType());
     }
 
     public function testRegistersTwoUsersSuccessfully(): void
     {
-        $userOneData = [
-            'email' => 'test@test.com',
-            'first_name' => 'John',
-            'last_name' => 'Doe',
-            'password' => '12345678',
-            'type' => UserType::Admin->value,
-            'csrf_token' => $this->csrf->generate(),
-        ];
-        $userTwoData = [
-            'email' => 'admin@test.com',
-            'first_name' => 'Ahmed',
-            'last_name' => 'Balack',
-            'password' => '987654122',
-            'type' => UserType::Member->value,
-            'csrf_token' => $this->csrf->get(),
-        ];
+        $userOneData = UserData::memberOne();
+        $userOneData['csrf_token'] = $this->csrf->generate();
 
         $response1 = $this->post(
             '/ajax/register',
             $userOneData
         );
+
+        $userTwoData = UserData::memberTwo();
+        $userTwoData['csrf_token'] = $this->csrf->generate();
 
         $response2 = $this->post(
             '/ajax/register',
@@ -74,18 +62,18 @@ class UserRegisterTest extends FeatureTestCase
         $this->assertCount(2, $userRepository->all());
     }
 
-    public function testThrowsExceptionWhenAddingUserWithInvalidEmail(): void
+    /**
+     * @dataProvider invalidUserDataProvider
+     * @param array $userData
+     * @return void
+     * @throws Exception
+     */
+    public function testReturnsBadRequestResponseWhenRegisteringWithInvalidData(array $userData): void
     {
+        $userData['csrf_token'] = $this->csrf->generate();
         $response = $this->post(
             '/ajax/register',
-            [
-                'email' => 'test',
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'password' => '12345678',
-                'type' => UserType::Member->value,
-                'csrf_token' => $this->csrf->generate(),
-            ],
+            $userData,
             self::DISABLE_GUZZLE_EXCEPTION
         );
 
@@ -98,16 +86,11 @@ class UserRegisterTest extends FeatureTestCase
      */
     public function testUserTypeShouldAlwaysBeMemberWhenRegistering(): void
     {
+        $userData = UserData::memberOne();
+        $userData['csrf_token'] = $this->csrf->generate();
         $response = $this->post(
             '/ajax/register',
-            [
-                'email' => 'test@test.com',
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'password' => '12345678',
-                'type' => UserType::Admin->value,
-                'csrf_token' => $this->csrf->generate(),
-            ]
+            $userData
         );
 
         $userRepository = new UserRepository($this->pdo);
@@ -121,20 +104,61 @@ class UserRegisterTest extends FeatureTestCase
     public function testReturnsForbiddenResponseWhenCsrfTokenIsInvalid(): void
     {
         $this->csrf->generate();
+        $userData = UserData::memberOne();
+        $userData['csrf_token'] = 'invalid-csrf-token';
 
         $response = $this->post(
             '/ajax/register',
-            [
-                'email' => 'test@test.com',
-                'first_name' => 'John',
-                'last_name' => 'Doe',
-                'password' => '12345678',
-                'type' => UserType::Admin->value,
-                'csrf_token' => 'hahahaha',
-            ],
+            $userData,
             self::DISABLE_GUZZLE_EXCEPTION
         );
 
         $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+    }
+
+    /**
+     * Invalid type should be ignored and the user should be registered as a member
+     * @return array[]
+     */
+    public static function invalidUserDataProvider(): array
+    {
+        return [
+            'Invalid Email' => [
+                [
+                    'email' => 'invalidemail',
+                    'first_name' => 'John',
+                    'last_name' => 'Doe',
+                    'password' => 'strongpassword',
+                    'type' => UserType::Member->value,
+                ]
+            ],
+            'Empty First Name' => [
+                [
+                    'email' => 'john@example.com',
+                    'first_name' => '',
+                    'last_name' => 'Doe',
+                    'password' => 'strongpassword',
+                    'type' => UserType::Member->value
+                ]
+            ],
+            'Empty Last Name' => [
+                [
+                    'email' => 'john@example.com',
+                    'first_name' => 'John',
+                    'last_name' => '',
+                    'password' => 'strongpassword',
+                    'type' => UserType::Member->value
+                ]
+            ],
+            'Invalid Password' => [
+                [
+                    'email' => 'john@example.com',
+                    'first_name' => 'John',
+                    'last_name' => 'Doe',
+                    'password' => '123',
+                    'type' => UserType::Member->value
+                ]
+            ],
+        ];
     }
 }
