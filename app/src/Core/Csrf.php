@@ -6,7 +6,7 @@ use App\Core\Session\Session;
 use DateTime;
 use Exception;
 
-class Csrf
+readonly class Csrf
 {
     public const SESSION_KEY = 'session_csrf';
 

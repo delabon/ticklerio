@@ -21,8 +21,8 @@ readonly class Auth
             throw new LogicException('Cannot log in a user with an id of 0.');
         }
 
-        if ($user->getType() === UserType::Banned->value) {
-            throw new LogicException('Cannot log in a banned user.');
+        if (in_array($user->getType(), [UserType::Deleted->value, UserType::Banned->value])) {
+            throw new LogicException("Cannot log in a '{$user->getType()}' or pending user.");
         }
 
         $this->session->regenerateId();

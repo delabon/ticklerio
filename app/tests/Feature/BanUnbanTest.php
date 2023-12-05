@@ -12,19 +12,33 @@ use Tests\FeatureTestCase;
 
 class BanUnbanTest extends FeatureTestCase
 {
+    private Auth $auth;
+    private UserRepository $userRepository;
+    private UserFactory $userFactory;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->auth = new Auth($this->session);
+        $this->userRepository = new UserRepository($this->pdo);
+        $this->userFactory = new UserFactory($this->userRepository, Factory::create());
+    }
+
+    //
+    // Ban user
+    //
+
     public function testBansUserSuccessfully(): void
     {
-        $auth = new Auth($this->session);
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-        $user = $userFactory->create([
+        $user = $this->userFactory->create([
             'type' => UserType::Member->value,
         ])[0];
-        $admin = $userFactory->create([
+        $admin = $this->userFactory->create([
             'type' => UserType::Admin->value,
         ])[0];
 
-        $auth->login($admin);
+        $this->auth->login($admin);
 
         $response = $this->post(
             '/ajax/ban',
@@ -34,7 +48,7 @@ class BanUnbanTest extends FeatureTestCase
             ]
         );
 
-        $refreshedUser = $userRepository->find($user->getId());
+        $refreshedUser = $this->userRepository->find($user->getId());
 
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
         $this->assertTrue($refreshedUser->isBanned());
@@ -42,16 +56,13 @@ class BanUnbanTest extends FeatureTestCase
 
     public function testReturnsForbiddenWhenTryingToBansUserWithInvalidCsrfToken(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-        $user = $userFactory->create([
+        $user = $this->userFactory->create([
             'type' => UserType::Member->value,
         ])[0];
-        $admin = $userFactory->create([
+        $admin = $this->userFactory->create([
             'type' => UserType::Admin->value,
         ])[0];
-        $auth = new Auth($this->session);
-        $auth->login($admin);
+        $this->auth->login($admin);
 
         $response = $this->post(
             '/ajax/ban',
@@ -68,14 +79,11 @@ class BanUnbanTest extends FeatureTestCase
 
     public function testReturnsNotFoundResponseWhenTryingToBanNonExistentUser(): void
     {
-        $auth = new Auth($this->session);
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-        $admin = $userFactory->create([
+        $admin = $this->userFactory->create([
             'type' => UserType::Admin->value,
         ])[0];
 
-        $auth->login($admin);
+        $this->auth->login($admin);
 
         $response = $this->post(
             '/ajax/ban',
@@ -91,16 +99,13 @@ class BanUnbanTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToBanUserWithNonAdminAccount(): void
     {
-        $auth = new Auth($this->session);
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-        $user = $userFactory->create([
+        $user = $this->userFactory->create([
             'type' => UserType::Member->value,
         ])[0];
-        $adminPretender = $userFactory->create([
+        $adminPretender = $this->userFactory->create([
             'type' => UserType::Member->value,
         ])[0];
-        $auth->login($adminPretender);
+        $this->auth->login($adminPretender);
 
         $response = $this->post(
             '/ajax/ban',
@@ -117,9 +122,7 @@ class BanUnbanTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToBanUserWithoutLoggedIn(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-        $user = $userFactory->create([
+        $user = $this->userFactory->create([
             'type' => UserType::Member->value,
         ])[0];
 
@@ -135,18 +138,19 @@ class BanUnbanTest extends FeatureTestCase
         $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
     }
 
+    //
+    // Unban user
+    //
+
     public function testUnbansUserSuccessfully(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-        $user = $userFactory->create([
+        $user = $this->userFactory->create([
             'type' => UserType::Banned->value,
         ])[0];
-        $admin = $userFactory->create([
+        $admin = $this->userFactory->create([
             'type' => UserType::Admin->value,
         ])[0];
-        $auth = new Auth($this->session);
-        $auth->login($admin);
+        $this->auth->login($admin);
 
         $response = $this->post(
             '/ajax/unban',
@@ -156,23 +160,20 @@ class BanUnbanTest extends FeatureTestCase
             ]
         );
 
-        $refreshedUser = $userRepository->find($user->getId());
+        $refreshedUser = $this->userRepository->find($user->getId());
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
         $this->assertSame(UserType::Member->value, $refreshedUser->getType());
     }
 
     public function testReturnsForbiddenResponseWhenTryingToUnbanUserWithInvalidCsrfToken(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-        $user = $userFactory->create([
+        $user = $this->userFactory->create([
             'type' => UserType::Banned->value,
         ])[0];
-        $admin = $userFactory->create([
+        $admin = $this->userFactory->create([
             'type' => UserType::Admin->value,
         ])[0];
-        $auth = new Auth($this->session);
-        $auth->login($admin);
+        $this->auth->login($admin);
 
         $response = $this->post(
             '/ajax/unban',
@@ -189,9 +190,7 @@ class BanUnbanTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToUnbanUserWithoutLoggedIn(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-        $user = $userFactory->create([
+        $user = $this->userFactory->create([
             'type' => UserType::Banned->value,
         ])[0];
 
@@ -210,16 +209,13 @@ class BanUnbanTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToUnbanUserWithNonAdminAccount(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-        $user = $userFactory->create([
+        $user = $this->userFactory->create([
             'type' => UserType::Banned->value,
         ])[0];
-        $userTwo = $userFactory->create([
+        $userTwo = $this->userFactory->create([
             'type' => UserType::Member->value,
         ])[0];
-        $auth = new Auth($this->session);
-        $auth->login($userTwo);
+        $this->auth->login($userTwo);
 
         $response = $this->post(
             '/ajax/unban',
@@ -236,13 +232,10 @@ class BanUnbanTest extends FeatureTestCase
 
     public function testReturnsNotFoundResponseWhenTryingToUnbanNonExistentUser(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-        $admin = $userFactory->create([
+        $admin = $this->userFactory->create([
             'type' => UserType::Admin->value,
         ])[0];
-        $auth = new Auth($this->session);
-        $auth->login($admin);
+        $this->auth->login($admin);
 
         $response = $this->post(
             '/ajax/unban',

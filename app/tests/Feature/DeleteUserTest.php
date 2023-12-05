@@ -12,22 +12,30 @@ use App\Users\UserType;
 use App\Users\UserValidator;
 use Exception;
 use Faker\Factory;
-use Tests\_data\UserDataProviderTrait;
+use Tests\_data\UserData;
 use Tests\FeatureTestCase;
 
 class DeleteUserTest extends FeatureTestCase
 {
-    use UserDataProviderTrait;
+    private Auth $auth;
+    private UserRepository $userRepository;
+    private UserFactory $userFactory;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->auth = new Auth($this->session);
+        $this->userRepository = new UserRepository($this->pdo);
+        $this->userFactory = new UserFactory($this->userRepository, Factory::create());
+    }
 
     public function testDeletesUserSuccessfully(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-        $user = $userFactory->create([
+        $user = $this->userFactory->create([
             'type' => UserType::Member->value,
         ])[0];
-        $auth = new Auth($this->session);
-        $auth->login($user);
+        $this->auth->login($user);
 
         $response = $this->post(
             '/ajax/delete-user',
@@ -37,7 +45,7 @@ class DeleteUserTest extends FeatureTestCase
             ]
         );
 
-        $deletedUser = $userRepository->find($user->getId());
+        $deletedUser = $this->userRepository->find($user->getId());
 
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
         $this->assertSame('deleted-' . $deletedUser->getId() . '@' . $_ENV['APP_DOMAIN'], $deletedUser->getEmail());
@@ -48,13 +56,10 @@ class DeleteUserTest extends FeatureTestCase
 
     public function testDeletesMultipleUsersSuccessfully(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-        $userOne = $userFactory->create([
+        $userOne = $this->userFactory->create([
             'type' => UserType::Member->value,
         ])[0];
-        $auth = new Auth($this->session);
-        $auth->login($userOne);
+        $this->auth->login($userOne);
 
         $responseOne = $this->post(
             '/ajax/delete-user',
@@ -64,10 +69,10 @@ class DeleteUserTest extends FeatureTestCase
             ]
         );
 
-        $userTwo = $userFactory->create([
+        $userTwo = $this->userFactory->create([
             'type' => UserType::Member->value,
         ])[0];
-        $auth->login($userTwo);
+        $this->auth->login($userTwo);
 
         $responseTwo = $this->post(
             '/ajax/delete-user',
@@ -79,8 +84,8 @@ class DeleteUserTest extends FeatureTestCase
 
         $this->assertSame(HttpStatusCode::OK->value, $responseOne->getStatusCode());
         $this->assertSame(HttpStatusCode::OK->value, $responseTwo->getStatusCode());
-        $this->assertSame(UserType::Deleted->value, $userRepository->find($userOne->getId())->getLastName());
-        $this->assertSame(UserType::Deleted->value, $userRepository->find($userTwo->getId())->getLastName());
+        $this->assertSame(UserType::Deleted->value, $this->userRepository->find($userOne->getId())->getLastName());
+        $this->assertSame(UserType::Deleted->value, $this->userRepository->find($userTwo->getId())->getLastName());
     }
 
     public function testReturnsForbiddenResponseWhenTryingToSoftDeleteUserWithInvalidCsrfToken(): void
@@ -117,17 +122,13 @@ class DeleteUserTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToSoftDeleteUserWithDifferentAccount(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-        $user = $userFactory->create([
+        $user = $this->userFactory->create([
             'type' => UserType::Member->value,
         ])[0];
-        $userTwo = $userFactory->create([
+        $userTwo = $this->userFactory->create([
             'type' => UserType::Member->value,
         ])[0];
-
-        $auth = new Auth($this->session);
-        $auth->login($userTwo);
+        $this->auth->login($userTwo);
 
         $response = $this->post(
             '/ajax/delete-user',
@@ -145,13 +146,10 @@ class DeleteUserTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToSoftDeleteUserWithAnIdOfZero(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-        $userTwo = $userFactory->create([
+        $userTwo = $this->userFactory->create([
             'type' => UserType::Member->value,
         ])[0];
-        $auth = new Auth($this->session);
-        $auth->login($userTwo);
+        $this->auth->login($userTwo);
 
         $response = $this->post(
             '/ajax/delete-user',
@@ -173,10 +171,9 @@ class DeleteUserTest extends FeatureTestCase
      */
     public function testReturnsForbiddenResponseWhenTryingToSoftDeleteUserThatDoesNotExist(): void
     {
-        $user = (new UserRepository($this->pdo))->make($this->userData());
+        $user = $this->userRepository->make(UserData::memberOne());
         $user->setId(999);
-        $auth = new Auth($this->session);
-        $auth->login($user);
+        $this->auth->login($user);
 
         $response = $this->post(
             '/ajax/delete-user',
@@ -196,16 +193,13 @@ class DeleteUserTest extends FeatureTestCase
      * @return void
      * @throws Exception
      */
-    public function testReturnsBadRequestResponseWhenTryingToSoftDeleteUserThatAlreadyIsDeleted(): void
+    public function testReturnsBadRequestResponseWhenTryingToSoftDeleteUserThatHasAlreadyBeenDeleted(): void
     {
-        $userRepository = new UserRepository($this->pdo);
-        $userFactory = new UserFactory($userRepository, Factory::create());
-        $user = $userFactory->create([
+        $user = $this->userFactory->create([
             'type' => UserType::Member->value,
         ])[0];
-        $auth = new Auth($this->session);
-        $auth->login($user);
-        $userService = new UserService($userRepository, new userValidator(), new UserSanitizer());
+        $this->auth->login($user);
+        $userService = new UserService($this->userRepository, new userValidator(), new UserSanitizer());
         $userService->softDeleteUser($user->getId());
 
         $response = $this->post(
@@ -217,7 +211,7 @@ class DeleteUserTest extends FeatureTestCase
             self::DISABLE_GUZZLE_EXCEPTION
         );
 
-        $deletedUser = $userRepository->find($user->getId());
+        $deletedUser = $this->userRepository->find($user->getId());
 
         $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
         $this->assertStringContainsStringIgnoringCase('You must be logged in to delete this account.', $response->getBody()->getContents());

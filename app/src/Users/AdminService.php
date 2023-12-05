@@ -6,7 +6,7 @@ use App\Core\Auth;
 use App\Exceptions\UserDoesNotExistException;
 use LogicException;
 
-class AdminService
+readonly class AdminService
 {
     public function __construct(
         private UserRepository $userRepository,
@@ -30,8 +30,8 @@ class AdminService
             throw new UserDoesNotExistException("Cannot ban a user that does not exist.");
         }
 
-        if ($user->getType() === UserType::Banned->value) {
-            throw new LogicException("Cannot ban a user that is already banned.");
+        if (in_array($user->getType(), [UserType::Deleted->value, UserType::Banned->value])) {
+            throw new LogicException("Cannot ban a user that has been {$user->getType()}.");
         }
 
         $admin = $this->userRepository->find($this->auth->getUserId());

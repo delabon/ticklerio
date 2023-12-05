@@ -4,9 +4,9 @@ namespace Tests\_data;
 
 use App\Users\UserType;
 
-trait UserDataProviderTrait
+class UserData
 {
-    private function userData(): array
+    public static function memberOne(): array
     {
         $now = time();
 
@@ -21,22 +21,7 @@ trait UserDataProviderTrait
         ];
     }
 
-    private function adminData(): array
-    {
-        $now = time();
-
-        return [
-            'email' => 'admin@test.com',
-            'first_name' => 'Admin',
-            'last_name' => 'Flex',
-            'password' => '12345678',
-            'type' => UserType::Admin->value,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ];
-    }
-
-    private function userTwoData(): array
+    public static function memberTwo(): array
     {
         $now = time();
 
@@ -51,7 +36,22 @@ trait UserDataProviderTrait
         ];
     }
 
-    private function userUpdatedData(): array
+    public static function adminData(): array
+    {
+        $now = time();
+
+        return [
+            'email' => 'admin@test.com',
+            'first_name' => 'Admin',
+            'last_name' => 'Flex',
+            'password' => '12345678',
+            'type' => UserType::Admin->value,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ];
+    }
+
+    public static function updatedData(): array
     {
         $now = time();
 
@@ -66,7 +66,7 @@ trait UserDataProviderTrait
         ];
     }
 
-    private function userUnsanitizedData(): array
+    public static function userUnsanitizedData(): array
     {
         return [
             'email' => '“><svg/onload=confirm(1)>”@gmail.com',
