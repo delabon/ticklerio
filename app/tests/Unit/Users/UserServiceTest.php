@@ -532,6 +532,36 @@ class UserServiceTest extends TestCase
         $this->userService->softDeleteUser($user->getId());
     }
 
+    public function testThrowsExceptionWhenTryingToSoftDeleteUserThatHasBeenBanned(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () {
+                $userData = UserData::memberOne();
+                $userData['id'] = 1;
+                $userData['type'] = UserType::Banned->value;
+
+                return $userData;
+            });
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $user = new User();
+        $user->setId(1);
+        $user->setType(UserType::Banned->value);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("Cannot delete a user that already has been banned.");
+
+        $this->userService->softDeleteUser($user->getId());
+    }
+
     public function testThrowsExceptionWhenSoftDeletingNonExistentUser(): void
     {
         $this->pdoStatementMock->expects($this->once())

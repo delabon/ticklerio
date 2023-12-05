@@ -193,7 +193,7 @@ class DeleteUserTest extends FeatureTestCase
      * @return void
      * @throws Exception
      */
-    public function testReturnsBadRequestResponseWhenTryingToSoftDeleteUserThatAlreadyIsDeleted(): void
+    public function testReturnsBadRequestResponseWhenTryingToSoftDeleteUserThatHasAlreadyBeenDeleted(): void
     {
         $user = $this->userFactory->create([
             'type' => UserType::Member->value,
