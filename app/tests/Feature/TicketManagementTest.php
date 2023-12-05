@@ -14,21 +14,28 @@ use Tests\FeatureTestCase;
 
 class TicketManagementTest extends FeatureTestCase
 {
+    private TicketRepository $ticketRepository;
+    private UserFactory $userFactory;
+    private Auth $auth;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->ticketRepository = new TicketRepository($this->pdo);
+        $this->userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
+        $this->auth = new Auth($this->session);
+    }
+
     public function testAddsTicketSuccessfully(): void
     {
-        $userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
-        $user = $userFactory->create([
+        $user = $this->userFactory->create([
             'type' => UserType::Member->value,
         ])[0];
-        $auth = new Auth($this->session);
-        $auth->login($user);
-        $ticketRepository = new TicketRepository($this->pdo);
-
-        $this->assertTrue(true);
-        return;
+        $this->auth->login($user);
 
         $response = $this->post(
-            '/ajax/ticket/add',
+            '/ajax/ticket/create',
             [
                 'title' => 'Test ticket',
                 'description' => 'Test ticket description',
@@ -36,11 +43,11 @@ class TicketManagementTest extends FeatureTestCase
             ]
         );
 
-        $tickets = $ticketRepository->all();
+        $tickets = $this->ticketRepository->all();
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
         $this->assertCount(1, $tickets);
         $this->assertSame(1, $tickets[0]->getId());
-        $this->assertSame(1, $tickets[0]->getUserId());
+        $this->assertSame($user->getId(), $tickets[0]->getUserId());
         $this->assertSame(TicketStatus::Publish->value, $tickets[0]->getStatus());
         $this->assertSame('Test ticket', $tickets[0]->getTitle());
         $this->assertSame('Test ticket description', $tickets[0]->getDescription());

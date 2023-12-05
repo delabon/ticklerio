@@ -38,7 +38,7 @@ class DeleteUserTest extends FeatureTestCase
         $this->auth->login($user);
 
         $response = $this->post(
-            '/ajax/delete-user',
+            '/ajax/user/delete',
             [
                 'id' => $user->getId(),
                 'csrf_token' => $this->csrf->generate(),
@@ -62,7 +62,7 @@ class DeleteUserTest extends FeatureTestCase
         $this->auth->login($userOne);
 
         $responseOne = $this->post(
-            '/ajax/delete-user',
+            '/ajax/user/delete',
             [
                 'id' => $userOne->getId(),
                 'csrf_token' => $this->csrf->generate(),
@@ -75,7 +75,7 @@ class DeleteUserTest extends FeatureTestCase
         $this->auth->login($userTwo);
 
         $responseTwo = $this->post(
-            '/ajax/delete-user',
+            '/ajax/user/delete',
             [
                 'id' => $userTwo->getId(),
                 'csrf_token' => $this->csrf->generate(),
@@ -91,7 +91,7 @@ class DeleteUserTest extends FeatureTestCase
     public function testReturnsForbiddenResponseWhenTryingToSoftDeleteUserWithInvalidCsrfToken(): void
     {
         $response = $this->post(
-            '/ajax/delete-user',
+            '/ajax/user/delete',
             [
                 'id' => 999,
                 'csrf_token' => 'invalid-csrf-token',
@@ -107,7 +107,7 @@ class DeleteUserTest extends FeatureTestCase
     public function testReturnsForbiddenResponseWhenTryingToSoftDeleteUserWhenNotLoggedIn(): void
     {
         $response = $this->post(
-            '/ajax/delete-user',
+            '/ajax/user/delete',
             [
                 'id' => 999,
                 'csrf_token' => $this->csrf->generate(),
@@ -131,7 +131,7 @@ class DeleteUserTest extends FeatureTestCase
         $this->auth->login($userTwo);
 
         $response = $this->post(
-            '/ajax/delete-user',
+            '/ajax/user/delete',
             [
                 'id' => $user->getId(),
                 'csrf_token' => $this->csrf->generate(),
@@ -152,7 +152,7 @@ class DeleteUserTest extends FeatureTestCase
         $this->auth->login($userTwo);
 
         $response = $this->post(
-            '/ajax/delete-user',
+            '/ajax/user/delete',
             [
                 'id' => 0,
                 'csrf_token' => $this->csrf->generate(),
@@ -176,7 +176,7 @@ class DeleteUserTest extends FeatureTestCase
         $this->auth->login($user);
 
         $response = $this->post(
-            '/ajax/delete-user',
+            '/ajax/user/delete',
             [
                 'id' => $user->getId(),
                 'csrf_token' => $this->csrf->generate(),
@@ -203,7 +203,7 @@ class DeleteUserTest extends FeatureTestCase
         $userService->softDeleteUser($user->getId());
 
         $response = $this->post(
-            '/ajax/delete-user',
+            '/ajax/user/delete',
             [
                 'id' => $user->getId(),
                 'csrf_token' => $this->csrf->generate(),

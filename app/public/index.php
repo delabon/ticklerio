@@ -9,12 +9,15 @@ use App\Controllers\BanUnbanController;
 use App\Controllers\DeleteUserController;
 use App\Controllers\HomeController;
 use App\Controllers\RegisterController;
+use App\Controllers\TicketController;
 use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\Http\HttpStatusCode;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Middlewares\CheckUserMiddleware;
+use App\Tickets\TicketRepository;
+use App\Tickets\TicketService;
 use App\Users\AdminService;
 use App\Users\UserRepository;
 use App\Users\UserSanitizer;
@@ -72,7 +75,7 @@ if ($uri === '/') {
         new UserRepository($container->get(PDO::class)),
         $container->get(Csrf::class)
     );
-} elseif (preg_match("/^\/ajax\/ban\/?$/", $uri)) {
+} elseif (preg_match("/^\/ajax\/user\/ban\/?$/", $uri)) {
     // Ban a user via ajax
     $response = (new BanUnbanController())->ban(
         $container->get(Request::class),
@@ -82,7 +85,7 @@ if ($uri === '/') {
         ),
         $container->get(Csrf::class)
     );
-} elseif (preg_match("/^\/ajax\/unban\/?$/", $uri)) {
+} elseif (preg_match("/^\/ajax\/user\/unban\/?$/", $uri)) {
     // Unban a user via ajax
     $response = (new BanUnbanController())->unban(
         $container->get(Request::class),
@@ -92,7 +95,7 @@ if ($uri === '/') {
         ),
         $container->get(Csrf::class)
     );
-} elseif (preg_match("/^\/ajax\/delete-user\/?$/", $uri)) {
+} elseif (preg_match("/^\/ajax\/user\/delete\/?$/", $uri)) {
     // Delete a user via ajax
     $response = (new DeleteUserController())->delete(
         $container->get(Request::class),
@@ -100,6 +103,17 @@ if ($uri === '/') {
             new UserRepository($container->get(PDO::class)),
             new UserValidator(),
             new UserSanitizer()
+        ),
+        $container->get(Auth::class),
+        $container->get(Csrf::class)
+    );
+} elseif (preg_match("/^\/ajax\/ticket\/create\/?$/", $uri)) {
+    // Create a ticket via ajax
+    $response = (new TicketController())->create(
+        $container->get(Request::class),
+        new TicketService(
+            new TicketRepository($container->get(PDO::class)),
+            $container->get(Auth::class)
         ),
         $container->get(Auth::class),
         $container->get(Csrf::class)

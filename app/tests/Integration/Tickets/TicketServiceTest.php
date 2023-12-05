@@ -2,10 +2,12 @@
 
 namespace Tests\Integration\Tickets;
 
+use App\Core\Auth;
 use App\Tickets\Ticket;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketService;
 use App\Tickets\TicketStatus;
+use App\Users\User;
 use Tests\IntegrationTestCase;
 
 class TicketServiceTest extends IntegrationTestCase
@@ -20,14 +22,16 @@ class TicketServiceTest extends IntegrationTestCase
 
     public function testAddsTicketSuccessfully(): void
     {
+        $auth = new Auth($this->session);
+        $user = new User();
+        $user->setId(1);
+        $auth->login($user);
         $ticketRepository = new TicketRepository($this->pdo);
-        $ticketService = new TicketService($ticketRepository);
+        $ticketService = new TicketService($ticketRepository, $auth);
 
         $ticketService->createTicket([
             'title' => 'Test ticket',
             'description' => 'Test ticket description',
-            'status' => TicketStatus::Publish->value,
-            'user_id' => 1,
         ]);
 
         $ticket = $ticketRepository->find(1);
