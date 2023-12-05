@@ -25,6 +25,10 @@ class BanUnbanTest extends FeatureTestCase
         $this->userFactory = new UserFactory($this->userRepository, Factory::create());
     }
 
+    //
+    // Ban user
+    //
+
     public function testBansUserSuccessfully(): void
     {
         $user = $this->userFactory->create([
@@ -133,6 +137,10 @@ class BanUnbanTest extends FeatureTestCase
 
         $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
     }
+
+    //
+    // Unban user
+    //
 
     public function testUnbansUserSuccessfully(): void
     {

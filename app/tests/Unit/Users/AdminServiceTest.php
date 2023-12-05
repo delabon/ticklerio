@@ -182,7 +182,7 @@ class AdminServiceTest extends TestCase
         $this->adminService->banUser($user->getId());
     }
 
-    public function testThrowsExceptionWhenBanningUserThatIsAlreadyBanned(): void
+    public function testThrowsExceptionWhenBanningUserThatHasBeenBanned(): void
     {
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
@@ -210,6 +210,40 @@ class AdminServiceTest extends TestCase
         $this->auth->login($admin);
 
         $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("Cannot ban a user that has been banned.");
+
+        $this->adminService->banUser($user->getId());
+    }
+
+    public function testThrowsExceptionWhenBanningUserThatHasBeenDeleted(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () {
+                $userData = UserData::memberOne();
+                $userData['id'] = 999;
+                $userData['type'] = UserType::Deleted->value;
+
+                return $userData;
+            });
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $user = new User();
+        $user->setId(999);
+        $user->setType(UserType::Banned->value);
+        $admin = new User();
+        $admin->setId(55);
+        $this->auth->login($admin);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("Cannot ban a user that has been deleted.");
 
         $this->adminService->banUser($user->getId());
     }
@@ -234,7 +268,8 @@ class AdminServiceTest extends TestCase
         $admin->setId(55);
         $this->auth->login($admin);
 
-        $this->expectException(LogicException::class);
+        $this->expectException(UserDoesNotExistException::class);
+        $this->expectExceptionMessage("Cannot ban a user that does not exist.");
 
         $this->adminService->banUser($user->getId());
     }
