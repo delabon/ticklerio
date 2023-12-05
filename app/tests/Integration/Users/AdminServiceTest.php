@@ -61,15 +61,32 @@ class AdminServiceTest extends IntegrationTestCase
         $this->adminService->banUser($user->getId());
     }
 
-    public function testThrowsExceptionWhenBanningUserThatIsAlreadyBanned(): void
+    public function testThrowsExceptionWhenBanningUserThatHasAlreadyBeenBanned(): void
     {
-        $user = new User();
-        $user->setId(999);
+        $user = $this->userRepository->make(UserData::memberOne());
         $user->setType(UserType::Banned->value);
+        $this->userRepository->save($user);
+
         $admin = $this->userService->createUser(UserData::adminData());
         $this->auth->login($admin);
 
         $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("Cannot ban a user that has been banned.");
+
+        $this->adminService->banUser($user->getId());
+    }
+
+    public function testThrowsExceptionWhenBanningUserThatHasBeenDeleted(): void
+    {
+        $user = $this->userRepository->make(UserData::memberOne());
+        $user->setType(UserType::Deleted->value);
+        $this->userRepository->save($user);
+
+        $admin = $this->userService->createUser(UserData::adminData());
+        $this->auth->login($admin);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("Cannot ban a user that has been deleted.");
 
         $this->adminService->banUser($user->getId());
     }
@@ -82,6 +99,7 @@ class AdminServiceTest extends IntegrationTestCase
         $this->auth->login($admin);
 
         $this->expectException(UserDoesNotExistException::class);
+        $this->expectExceptionMessage("Cannot ban a user that does not exist.");
 
         $this->adminService->banUser($user->getId());
     }
