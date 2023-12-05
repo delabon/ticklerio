@@ -2,7 +2,6 @@
 
 namespace Tests\Unit\Users;
 
-use App\Users\UserType;
 use App\Users\UserValidator;
 use App\Utilities\PasswordUtils;
 use InvalidArgumentException;
@@ -11,23 +10,29 @@ use Tests\_data\UserData;
 
 class UserValidatorTest extends TestCase
 {
+    private array $userData;
+    private UserValidator $userValidator;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->userData = UserData::memberOne();
+        $this->userValidator = new UserValidator();
+    }
+
     public function testValidAllData(): void
     {
-        $userData = UserData::memberOne();
-        $userValidator = new UserValidator();
-
-        $userValidator->validate($userData);
+        $this->userValidator->validate($this->userData);
 
         $this->expectNotToPerformAssertions();
     }
 
     public function testHashedPasswordShouldPassTheValidationSuccessfully(): void
     {
-        $userData = UserData::memberOne();
-        $userData['password'] = PasswordUtils::hashPasswordIfNotHashed('123456789');
-        $userValidator = new UserValidator();
+        $this->userData['password'] = PasswordUtils::hashPasswordIfNotHashed('123456789');
 
-        $userValidator->validate($userData);
+        $this->userValidator->validate($this->userData);
 
         $this->expectNotToPerformAssertions();
     }
@@ -41,13 +46,11 @@ class UserValidatorTest extends TestCase
      */
     public function testThrowsExceptionWhenInvalidData($key, $value, $expectedException): void
     {
-        $userData = UserData::memberOne();
-        $userData[$key] = $value;
-        $userValidator = new UserValidator();
+        $this->userData[$key] = $value;
 
         $this->expectException($expectedException);
 
-        $userValidator->validate($userData);
+        $this->userValidator->validate($this->userData);
     }
 
     public static function invalidDataProvider(): array
