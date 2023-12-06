@@ -2,7 +2,6 @@
 
 namespace App\Abstracts;
 
-use App\Interfaces\EntityInterface;
 use App\Interfaces\RepositoryInterface;
 use PDO;
 
@@ -10,8 +9,6 @@ use function Symfony\Component\String\u;
 
 abstract class Repository implements RepositoryInterface
 {
-    protected string $entityClassName = '';
-
     /** @var array|string[] */
     protected array $validColumns = [];
 

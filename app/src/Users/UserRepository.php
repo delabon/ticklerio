@@ -11,8 +11,6 @@ use PDO;
 
 class UserRepository extends Repository
 {
-    protected string $entityClassName = User::class;
-
     /** @var array|string[] */
     protected array $validColumns = [
         'id',
