@@ -6,18 +6,27 @@ use App\Tickets\Ticket;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketStatus;
 use OutOfBoundsException;
+use Tests\_data\TicketData;
 use Tests\IntegrationTestCase;
 
 class TicketRepositoryTest extends IntegrationTestCase
 {
+    private TicketRepository $ticketRepository;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->ticketRepository = new TicketRepository($this->pdo);
+    }
+
     public function testAddsTicketSuccessfully(): void
     {
-        $ticketRepository = new TicketRepository($this->pdo);
-        $ticket = $this->makeTicketOne();
+        $ticket = TicketRepository::make(TicketData::one());
 
-        $ticketRepository->save($ticket);
+        $this->ticketRepository->save($ticket);
 
-        $tickets = $ticketRepository->all();
+        $tickets = $this->ticketRepository->all();
         $this->assertCount(1, $tickets);
         $this->assertInstanceOf(Ticket::class, $tickets[0]);
         $this->assertSame(1, $tickets[0]->getId());
@@ -31,14 +40,13 @@ class TicketRepositoryTest extends IntegrationTestCase
 
     public function testAddsMultipleTicketsSuccessfully(): void
     {
-        $ticketRepository = new TicketRepository($this->pdo);
-        $ticketOne = $this->makeTicketOne();
-        $ticketTwo = $this->makeTicketTwo();
+        $ticketOne = TicketRepository::make(TicketData::one());
+        $ticketTwo = $this->ticketRepository->make(TicketData::two());
 
-        $ticketRepository->save($ticketOne);
-        $ticketRepository->save($ticketTwo);
+        $this->ticketRepository->save($ticketOne);
+        $this->ticketRepository->save($ticketTwo);
 
-        $tickets = $ticketRepository->all();
+        $tickets = $this->ticketRepository->all();
         $this->assertCount(2, $tickets);
         $this->assertInstanceOf(Ticket::class, $tickets[0]);
         $this->assertInstanceOf(Ticket::class, $tickets[1]);
@@ -48,9 +56,8 @@ class TicketRepositoryTest extends IntegrationTestCase
 
     public function testUpdatesTicketSuccessfully(): void
     {
-        $ticketRepository = new TicketRepository($this->pdo);
-        $ticket = $this->makeTicketOne();
-        $ticketRepository->save($ticket);
+        $ticket = TicketRepository::make(TicketData::one());
+        $this->ticketRepository->save($ticket);
 
         $ticket->setTitle('Updated title');
         $ticket->setDescription('Updated description');
@@ -59,9 +66,9 @@ class TicketRepositoryTest extends IntegrationTestCase
         $ticket->setCreatedAt(111111);
         $ticket->setUpdatedAt(222222);
 
-        $ticketRepository->save($ticket);
+        $this->ticketRepository->save($ticket);
 
-        $tickets = $ticketRepository->all();
+        $tickets = $this->ticketRepository->all();
 
         $this->assertCount(1, $tickets);
         $this->assertInstanceOf(Ticket::class, $tickets[0]);
@@ -76,21 +83,19 @@ class TicketRepositoryTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenTryingToUpdateNonExistentTicket(): void
     {
-        $ticketRepository = new TicketRepository($this->pdo);
-        $ticket = $this->makeTicketOne();
+        $ticket = TicketRepository::make(TicketData::one());
         $ticket->setId(999);
 
         $this->expectException(OutOfBoundsException::class);
 
-        $ticketRepository->save($ticket);
+        $this->ticketRepository->save($ticket);
     }
 
     public function testFindsTicketSuccessfully(): void
     {
-        $ticketRepository = new TicketRepository($this->pdo);
-        $ticketRepository->save($this->makeTicketOne());
+        $this->ticketRepository->save(TicketRepository::make(TicketData::one()));
 
-        $ticket = $ticketRepository->find(1);
+        $ticket = $this->ticketRepository->find(1);
 
         $this->assertInstanceOf(Ticket::class, $ticket);
         $this->assertSame(1, $ticket->getId());
@@ -104,38 +109,8 @@ class TicketRepositoryTest extends IntegrationTestCase
 
     public function testReturnsFalseWhenTryingToFindNonExistentTicket(): void
     {
-        $ticketRepository = new TicketRepository($this->pdo);
-
-        $ticket = $ticketRepository->find(999);
+        $ticket = $this->ticketRepository->find(999);
 
         $this->assertFalse($ticket);
-    }
-
-    public function makeTicketOne(): Ticket
-    {
-        $time = time();
-        $ticket = new Ticket();
-        $ticket->setUserId(1);
-        $ticket->setTitle('Test ticket');
-        $ticket->setDescription('Test ticket description');
-        $ticket->setStatus(TicketStatus::Publish->value);
-        $ticket->setCreatedAt($time);
-        $ticket->setUpdatedAt($time);
-
-        return $ticket;
-    }
-
-    public function makeTicketTwo(): Ticket
-    {
-        $time = time();
-        $ticket = new Ticket();
-        $ticket->setUserId(1);
-        $ticket->setTitle('Test ticket number two');
-        $ticket->setDescription('Test ticket description number two');
-        $ticket->setStatus(TicketStatus::Draft->value);
-        $ticket->setCreatedAt($time);
-        $ticket->setUpdatedAt($time);
-
-        return $ticket;
     }
 }

@@ -9,16 +9,33 @@ use OutOfBoundsException;
 use PDO;
 use PDOStatement;
 use PHPUnit\Framework\TestCase;
+use Tests\_data\TicketData;
 
 class TicketRepositoryTest extends TestCase
 {
+    private object $pdoStatementMock;
+    private object $pdoMock;
+    private TicketRepository $ticketRepository;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->pdoStatementMock = $this->createMock(PDOStatement::class);
+        $this->pdoMock = $this->createMock(PDO::class);
+        $this->ticketRepository = new TicketRepository($this->pdoMock);
+    }
+
+    //
+    // Add
+    //
+
     public function testAddsTicketSuccessfully(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(2))
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetchAll')
             ->with(PDO::FETCH_ASSOC)
             ->willReturn([
@@ -33,20 +50,18 @@ class TicketRepositoryTest extends TestCase
                 ]
             ]);
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(2))
+        $this->pdoMock->expects($this->exactly(2))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->once())
+            ->willReturn($this->pdoStatementMock);
+        $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $ticketRepository = new TicketRepository($pdoMock);
-        $ticket = $this->makeTicketOne();
+        $ticket = TicketRepository::make(TicketData::one());
 
-        $ticketRepository->save($ticket);
+        $this->ticketRepository->save($ticket);
 
-        $tickets = $ticketRepository->all();
+        $tickets = $this->ticketRepository->all();
         $this->assertCount(1, $tickets);
         $this->assertInstanceOf(Ticket::class, $tickets[0]);
         $this->assertSame(1, $tickets[0]->getId());
@@ -60,11 +75,10 @@ class TicketRepositoryTest extends TestCase
 
     public function testAddsMultipleTicketsSuccessfully(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(3))
+        $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetchAll')
             ->with(PDO::FETCH_ASSOC)
             ->willReturn([
@@ -88,22 +102,20 @@ class TicketRepositoryTest extends TestCase
                 ]
             ]);
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(3))
+        $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->exactly(2))
+            ->willReturn($this->pdoStatementMock);
+        $this->pdoMock->expects($this->exactly(2))
             ->method('lastInsertId')
             ->willReturnOnConsecutiveCalls("1", "2");
 
-        $ticketRepository = new TicketRepository($pdoMock);
-        $ticketOne = $this->makeTicketOne();
-        $ticketTwo = $this->makeTicketTwo();
+        $ticketOne = TicketRepository::make(TicketData::one());
+        $ticketTwo = TicketRepository::make(TicketData::two());
 
-        $ticketRepository->save($ticketOne);
-        $ticketRepository->save($ticketTwo);
+        $this->ticketRepository->save($ticketOne);
+        $this->ticketRepository->save($ticketTwo);
 
-        $tickets = $ticketRepository->all();
+        $tickets = $this->ticketRepository->all();
         $this->assertCount(2, $tickets);
         $this->assertInstanceOf(Ticket::class, $tickets[0]);
         $this->assertInstanceOf(Ticket::class, $tickets[1]);
@@ -111,13 +123,16 @@ class TicketRepositoryTest extends TestCase
         $this->assertSame(2, $tickets[1]->getId());
     }
 
+    //
+    // Update
+    //
+
     public function testUpdatesTicketSuccessfully(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(4))
+        $this->pdoStatementMock->expects($this->exactly(4))
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturn([
@@ -129,7 +144,7 @@ class TicketRepositoryTest extends TestCase
                 'created_at' => time(),
                 'updated_at' => time(),
             ]);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetchAll')
             ->with(PDO::FETCH_ASSOC)
             ->willReturn([
@@ -144,17 +159,15 @@ class TicketRepositoryTest extends TestCase
                 ]
             ]);
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(4))
+        $this->pdoMock->expects($this->exactly(4))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->once())
+            ->willReturn($this->pdoStatementMock);
+        $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $ticketRepository = new TicketRepository($pdoMock);
-        $ticket = $this->makeTicketOne();
-        $ticketRepository->save($ticket);
+        $ticket = TicketRepository::make(TicketData::one());
+        $this->ticketRepository->save($ticket);
 
         $ticket->setTitle('Updated title');
         $ticket->setDescription('Updated description');
@@ -163,9 +176,9 @@ class TicketRepositoryTest extends TestCase
         $ticket->setCreatedAt(111111);
         $ticket->setUpdatedAt(222222);
 
-        $ticketRepository->save($ticket);
+        $this->ticketRepository->save($ticket);
 
-        $tickets = $ticketRepository->all();
+        $tickets = $this->ticketRepository->all();
 
         $this->assertCount(1, $tickets);
         $this->assertInstanceOf(Ticket::class, $tickets[0]);
@@ -180,35 +193,36 @@ class TicketRepositoryTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToUpdateNonExistentTicket(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturn(false);
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->once())
-            ->method('prepare')
-            ->willReturn($pdoStatementMock);
 
-        $ticketRepository = new TicketRepository($pdoMock);
-        $ticket = $this->makeTicketOne();
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $ticket = TicketRepository::make(TicketData::one());
         $ticket->setId(999);
 
         $this->expectException(OutOfBoundsException::class);
 
-        $ticketRepository->save($ticket);
+        $this->ticketRepository->save($ticket);
     }
+
+    //
+    // Find
+    //
 
     public function testFindsTicketSuccessfully(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(2))
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturn([
@@ -221,18 +235,16 @@ class TicketRepositoryTest extends TestCase
                 'updated_at' => time(),
             ]);
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(2))
+        $this->pdoMock->expects($this->exactly(2))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
-        $pdoMock->expects($this->once())
+            ->willReturn($this->pdoStatementMock);
+        $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $ticketRepository = new TicketRepository($pdoMock);
-        $ticketRepository->save($this->makeTicketOne());
+        $this->ticketRepository->save(TicketRepository::make(TicketData::one()));
 
-        $ticket = $ticketRepository->find(1);
+        $ticket = $this->ticketRepository->find(1);
 
         $this->assertInstanceOf(Ticket::class, $ticket);
         $this->assertSame(1, $ticket->getId());
@@ -246,26 +258,26 @@ class TicketRepositoryTest extends TestCase
 
     public function testReturnsFalseWhenTryingToFindNonExistentTicket(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->with([999])
             ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->willReturn(false);
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->once())
+        $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
+            ->willReturn($this->pdoStatementMock);
 
-        $ticketRepository = new TicketRepository($pdoMock);
-
-        $ticket = $ticketRepository->find(999);
+        $ticket = $this->ticketRepository->find(999);
 
         $this->assertFalse($ticket);
     }
+
+    //
+    // Make
+    //
 
     public function testMakeReturnsNewInstanceOfTicketSuccessfully(): void
     {
@@ -285,33 +297,5 @@ class TicketRepositoryTest extends TestCase
         $this->assertSame('Test ticket description', $ticket->getDescription());
         $this->assertGreaterThan(0, $ticket->getCreatedAt());
         $this->assertGreaterThan(0, $ticket->getUpdatedAt());
-    }
-
-    public function makeTicketOne(): Ticket
-    {
-        $time = time();
-        $ticket = new Ticket();
-        $ticket->setUserId(1);
-        $ticket->setTitle('Test ticket');
-        $ticket->setDescription('Test ticket description');
-        $ticket->setStatus(TicketStatus::Publish->value);
-        $ticket->setCreatedAt($time);
-        $ticket->setUpdatedAt($time);
-
-        return $ticket;
-    }
-
-    public function makeTicketTwo(): Ticket
-    {
-        $time = time();
-        $ticket = new Ticket();
-        $ticket->setUserId(1);
-        $ticket->setTitle('Test ticket number two');
-        $ticket->setDescription('Test ticket description number two');
-        $ticket->setStatus(TicketStatus::Draft->value);
-        $ticket->setCreatedAt($time);
-        $ticket->setUpdatedAt($time);
-
-        return $ticket;
     }
 }
