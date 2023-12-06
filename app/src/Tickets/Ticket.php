@@ -2,15 +2,17 @@
 
 namespace App\Tickets;
 
-class Ticket
+use App\Abstracts\Entity;
+
+class Ticket extends Entity
 {
-    private int $id = 0;
-    private int $userId = 0;
-    private string $title = '';
-    private string $description = '';
-    private string $status = TicketStatus::Draft->value;
-    private int $createdAt = 0;
-    private int $updatedAt = 0;
+    protected int $id = 0;
+    protected int $userId = 0;
+    protected string $title = '';
+    protected string $description = '';
+    protected string $status = TicketStatus::Draft->value;
+    protected int $createdAt = 0;
+    protected int $updatedAt = 0;
 
     public function getId(): int
     {

@@ -37,7 +37,7 @@ class UserRepositoryTest extends TestCase
     {
         $now = time();
         $userData = UserData::memberOne();
-        $user = $this->userRepository->make($userData);
+        $user = UserRepository::make($userData);
 
         $this->pdoStatementMock->expects($this->exactly(2))
             ->method('execute')
@@ -69,9 +69,9 @@ class UserRepositoryTest extends TestCase
     public function testAddsMultipleUsersSuccessfully(): void
     {
         $userOneData = UserData::memberOne();
-        $user = $this->userRepository->make($userOneData);
+        $user = UserRepository::make($userOneData);
         $userTwoData = UserData::memberTwo();
-        $user2 = $this->userRepository->make($userTwoData);
+        $user2 = UserRepository::make($userTwoData);
 
         $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
@@ -108,7 +108,7 @@ class UserRepositoryTest extends TestCase
     public function testUpdatesUserSuccessfully(): void
     {
         $userData = UserData::memberOne();
-        $user = $this->userRepository->make($userData);
+        $user = UserRepository::make($userData);
         $userUpdatedData = UserData::updatedData();
         $userUpdatedData['id'] = 1;
 
@@ -140,7 +140,7 @@ class UserRepositoryTest extends TestCase
         $this->userRepository->save($user);
 
         // Update user
-        $updatedUser = $this->userRepository->make($userUpdatedData);
+        $updatedUser = UserRepository::make($userUpdatedData);
         $this->userRepository->save($updatedUser);
 
         $users = $this->userRepository->all();
@@ -203,7 +203,7 @@ class UserRepositoryTest extends TestCase
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $user = $this->userRepository->make($userData);
+        $user = UserRepository::make($userData);
         $this->userRepository->save($user);
 
         $userFound = $this->userRepository->find($user->getId());
@@ -336,7 +336,7 @@ class UserRepositoryTest extends TestCase
     public function testMakesUserFromAnArrayOfData(): void
     {
         $userData = UserData::memberOne();
-        $user = $this->userRepository->make($userData);
+        $user = UserRepository::make($userData);
 
         $this->assertInstanceOf(User::class, $user);
         $this->assertSame($userData['email'], $user->getEmail());
@@ -352,6 +352,6 @@ class UserRepositoryTest extends TestCase
     {
         $user = new User();
 
-        $this->assertSame($user, $this->userRepository->make(UserData::memberOne(), $user));
+        $this->assertSame($user, UserRepository::make(UserData::memberOne(), $user));
     }
 }

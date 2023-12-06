@@ -2,33 +2,20 @@
 
 namespace App\Tickets;
 
+use App\Abstracts\Repository;
+use App\Interfaces\EntityInterface;
 use PDO;
 use OutOfBoundsException;
 use PDOException;
 
-use function Symfony\Component\String\u;
-
-class TicketRepository
+class TicketRepository extends Repository
 {
-    public function __construct(private readonly PDO $pdo)
+    protected function update(object $entity): void
     {
-    }
-
-    public function save(Ticket $ticket): void
-    {
-        if ($ticket->getId()) {
-            $this->update($ticket);
-        } else {
-            $this->insert($ticket);
-        }
-    }
-
-    private function update(Ticket $ticket): void
-    {
-        $result = $this->find($ticket->getId());
+        $result = $this->find($entity->getId());
 
         if (!$result) {
-            throw new OutOfBoundsException("The ticket with the id {$ticket->getId()} does not exist in the database.");
+            throw new OutOfBoundsException("The ticket with the id {$entity->getId()} does not exist in the database.");
         }
 
         $stmt = $this->pdo->prepare("
@@ -44,15 +31,15 @@ class TicketRepository
         ");
 
         $stmt->execute([
-            $ticket->getTitle(),
-            $ticket->getDescription(),
-            $ticket->getStatus(),
+            $entity->getTitle(),
+            $entity->getDescription(),
+            $entity->getStatus(),
             time(),
-            $ticket->getId(),
+            $entity->getId(),
         ]);
     }
 
-    private function insert(Ticket $ticket): void
+    protected function insert(object $entity): void
     {
         $stmt = $this->pdo->prepare("
             INSERT INTO
@@ -63,15 +50,15 @@ class TicketRepository
         ");
 
         $stmt->execute([
-            $ticket->getUserId(),
-            $ticket->getTitle(),
-            $ticket->getDescription(),
-            $ticket->getStatus(),
-            $ticket->getCreatedAt(),
-            $ticket->getUpdatedAt(),
+            $entity->getUserId(),
+            $entity->getTitle(),
+            $entity->getDescription(),
+            $entity->getStatus(),
+            $entity->getCreatedAt(),
+            $entity->getUpdatedAt(),
         ]);
 
-        $ticket->setId((int) $this->pdo->lastInsertId());
+        $entity->setId((int) $this->pdo->lastInsertId());
     }
 
     public function find(int $id): false|Ticket
@@ -104,7 +91,7 @@ class TicketRepository
 
     /**
      * @param array|string[] $columns
-     * @return Ticket[]|array
+     * @return array|Ticket[]
      */
     public function all(array $columns = ['*']): array
     {
@@ -131,23 +118,14 @@ class TicketRepository
     }
 
     /**
-     * @param array<string, mixed> $data
-     * @return Ticket
+     * @param string $column
+     * @param mixed $value
+     * @return array|Ticket[]
      */
-    public static function make(array $data): Ticket
+    public function findBy(string $column, mixed $value): array
     {
-        $ticket = new Ticket();
+        // TODO: Implement findBy() method.
 
-        foreach ($data as $key => $value) {
-            $method = u('set_' . $key)->camel()->toString();
-
-            if (!method_exists($ticket, $method)) {
-                continue;
-            }
-
-            $ticket->$method($value);
-        }
-
-        return $ticket;
+        return [];
     }
 }

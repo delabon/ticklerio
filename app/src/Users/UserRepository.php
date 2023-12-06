@@ -2,18 +2,19 @@
 
 namespace App\Users;
 
+use App\Abstracts\Repository;
 use App\Exceptions\UserDoesNotExistException;
 use InvalidArgumentException;
 use LogicException;
 use PDOException;
 use PDO;
 
-use function Symfony\Component\String\u;
-
-class UserRepository
+class UserRepository extends Repository
 {
+    protected string $entityClassName = User::class;
+
     /** @var array|string[] */
-    private array $validColumns = [
+    protected array $validColumns = [
         'id',
         'email',
         'password',
@@ -24,30 +25,12 @@ class UserRepository
         'updated_at',
     ];
 
-    public function __construct(private readonly PDO $pdo)
+    protected function update(object $entity): void
     {
-    }
-
-    /**
-     * Insert or update a user
-     * @param User $user
-     * @return void
-     */
-    public function save(User $user): void
-    {
-        if ($user->getId()) {
-            $this->update($user);
-        } else {
-            $this->insert($user);
-        }
-    }
-
-    private function update(User $user): void
-    {
-        $result = $this->find($user->getId());
+        $result = $this->find($entity->getId());
 
         if (!$result) {
-            throw new UserDoesNotExistException("The user with the id {$user->getId()} does not exist in the database.");
+            throw new UserDoesNotExistException("The user with the id {$entity->getId()} does not exist in the database.");
         }
 
         $stmt = $this->pdo->prepare("
@@ -65,18 +48,18 @@ class UserRepository
                 id = ?
         ");
         $stmt->execute([
-            $user->getEmail(),
-            $user->getType(),
-            $user->getFirstName(),
-            $user->getLastName(),
-            $user->getPassword(),
-            $user->getCreatedAt(),
+            $entity->getEmail(),
+            $entity->getType(),
+            $entity->getFirstName(),
+            $entity->getLastName(),
+            $entity->getPassword(),
+            $entity->getCreatedAt(),
             time(),
-            $user->getId()
+            $entity->getId()
         ]);
     }
 
-    private function insert(User $user): void
+    protected function insert(object $entity): void
     {
         $stmt = $this->pdo->prepare("
             INSERT INTO
@@ -85,20 +68,20 @@ class UserRepository
                 VALUES (?, ?, ?, ?, ?, ?, ?)
         ");
         $stmt->execute([
-            $user->getEmail(),
-            $user->getType(),
-            $user->getFirstName(),
-            $user->getLastName(),
-            $user->getPassword(),
-            $user->getCreatedAt(),
-            $user->getUpdatedAt(),
+            $entity->getEmail(),
+            $entity->getType(),
+            $entity->getFirstName(),
+            $entity->getLastName(),
+            $entity->getPassword(),
+            $entity->getCreatedAt(),
+            $entity->getUpdatedAt(),
         ]);
-        $user->setId((int)$this->pdo->lastInsertId());
+        $entity->setId((int)$this->pdo->lastInsertId());
     }
 
     /**
-     * @param array|string[] $columns
-     * @return User[]|array
+     * @param string[] $columns
+     * @return User[]
      */
     public function all(array $columns = ['*']): array
     {
@@ -118,12 +101,16 @@ class UserRepository
         $return = [];
 
         foreach ($results as $result) {
-            $return[] = self::make($result);
+            $return[] = UserRepository::make($result);
         }
 
         return $return;
     }
 
+    /**
+     * @param int $id
+     * @return false|User
+     */
     public function find(int $id): false|User
     {
         if (!$id) {
@@ -176,7 +163,7 @@ class UserRepository
             FROM
                 users
             WHERE
-                {$column} = ?
+                $column = ?
         ");
 
         try {
@@ -200,28 +187,5 @@ class UserRepository
         }
 
         return $return;
-    }
-
-    /**
-     * Instantiates a User using the data passed
-     * @param array|mixed[] $data
-     * @param User|null $user
-     * @return User
-     */
-    public function make(array $data, null|User $user = null): User
-    {
-        $user = is_null($user) ? new User() : $user;
-
-        foreach ($data as $key => $value) {
-            $method = u('set_' . $key)->camel()->toString();
-
-            if (!method_exists($user, $method)) {
-                continue;
-            }
-
-            $user->$method($value);
-        }
-
-        return $user;
     }
 }
