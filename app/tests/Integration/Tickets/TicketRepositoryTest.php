@@ -111,6 +111,6 @@ class TicketRepositoryTest extends IntegrationTestCase
     {
         $ticket = $this->ticketRepository->find(999);
 
-        $this->assertFalse($ticket);
+        $this->assertNull($ticket);
     }
 }

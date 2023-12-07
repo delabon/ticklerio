@@ -228,7 +228,7 @@ class UserRepositoryTest extends TestCase
 
         $userFound = $this->userRepository->find(99999);
 
-        $this->assertFalse($userFound);
+        $this->assertNull($userFound);
     }
 
     /**
@@ -290,11 +290,9 @@ class UserRepositoryTest extends TestCase
         $this->assertCount(0, $usersFound);
     }
 
-    public function testThrowsExceptionWhenFindUserWithAnIdOfZero(): void
+    public function testReturnsNullWhenTryingToFindUserWithAnIdOfZero(): void
     {
-        $this->expectException(LogicException::class);
-
-        $this->userRepository->find(0);
+        $this->assertNull($this->userRepository->find(0));
     }
 
     public static function validUserDataProvider(): array

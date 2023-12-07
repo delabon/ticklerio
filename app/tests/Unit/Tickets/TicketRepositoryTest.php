@@ -272,7 +272,12 @@ class TicketRepositoryTest extends TestCase
 
         $ticket = $this->ticketRepository->find(999);
 
-        $this->assertFalse($ticket);
+        $this->assertNull($ticket);
+    }
+
+    public function testReturnsNullWhenTryingToFindTicketWithAnIdOfZero(): void
+    {
+        $this->assertNull($this->ticketRepository->find(0));
     }
 
     //

@@ -114,7 +114,7 @@ class UserRepositoryTest extends IntegrationTestCase
     {
         $userFound = $this->userRepository->find(99999);
 
-        $this->assertFalse($userFound);
+        $this->assertNull($userFound);
     }
 
     /**

@@ -3,13 +3,28 @@
 namespace App\Tickets;
 
 use App\Abstracts\Repository;
-use App\Interfaces\EntityInterface;
-use PDO;
 use OutOfBoundsException;
-use PDOException;
+use PDO;
 
 class TicketRepository extends Repository
 {
+    protected string $table = 'tickets';
+
+    /** @var array|string[] */
+    protected array $validColumns = [
+        'id',
+        'user_id',
+        'title',
+        'description',
+        'status',
+        'created_at',
+        'updated_at',
+    ];
+
+    /**
+     * @param Ticket $entity
+     * @return void
+     */
     protected function update(object $entity): void
     {
         $result = $this->find($entity->getId());
@@ -39,6 +54,10 @@ class TicketRepository extends Repository
         ]);
     }
 
+    /**
+     * @param Ticket $entity
+     * @return void
+     */
     protected function insert(object $entity): void
     {
         $stmt = $this->pdo->prepare("
@@ -59,73 +78,5 @@ class TicketRepository extends Repository
         ]);
 
         $entity->setId((int) $this->pdo->lastInsertId());
-    }
-
-    public function find(int $id): false|Ticket
-    {
-        $stmt = $this->pdo->prepare("
-            SELECT
-                *
-            FROM
-                tickets
-            WHERE
-                id = ?
-        ");
-
-        try {
-            $stmt->execute([
-                $id
-            ]);
-            $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        } catch (PDOException $e) {
-            error_log($e->getMessage());
-            $result = false;
-        }
-
-        if (!$result) {
-            return false;
-        }
-
-        return self::make($result);
-    }
-
-    /**
-     * @param array|string[] $columns
-     * @return array|Ticket[]
-     */
-    public function all(array $columns = ['*']): array
-    {
-        $stmt = $this->pdo->prepare("
-            SELECT
-                " . implode(',', $columns) . "
-            FROM
-                tickets
-        ");
-        $stmt->execute();
-        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        if (!$results) {
-            return [];
-        }
-
-        $return = [];
-
-        foreach ($results as $result) {
-            $return[] = self::make($result);
-        }
-
-        return $return;
-    }
-
-    /**
-     * @param string $column
-     * @param mixed $value
-     * @return array|Ticket[]
-     */
-    public function findBy(string $column, mixed $value): array
-    {
-        // TODO: Implement findBy() method.
-
-        return [];
     }
 }
