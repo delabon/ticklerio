@@ -107,10 +107,26 @@ class TicketRepositoryTest extends IntegrationTestCase
         $this->assertGreaterThan(0, $ticket->getUpdatedAt());
     }
 
-    public function testReturnsFalseWhenTryingToFindNonExistentTicket(): void
+    public function testReturnsNullWhenTryingToFindNonExistentTicket(): void
     {
         $ticket = $this->ticketRepository->find(999);
 
         $this->assertNull($ticket);
+    }
+
+    public function testFindsAllTickets(): void
+    {
+        $ticketOne = $this->ticketRepository->make(TicketData::one());
+        $this->ticketRepository->save($ticketOne);
+        $ticketTwo = $this->ticketRepository->make(TicketData::two());
+        $this->ticketRepository->save($ticketTwo);
+
+        $ticketsFound = $this->ticketRepository->all();
+
+        $this->assertCount(2, $ticketsFound);
+        $this->assertSame(1, $ticketsFound[0]->getId());
+        $this->assertSame(2, $ticketsFound[1]->getId());
+        $this->assertInstanceOf(Ticket::class, $ticketsFound[0]);
+        $this->assertInstanceOf(Ticket::class, $ticketsFound[1]);
     }
 }

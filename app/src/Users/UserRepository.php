@@ -4,10 +4,6 @@ namespace App\Users;
 
 use App\Exceptions\UserDoesNotExistException;
 use App\Abstracts\Repository;
-use InvalidArgumentException;
-use LogicException;
-use PDOException;
-use PDO;
 
 class UserRepository extends Repository
 {

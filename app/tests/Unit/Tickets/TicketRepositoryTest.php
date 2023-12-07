@@ -2,14 +2,15 @@
 
 namespace Tests\Unit\Tickets;
 
-use App\Tickets\Ticket;
 use App\Tickets\TicketRepository;
-use App\Tickets\TicketStatus;
-use OutOfBoundsException;
-use PDO;
-use PDOStatement;
 use PHPUnit\Framework\TestCase;
+use App\Tickets\TicketStatus;
 use Tests\_data\TicketData;
+use OutOfBoundsException;
+use App\Tickets\Ticket;
+use PDOStatement;
+use PDO;
+use Tests\_data\UserData;
 
 class TicketRepositoryTest extends TestCase
 {
@@ -278,6 +279,49 @@ class TicketRepositoryTest extends TestCase
     public function testReturnsNullWhenTryingToFindTicketWithAnIdOfZero(): void
     {
         $this->assertNull($this->ticketRepository->find(0));
+    }
+
+    public function testFindsAllTickets(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(3))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () {
+                $ticketOneData = TicketData::one();
+                $ticketOneData['id'] = 1;
+                $ticketTwoData = TicketData::two();
+                $ticketTwoData['id'] = 2;
+
+                return [
+                    $ticketOneData,
+                    $ticketTwoData
+                ];
+            });
+
+        $this->pdoMock->expects($this->exactly(3))
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('lastInsertId')
+            ->willReturnOnConsecutiveCalls("1", "2");
+
+        $ticketOne = $this->ticketRepository->make(TicketData::one());
+        $this->ticketRepository->save($ticketOne);
+        $ticketTwo = $this->ticketRepository->make(TicketData::two());
+        $this->ticketRepository->save($ticketTwo);
+
+        $ticketsFound = $this->ticketRepository->all();
+
+        $this->assertCount(2, $ticketsFound);
+        $this->assertSame(1, $ticketsFound[0]->getId());
+        $this->assertSame(2, $ticketsFound[1]->getId());
+        $this->assertInstanceOf(Ticket::class, $ticketsFound[0]);
+        $this->assertInstanceOf(Ticket::class, $ticketsFound[1]);
     }
 
     //

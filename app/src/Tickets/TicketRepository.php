@@ -4,7 +4,6 @@ namespace App\Tickets;
 
 use App\Abstracts\Repository;
 use OutOfBoundsException;
-use PDO;
 
 class TicketRepository extends Repository
 {

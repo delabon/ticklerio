@@ -295,6 +295,49 @@ class UserRepositoryTest extends TestCase
         $this->assertNull($this->userRepository->find(0));
     }
 
+    public function testFindsAllUsers(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(3))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () {
+                $userOneData = UserData::memberOne();
+                $userOneData['id'] = 1;
+                $userTwoData = UserData::memberTwo();
+                $userTwoData['id'] = 2;
+
+                return [
+                    $userOneData,
+                    $userTwoData
+                ];
+            });
+
+        $this->pdoMock->expects($this->exactly(3))
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('lastInsertId')
+            ->willReturnOnConsecutiveCalls("1", "2");
+
+        $userOne = $this->userRepository->make(UserData::memberOne());
+        $this->userRepository->save($userOne);
+        $userTwo = $this->userRepository->make(UserData::memberTwo());
+        $this->userRepository->save($userTwo);
+
+        $usersFound = $this->userRepository->all();
+
+        $this->assertCount(2, $usersFound);
+        $this->assertSame(1, $usersFound[0]->getId());
+        $this->assertSame(2, $usersFound[1]->getId());
+        $this->assertInstanceOf(User::class, $usersFound[0]);
+        $this->assertInstanceOf(User::class, $usersFound[1]);
+    }
+
     public static function validUserDataProvider(): array
     {
         $userData = UserData::memberOne();
