@@ -24,7 +24,7 @@ class RepositoryTest extends IntegrationTestCase
     }
 
     //
-    // Insert new entity to database
+    // Insert
     //
 
     public function testInsertsNewEntityToDatabaseSuccessfully(): void
@@ -67,7 +67,7 @@ class RepositoryTest extends IntegrationTestCase
     }
 
     //
-    // Update existing entity in database
+    // Update
     //
 
     public function testUpdatesEntitySuccessfully(): void
@@ -153,6 +153,136 @@ class RepositoryTest extends IntegrationTestCase
         $this->expectExceptionMessage('The person your are trying to update does not exist in the database.');
 
         $personRepository->save($person);
+    }
+
+    //
+    // Find
+    //
+
+    public function testFindsEntitySuccessfully(): void
+    {
+        $pdoStatementMock = $this->createMock(PDOStatement::class);
+        $pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                    'id' => 1,
+                    'name' => 'test'
+                ]);
+
+        $pdoMock = $this->createMock(PDO::class);
+        $pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturn($pdoStatementMock);
+
+        $pdoMock->expects($this->once())
+            ->method('lastInsertId')
+            ->willReturn("1");
+
+        $personRepository = new PersonRepository($pdoMock);
+        $person = new Person();
+        $person->setName('test');
+        $personRepository->save($person);
+
+        $foundPerson = $personRepository->find(1);
+        $this->assertInstanceOf(Person::class, $foundPerson);
+        $this->assertEquals($foundPerson, $person);
+    }
+
+    public function testFindReturnsNullWhenTryingToFindNonExistentEntity(): void
+    {
+        $pdoStatementMock = $this->createMock(PDOStatement::class);
+        $pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn(false);
+
+        $pdoMock = $this->createMock(PDO::class);
+        $pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($pdoStatementMock);
+
+        $personRepository = new PersonRepository($pdoMock);
+
+        $this->assertNull($personRepository->find(999));
+    }
+
+    public function testFindsAllEntitiesSuccessfully(): void
+    {
+        $pdoStatementMock = $this->createMock(PDOStatement::class);
+        $pdoStatementMock->expects($this->exactly(3))
+            ->method('execute')
+            ->willReturn(true);
+
+        $pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                [
+                    'id' => 1,
+                    'name' => 'one'
+                ],
+                [
+                    'id' => 2,
+                    'name' => 'two'
+                ]
+            ]);
+
+        $pdoMock = $this->createMock(PDO::class);
+        $pdoMock->expects($this->exactly(3))
+            ->method('prepare')
+            ->willReturn($pdoStatementMock);
+
+        $pdoMock->expects($this->exactly(2))
+            ->method('lastInsertId')
+            ->willReturnOnConsecutiveCalls("1", "2");
+
+        $personRepository = new PersonRepository($pdoMock);
+        $personOne = new Person();
+        $personOne->setName('one');
+        $personRepository->save($personOne);
+        $personTwo = new Person();
+        $personTwo->setName('two');
+        $personRepository->save($personTwo);
+
+        $found = $personRepository->all();
+        $this->assertCount(2, $found);
+        $this->assertInstanceOf(Person::class, $found[0]);
+        $this->assertInstanceOf(Person::class, $found[1]);
+        $this->assertEquals($found[0], $personOne);
+        $this->assertEquals($found[1], $personTwo);
+        $this->assertSame('one', $found[0]->getName());
+        $this->assertSame('two', $found[1]->getName());
+    }
+
+    public function testAllReturnsEmptyArrayWhenNoEntriesInDatabase(): void
+    {
+        $pdoStatementMock = $this->createMock(PDOStatement::class);
+        $pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([]);
+
+        $pdoMock = $this->createMock(PDO::class);
+        $pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($pdoStatementMock);
+
+        $personRepository = new PersonRepository($pdoMock);
+
+        $this->assertCount(0, $personRepository->all());
     }
 }
 
