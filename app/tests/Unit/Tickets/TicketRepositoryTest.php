@@ -10,7 +10,6 @@ use OutOfBoundsException;
 use App\Tickets\Ticket;
 use PDOStatement;
 use PDO;
-use Tests\_data\UserData;
 
 class TicketRepositoryTest extends TestCase
 {
@@ -28,7 +27,7 @@ class TicketRepositoryTest extends TestCase
     }
 
     //
-    // Add
+    // Create
     //
 
     public function testAddsTicketSuccessfully(): void
@@ -257,7 +256,7 @@ class TicketRepositoryTest extends TestCase
         $this->assertGreaterThan(0, $ticket->getUpdatedAt());
     }
 
-    public function testReturnsFalseWhenTryingToFindNonExistentTicket(): void
+    public function testReturnsNullWhenTryingToFindNonExistentTicket(): void
     {
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
@@ -322,6 +321,24 @@ class TicketRepositoryTest extends TestCase
         $this->assertSame(2, $ticketsFound[1]->getId());
         $this->assertInstanceOf(Ticket::class, $ticketsFound[0]);
         $this->assertInstanceOf(Ticket::class, $ticketsFound[1]);
+    }
+
+    public function testFindsAllWithNoTicketsInTableShouldReturnEmptyArray(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->assertCount(0, $this->ticketRepository->all());
     }
 
     //

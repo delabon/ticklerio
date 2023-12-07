@@ -196,4 +196,9 @@ class UserRepositoryTest extends IntegrationTestCase
         $this->assertInstanceOf(User::class, $usersFound[0]);
         $this->assertInstanceOf(User::class, $usersFound[1]);
     }
+
+    public function testFindsAllWithNoUsersInTableShouldReturnEmptyArray(): void
+    {
+        $this->assertCount(0, $this->userRepository->all());
+    }
 }

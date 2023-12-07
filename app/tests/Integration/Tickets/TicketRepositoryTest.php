@@ -20,6 +20,10 @@ class TicketRepositoryTest extends IntegrationTestCase
         $this->ticketRepository = new TicketRepository($this->pdo);
     }
 
+    //
+    // Create
+    //
+
     public function testAddsTicketSuccessfully(): void
     {
         $ticket = TicketRepository::make(TicketData::one());
@@ -53,6 +57,10 @@ class TicketRepositoryTest extends IntegrationTestCase
         $this->assertSame(1, $tickets[0]->getId());
         $this->assertSame(2, $tickets[1]->getId());
     }
+
+    //
+    // Update
+    //
 
     public function testUpdatesTicketSuccessfully(): void
     {
@@ -91,6 +99,10 @@ class TicketRepositoryTest extends IntegrationTestCase
         $this->ticketRepository->save($ticket);
     }
 
+    //
+    // Find
+    //
+
     public function testFindsTicketSuccessfully(): void
     {
         $this->ticketRepository->save(TicketRepository::make(TicketData::one()));
@@ -128,5 +140,10 @@ class TicketRepositoryTest extends IntegrationTestCase
         $this->assertSame(2, $ticketsFound[1]->getId());
         $this->assertInstanceOf(Ticket::class, $ticketsFound[0]);
         $this->assertInstanceOf(Ticket::class, $ticketsFound[1]);
+    }
+
+    public function testFindsAllWithNoTicketsInTableShouldReturnEmptyArray(): void
+    {
+        $this->assertCount(0, $this->ticketRepository->all());
     }
 }
