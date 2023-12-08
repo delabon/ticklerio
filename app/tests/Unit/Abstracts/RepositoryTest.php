@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Abstracts;
 
+use PHPUnit\Framework\MockObject\Exception;
 use Tests\IntegrationTestCase;
 use InvalidArgumentException;
 use App\Abstracts\Repository;
@@ -10,17 +11,30 @@ use App\Abstracts\Entity;
 use PDOStatement;
 use PDO;
 
+use function Symfony\Component\String\u;
+
 class RepositoryTest extends IntegrationTestCase
 {
+    private object $pdoStatementMock;
+    private object $pdoMock;
+    private PersonRepository $personRepository;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->pdoStatementMock = $this->createMock(PDOStatement::class);
+        $this->pdoMock = $this->createMock(PDO::class);
+        $this->personRepository = new PersonRepository($this->pdoMock);
+    }
+
     //
     // Create new repository class
     //
 
     public function testCreatesNewRepositoryClassSuccessfully(): void
     {
-        $personRepository = new PersonRepository($this->createStub(PDO::class));
-
-        $this->assertInstanceOf(Repository::class, $personRepository);
+        $this->assertInstanceOf(Repository::class, $this->personRepository);
     }
 
     //
@@ -29,25 +43,22 @@ class RepositoryTest extends IntegrationTestCase
 
     public function testInsertsNewEntityToDatabaseSuccessfully(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->once())
+        $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
+            ->willReturn($this->pdoStatementMock);
 
-        $pdoMock->expects($this->once())
+        $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $personRepository = new PersonRepository($pdoMock);
         $person = new Person();
         $person->setName('test');
 
-        $personRepository->save($person);
+        $this->personRepository->save($person);
 
         $this->assertSame(1, $person->getId());
         $this->assertSame('test', $person->getName());
@@ -56,14 +67,13 @@ class RepositoryTest extends IntegrationTestCase
     // TODO: add the same test to app/tests/Unit/Users/UserRepositoryTest.php
     public function testThrowsExceptionWhenTryingToInsertWithEntityThatIsNotPerson(): void
     {
-        $personRepository = new PersonRepository($this->createStub(PDO::class));
         $person = new InvalidPerson();
         $person->setEmail('test');
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The entity must be an instance of Person.');
 
-        $personRepository->save($person);
+        $this->personRepository->save($person);
     }
 
     //
@@ -72,12 +82,11 @@ class RepositoryTest extends IntegrationTestCase
 
     public function testUpdatesEntitySuccessfully(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(4))
+        $this->pdoStatementMock->expects($this->exactly(4))
             ->method('execute')
             ->willReturn(true);
 
-        $pdoStatementMock->expects($this->exactly(2))
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturnOnConsecutiveCalls(
@@ -91,24 +100,22 @@ class RepositoryTest extends IntegrationTestCase
                 ],
             );
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(4))
+        $this->pdoMock->expects($this->exactly(4))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
+            ->willReturn($this->pdoStatementMock);
 
-        $pdoMock->expects($this->once())
+        $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $personRepository = new PersonRepository($pdoMock);
         $person = new Person();
         $person->setName('test');
-        $personRepository->save($person);
+        $this->personRepository->save($person);
 
         $person->setName('updated');
-        $personRepository->save($person);
+        $this->personRepository->save($person);
 
-        $foundPerson = $personRepository->find(1);
+        $foundPerson = $this->personRepository->find(1);
         $this->assertSame(1, $person->getId());
         $this->assertSame('updated', $person->getName());
         $this->assertInstanceOf(Person::class, $foundPerson);
@@ -117,7 +124,6 @@ class RepositoryTest extends IntegrationTestCase
     // TODO: add the same test to app/tests/Unit/Users/UserRepositoryTest.php
     public function testThrowsExceptionWhenTryingToUpdateWithEntityThatIsNotPerson(): void
     {
-        $personRepository = new PersonRepository($this->createStub(PDO::class));
         $person = new InvalidPerson();
         $person->setId(1);
         $person->setEmail('test');
@@ -125,26 +131,23 @@ class RepositoryTest extends IntegrationTestCase
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The entity must be an instance of Person.');
 
-        $personRepository->save($person);
+        $this->personRepository->save($person);
     }
 
     public function testThrowsExceptionWhenTryingToUpdateEntityThatDoesNotExist(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturn(false);
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->once())
+        $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
+            ->willReturn($this->pdoStatementMock);
 
-        $personRepository = new PersonRepository($pdoMock);
         $person = new Person();
         $person->setId(999);
         $person->setName('test');
@@ -152,7 +155,7 @@ class RepositoryTest extends IntegrationTestCase
         $this->expectException(OutOfBoundsException::class);
         $this->expectExceptionMessage('The person your are trying to update does not exist in the database.');
 
-        $personRepository->save($person);
+        $this->personRepository->save($person);
     }
 
     //
@@ -161,12 +164,11 @@ class RepositoryTest extends IntegrationTestCase
 
     public function testFindsEntitySuccessfully(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(2))
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('execute')
             ->willReturn(true);
 
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturn([
@@ -174,55 +176,48 @@ class RepositoryTest extends IntegrationTestCase
                     'name' => 'test'
                 ]);
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(2))
+        $this->pdoMock->expects($this->exactly(2))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
+            ->willReturn($this->pdoStatementMock);
 
-        $pdoMock->expects($this->once())
+        $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $personRepository = new PersonRepository($pdoMock);
         $person = new Person();
         $person->setName('test');
-        $personRepository->save($person);
+        $this->personRepository->save($person);
 
-        $foundPerson = $personRepository->find(1);
+        $foundPerson = $this->personRepository->find(1);
         $this->assertInstanceOf(Person::class, $foundPerson);
         $this->assertEquals($foundPerson, $person);
     }
 
     public function testFindReturnsNullWhenTryingToFindNonExistentEntity(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
 
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturn(false);
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->once())
+        $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
+            ->willReturn($this->pdoStatementMock);
 
-        $personRepository = new PersonRepository($pdoMock);
-
-        $this->assertNull($personRepository->find(999));
+        $this->assertNull($this->personRepository->find(999));
     }
 
     public function testFindsAllEntitiesSuccessfully(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(3))
+        $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
             ->willReturn(true);
 
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetchAll')
             ->with(PDO::FETCH_ASSOC)
             ->willReturn([
@@ -236,24 +231,22 @@ class RepositoryTest extends IntegrationTestCase
                 ]
             ]);
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(3))
+        $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
+            ->willReturn($this->pdoStatementMock);
 
-        $pdoMock->expects($this->exactly(2))
+        $this->pdoMock->expects($this->exactly(2))
             ->method('lastInsertId')
             ->willReturnOnConsecutiveCalls("1", "2");
 
-        $personRepository = new PersonRepository($pdoMock);
         $personOne = new Person();
         $personOne->setName('one');
-        $personRepository->save($personOne);
+        $this->personRepository->save($personOne);
         $personTwo = new Person();
         $personTwo->setName('two');
-        $personRepository->save($personTwo);
+        $this->personRepository->save($personTwo);
 
-        $found = $personRepository->all();
+        $found = $this->personRepository->all();
         $this->assertCount(2, $found);
         $this->assertInstanceOf(Person::class, $found[0]);
         $this->assertInstanceOf(Person::class, $found[1]);
@@ -265,24 +258,102 @@ class RepositoryTest extends IntegrationTestCase
 
     public function testAllReturnsEmptyArrayWhenNoEntriesInDatabase(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
 
-        $pdoStatementMock->expects($this->once())
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetchAll')
             ->with(PDO::FETCH_ASSOC)
             ->willReturn([]);
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->once())
+        $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
+            ->willReturn($this->pdoStatementMock);
 
-        $personRepository = new PersonRepository($pdoMock);
+        $this->assertCount(0, $this->personRepository->all());
+    }
 
-        $this->assertCount(0, $personRepository->all());
+    /**
+     * @dataProvider validPersonDataProvider
+     * @param $data
+     * @return void
+     * @throws Exception
+     */
+    public function testFindsByColumnValue($data): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                [
+                    'id' => 1,
+                    'name' => 'test'
+                ]
+            ]);
+
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->pdoMock->expects($this->once())
+            ->method('lastInsertId')
+            ->willReturn("1");
+
+        $personData = self::personData();
+        $person = new Person();
+        $person->setName($personData['name']);
+        $this->personRepository->save($person);
+
+        $found = $this->personRepository->findBy($data['key'], $data['value']);
+        $this->assertInstanceOf(Person::class, $found[0]);
+        $this->assertEquals($found[0], $person);
+        $method = u('get_' . $data['key'])->camel()->toString();
+        $this->assertSame($data['value'], $found[0]->$method());
+    }
+
+    public static function validPersonDataProvider(): array
+    {
+        $personData = self::personData();
+
+        return [
+            'Find by id' => [
+                [
+                    'key' => 'id',
+                    'value' => 1,
+                ]
+            ],
+            'Find by name' => [
+                [
+                    'key' => 'name',
+                    'value' => $personData['name'],
+                ]
+            ],
+        ];
+    }
+
+    /**
+     * This prevents from passing an invalid column and SQL injection attacks.
+     * @return void
+     * @throws Exception
+     */
+    public function testThrowsExceptionWhenTryingToFindEntityWithAnInvalidColumnName(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Invalid column name.');
+
+        $this->personRepository->findBy('and 1=1', 1);
+    }
+
+    public static function personData(): array
+    {
+        return [
+            'name' => 'test',
+        ];
     }
 }
 
