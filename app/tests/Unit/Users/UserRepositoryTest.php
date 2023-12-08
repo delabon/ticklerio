@@ -13,8 +13,6 @@ use App\Users\User;
 use PDOStatement;
 use PDO;
 
-use Tests\Unit\Abstracts\InvalidPerson;
-
 use function Symfony\Component\String\u;
 
 class UserRepositoryTest extends TestCase

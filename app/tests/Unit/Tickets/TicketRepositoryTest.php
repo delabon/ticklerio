@@ -12,7 +12,6 @@ use OutOfBoundsException;
 use App\Tickets\Ticket;
 use PDOStatement;
 use PDO;
-use Tests\Unit\Users\InvalidUser;
 
 class TicketRepositoryTest extends TestCase
 {
@@ -390,6 +389,14 @@ class TicketRepositoryTest extends TestCase
         $this->assertGreaterThan(0, $ticket->getCreatedAt());
         $this->assertGreaterThan(0, $ticket->getUpdatedAt());
     }
+
+    public function testPassingTicketInstanceToMakeShouldUpdateThatInstanceShouldNotCreateDifferentOne(): void
+    {
+        $ticket = new Ticket();
+
+        $this->assertSame($ticket, TicketRepository::make(TicketData::one(), $ticket));
+    }
+
 }
 
 class InvalidTicket extends Entity // phpcs:ignore

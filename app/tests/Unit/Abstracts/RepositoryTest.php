@@ -64,7 +64,6 @@ class RepositoryTest extends IntegrationTestCase
         $this->assertSame('test', $person->getName());
     }
 
-    // TODO: add the same test to app/tests/Unit/Users/UserRepositoryTest.php
     public function testThrowsExceptionWhenTryingToInsertWithEntityThatIsNotPerson(): void
     {
         $person = new InvalidPerson();
@@ -121,7 +120,6 @@ class RepositoryTest extends IntegrationTestCase
         $this->assertInstanceOf(Person::class, $foundPerson);
     }
 
-    // TODO: add the same test to app/tests/Unit/Users/UserRepositoryTest.php
     public function testThrowsExceptionWhenTryingToUpdateWithEntityThatIsNotPerson(): void
     {
         $person = new InvalidPerson();
