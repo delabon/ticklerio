@@ -3,7 +3,7 @@
 namespace Tests\Unit\Abstracts;
 
 use PHPUnit\Framework\MockObject\Exception;
-use Tests\IntegrationTestCase;
+use PHPUnit\Framework\TestCase;
 use InvalidArgumentException;
 use App\Abstracts\Repository;
 use OutOfBoundsException;
@@ -13,7 +13,7 @@ use PDO;
 
 use function Symfony\Component\String\u;
 
-class RepositoryTest extends IntegrationTestCase
+class RepositoryTest extends TestCase
 {
     private object $pdoStatementMock;
     private object $pdoMock;
