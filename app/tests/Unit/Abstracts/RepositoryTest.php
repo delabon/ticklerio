@@ -356,6 +356,30 @@ class RepositoryTest extends IntegrationTestCase
         $this->assertSame($data['value'], $found[0]->$method());
     }
 
+    /**
+     * @dataProvider validPersonDataProvider
+     * @param array $findData
+     * @return void
+     */
+    public function testReturnsEmptyArrayWhenFindingEntityWithNonExistentData(array $findData): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $usersFound = $this->personRepository->findBy($findData['key'], $findData['value']);
+
+        $this->assertCount(0, $usersFound);
+    }
+
     public static function validPersonDataProvider(): array
     {
         $personData = self::personData();

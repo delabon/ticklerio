@@ -256,7 +256,7 @@ class TicketRepositoryTest extends TestCase
     // Find
     //
 
-    public function testFindsTicketSuccessfully(): void
+    public function testFindsByIdSuccessfully(): void
     {
         $this->pdoStatementMock->expects($this->exactly(2))
             ->method('execute')
@@ -434,6 +434,30 @@ class TicketRepositoryTest extends TestCase
         $this->assertEquals($found[0], $ticket);
         $method = u('get_' . $data['key'])->camel()->toString();
         $this->assertSame($data['value'], $found[0]->$method());
+    }
+
+    /**
+     * @dataProvider validTicketDataProvider
+     * @param array $data
+     * @return void
+     */
+    public function testReturnsEmptyArrayWhenFindingTicketWithNonExistentData(array $data): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $usersFound = $this->ticketRepository->findBy($data['key'], $data['value']);
+
+        $this->assertCount(0, $usersFound);
     }
 
     public static function validTicketDataProvider(): array

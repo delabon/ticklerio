@@ -246,7 +246,7 @@ class UserRepositoryTest extends TestCase
         $this->assertEquals($userFound, $user);
     }
 
-    public function testFindsNonExistentUserShouldFail(): void
+    public function testReturnsNullWhenTryingToFindNonExistentUser(): void
     {
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
@@ -263,108 +263,6 @@ class UserRepositoryTest extends TestCase
         $userFound = $this->userRepository->find(99999);
 
         $this->assertNull($userFound);
-    }
-
-    /**
-     * @dataProvider validUserDataProvider
-     * @param array $findData
-     * @return void
-     */
-    public function testFindsUserByKeyAndValueSuccessfully(array $findData): void
-    {
-        $userData = UserData::memberOne();
-
-        $this->pdoStatementMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(true);
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetchAll')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturnCallback(function () use ($userData) {
-                $userData['id'] = 1;
-
-                return [$userData];
-            });
-
-        $this->pdoMock->expects($this->once())
-            ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
-
-        $usersFound = $this->userRepository->findBy($findData['key'], $findData['value']);
-        $method = 'get' . u($findData['key'])->camel()->toString();
-
-        $this->assertCount(1, $usersFound);
-        $this->assertSame(1, $usersFound[0]->getId());
-        $this->assertSame($findData['value'], $usersFound[0]->$method());
-    }
-
-    /**
-     * @dataProvider validUserDataProvider
-     * @param array $findData
-     * @return void
-     */
-    public function testReturnsEmptyArrayWhenFindingUserWithNonExistentData(array $findData): void
-    {
-        $this->pdoStatementMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(true);
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetchAll')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturn([]);
-
-        $this->pdoMock->expects($this->once())
-            ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
-
-        $usersFound = $this->userRepository->findBy($findData['key'], $findData['value']);
-
-        $this->assertCount(0, $usersFound);
-    }
-
-    public static function validUserDataProvider(): array
-    {
-        $userData = UserData::memberOne();
-
-        return [
-            'Find by email' => [
-                [
-                    'key' => 'email',
-                    'value' => $userData['email'],
-                ]
-            ],
-            'Find by first_name' => [
-                [
-                    'key' => 'first_name',
-                    'value' => $userData['first_name'],
-                ]
-            ],
-            'Find by last_name' => [
-                [
-                    'key' => 'last_name',
-                    'value' => $userData['last_name'],
-                ]
-            ],
-            'Find by type' => [
-                [
-                    'key' => 'type',
-                    'value' => $userData['type'],
-                ]
-            ],
-        ];
-    }
-
-    /**
-     * This prevents the user from trying to find a user by a column that does not exist
-     * and SQL injection attacks.
-     * @return void
-     */
-    public function testThrowsExceptionWhenFindUserWithAnInvalidColumnName(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid column name 'not_a_valid_column_name'.");
-
-        $this->userRepository->findBy('not_a_valid_column_name', 1);
     }
 
     public function testReturnsNullWhenTryingToFindUserWithAnIdOfZero(): void
@@ -431,6 +329,126 @@ class UserRepositoryTest extends TestCase
             ->willReturn($this->pdoStatementMock);
 
         $this->assertCount(0, $this->userRepository->all());
+    }
+
+    /**
+     * Prevents SQL injection attacks
+     * @return void
+     */
+    public function testThrowsExceptionWhenTryingToFindAllUsingInvalidColumns(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid column name '' and 1=1'.");
+
+        $this->userRepository->all(['id', "' and 1=1", 'invalid_column']);
+    }
+
+    /**
+     * @dataProvider validUserDataProvider
+     * @param array $data
+     * @return void
+     */
+    public function testFindsByColumnValue(array $data): void
+    {
+        $userData = UserData::memberOne();
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () use ($userData) {
+                $userData['id'] = 1;
+
+                return [$userData];
+            });
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $usersFound = $this->userRepository->findBy($data['key'], $data['value']);
+        $method = 'get' . u($data['key'])->camel()->toString();
+
+        $this->assertCount(1, $usersFound);
+        $this->assertSame(1, $usersFound[0]->getId());
+        $this->assertSame($data['value'], $usersFound[0]->$method());
+    }
+
+    /**
+     * @dataProvider validUserDataProvider
+     * @param array $findData
+     * @return void
+     */
+    public function testReturnsEmptyArrayWhenFindingUserWithNonExistentData(array $findData): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $usersFound = $this->userRepository->findBy($findData['key'], $findData['value']);
+
+        $this->assertCount(0, $usersFound);
+    }
+
+    public static function validUserDataProvider(): array
+    {
+        $userData = UserData::memberOne();
+        $userData['id'] = 1;
+
+        return [
+            'Find by id' => [
+                [
+                    'key' => 'id',
+                    'value' => $userData['id'],
+                ]
+            ],
+            'Find by email' => [
+                [
+                    'key' => 'email',
+                    'value' => $userData['email'],
+                ]
+            ],
+            'Find by first_name' => [
+                [
+                    'key' => 'first_name',
+                    'value' => $userData['first_name'],
+                ]
+            ],
+            'Find by last_name' => [
+                [
+                    'key' => 'last_name',
+                    'value' => $userData['last_name'],
+                ]
+            ],
+            'Find by type' => [
+                [
+                    'key' => 'type',
+                    'value' => $userData['type'],
+                ]
+            ],
+        ];
+    }
+
+    /**
+     * This prevents from passing an invalid column and SQL injection attacks.
+     * @return void
+     */
+    public function testThrowsExceptionWhenFindUserWithAnInvalidColumnName(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid column name 'not_a_valid_column_name'.");
+
+        $this->userRepository->findBy('not_a_valid_column_name', 1);
     }
 
     //
