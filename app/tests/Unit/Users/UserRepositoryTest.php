@@ -2,15 +2,18 @@
 
 namespace Tests\Unit\Users;
 
+use App\Abstracts\Entity;
+use App\Abstracts\Repository;
 use App\Exceptions\UserDoesNotExistException;
-use InvalidArgumentException;
-use LogicException;
-use PDO;
-use App\Users\User;
-use App\Users\UserRepository;
-use PDOStatement;
 use PHPUnit\Framework\TestCase;
+use App\Users\UserRepository;
+use InvalidArgumentException;
 use Tests\_data\UserData;
+use App\Users\User;
+use PDOStatement;
+use PDO;
+
+use Tests\Unit\Abstracts\InvalidPerson;
 
 use function Symfony\Component\String\u;
 
@@ -30,7 +33,16 @@ class UserRepositoryTest extends TestCase
     }
 
     //
-    // Create user
+    // Create new repository class
+    //
+
+    public function testCreatesNewRepositoryClassSuccessfully(): void
+    {
+        $this->assertInstanceOf(Repository::class, $this->userRepository);
+    }
+
+    //
+    // Create
     //
 
     public function testAddsUserSuccessfully(): void
@@ -101,8 +113,19 @@ class UserRepositoryTest extends TestCase
         $this->assertCount(2, $this->userRepository->all());
     }
 
+    public function testThrowsExceptionWhenTryingToInsertWithEntityThatIsNotUser(): void
+    {
+        $person = new InvalidUser();
+        $person->setName('test');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The entity must be an instance of User.');
+
+        $this->userRepository->save($person);
+    }
+
     //
-    // Update user
+    // Update
     //
 
     public function testUpdatesUserSuccessfully(): void
@@ -176,8 +199,20 @@ class UserRepositoryTest extends TestCase
         $this->userRepository->save($user);
     }
 
+    public function testThrowsExceptionWhenTryingToUpdateWithEntityThatIsNotUser(): void
+    {
+        $person = new InvalidUser();
+        $person->setId(1);
+        $person->setName('test');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The entity must be an instance of User.');
+
+        $this->userRepository->save($person);
+    }
+
     //
-    // Find user
+    // Find
     //
 
     public function testFindsUserByIdSuccessfully(): void
@@ -423,5 +458,31 @@ class UserRepositoryTest extends TestCase
         $user = new User();
 
         $this->assertSame($user, UserRepository::make(UserData::memberOne(), $user));
+    }
+}
+
+class InvalidUser extends Entity // phpcs:ignore
+{
+    private int $id = 0;
+    private string $name = '';
+
+    public function getId(): int
+    {
+        return $this->id;
+    }
+
+    public function setId(int $id): void
+    {
+        $this->id = $id;
+    }
+
+    public function setName(string $name): void
+    {
+        $this->name = $name;
+    }
+
+    public function getName(): string
+    {
+        return $this->name;
     }
 }

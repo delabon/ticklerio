@@ -4,6 +4,8 @@ namespace App\Users;
 
 use App\Exceptions\UserDoesNotExistException;
 use App\Abstracts\Repository;
+use InvalidArgumentException;
+use Tests\Unit\Abstracts\Person;
 
 class UserRepository extends Repository
 {
@@ -27,6 +29,8 @@ class UserRepository extends Repository
      */
     protected function update(object $entity): void
     {
+        $this->validateEntity($entity);
+
         $result = $this->find($entity->getId());
 
         if (!$result) {
@@ -65,6 +69,8 @@ class UserRepository extends Repository
      */
     protected function insert(object $entity): void
     {
+        $this->validateEntity($entity);
+
         $stmt = $this->pdo->prepare("
             INSERT INTO
                 users
@@ -81,5 +87,12 @@ class UserRepository extends Repository
             $entity->getUpdatedAt(),
         ]);
         $entity->setId((int)$this->pdo->lastInsertId());
+    }
+
+    private function validateEntity(object $entity): void
+    {
+        if (!is_a($entity, User::class)) {
+            throw new InvalidArgumentException('The entity must be an instance of User.');
+        }
     }
 }
