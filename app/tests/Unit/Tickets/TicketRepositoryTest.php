@@ -2,18 +2,18 @@
 
 namespace Tests\Unit\Tickets;
 
-use App\Abstracts\Entity;
-use App\Tickets\TicketRepository;
-use InvalidArgumentException;
+use App\Abstracts\Repository;
 use PHPUnit\Framework\MockObject\Exception;
+use App\Tickets\TicketRepository;
 use PHPUnit\Framework\TestCase;
+use InvalidArgumentException;
 use App\Tickets\TicketStatus;
 use Tests\_data\TicketData;
+use App\Abstracts\Entity;
 use OutOfBoundsException;
 use App\Tickets\Ticket;
 use PDOStatement;
 use PDO;
-use Tests\Unit\Abstracts\Person;
 
 use function Symfony\Component\String\u;
 
@@ -30,6 +30,16 @@ class TicketRepositoryTest extends TestCase
         $this->pdoStatementMock = $this->createMock(PDOStatement::class);
         $this->pdoMock = $this->createMock(PDO::class);
         $this->ticketRepository = new TicketRepository($this->pdoMock);
+    }
+
+    //
+    // Create new repository class
+    //
+
+    public function testCreatesNewRepositoryClassSuccessfully(): void
+    {
+        $this->assertInstanceOf(Repository::class, $this->ticketRepository);
+        $this->assertInstanceOf(TicketRepository::class, $this->ticketRepository);
     }
 
     //

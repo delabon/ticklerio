@@ -37,6 +37,7 @@ class UserRepositoryTest extends TestCase
     public function testCreatesNewRepositoryClassSuccessfully(): void
     {
         $this->assertInstanceOf(Repository::class, $this->userRepository);
+        $this->assertInstanceOf(UserRepository::class, $this->userRepository);
     }
 
     //
