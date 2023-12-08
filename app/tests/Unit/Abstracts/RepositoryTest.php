@@ -64,6 +64,35 @@ class RepositoryTest extends IntegrationTestCase
         $this->assertSame('test', $person->getName());
     }
 
+    public function testInsertsMultipleEntitiesToDatabaseSuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('lastInsertId')
+            ->willReturnOnConsecutiveCalls("1", "2");
+
+        $personOne = new Person();
+        $personOne->setName('one');
+
+        $personTwo = new Person();
+        $personTwo->setName('two');
+
+        $this->personRepository->save($personOne);
+        $this->personRepository->save($personTwo);
+
+        $this->assertSame(1, $personOne->getId());
+        $this->assertSame(2, $personTwo->getId());
+        $this->assertSame('one', $personOne->getName());
+        $this->assertSame('two', $personTwo->getName());
+    }
+
     public function testThrowsExceptionWhenTryingToInsertWithEntityThatIsNotPerson(): void
     {
         $person = new InvalidPerson();
