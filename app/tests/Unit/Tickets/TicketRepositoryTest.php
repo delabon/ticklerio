@@ -2,7 +2,9 @@
 
 namespace Tests\Unit\Tickets;
 
+use App\Abstracts\Entity;
 use App\Tickets\TicketRepository;
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use App\Tickets\TicketStatus;
 use Tests\_data\TicketData;
@@ -10,6 +12,7 @@ use OutOfBoundsException;
 use App\Tickets\Ticket;
 use PDOStatement;
 use PDO;
+use Tests\Unit\Users\InvalidUser;
 
 class TicketRepositoryTest extends TestCase
 {
@@ -123,6 +126,17 @@ class TicketRepositoryTest extends TestCase
         $this->assertSame(2, $tickets[1]->getId());
     }
 
+    public function testThrowsExceptionWhenTryingToInsertWithEntityThatIsNotTicket(): void
+    {
+        $entity = new InvalidTicket();
+        $entity->setTitle('test');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The entity must be an instance of Ticket.');
+
+        $this->ticketRepository->save($entity);
+    }
+
     //
     // Update
     //
@@ -211,6 +225,18 @@ class TicketRepositoryTest extends TestCase
         $this->expectException(OutOfBoundsException::class);
 
         $this->ticketRepository->save($ticket);
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateWithEntityThatIsNotTicket(): void
+    {
+        $entity = new InvalidTicket();
+        $entity->setId(1);
+        $entity->setTitle('test');
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The entity must be an instance of Ticket.');
+
+        $this->ticketRepository->save($entity);
     }
 
     //
@@ -363,5 +389,31 @@ class TicketRepositoryTest extends TestCase
         $this->assertSame('Test ticket description', $ticket->getDescription());
         $this->assertGreaterThan(0, $ticket->getCreatedAt());
         $this->assertGreaterThan(0, $ticket->getUpdatedAt());
+    }
+}
+
+class InvalidTicket extends Entity // phpcs:ignore
+{
+    private int $id = 0;
+    private string $title = '';
+
+    public function getId(): int
+    {
+        return $this->id;
+    }
+
+    public function setId(int $id): void
+    {
+        $this->id = $id;
+    }
+
+    public function getTitle(): string
+    {
+        return $this->title;
+    }
+
+    public function setTitle(string $title): void
+    {
+        $this->title = $title;
     }
 }

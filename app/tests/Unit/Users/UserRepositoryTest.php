@@ -115,13 +115,13 @@ class UserRepositoryTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToInsertWithEntityThatIsNotUser(): void
     {
-        $person = new InvalidUser();
-        $person->setName('test');
+        $entity = new InvalidUser();
+        $entity->setName('test');
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The entity must be an instance of User.');
 
-        $this->userRepository->save($person);
+        $this->userRepository->save($entity);
     }
 
     //
@@ -201,14 +201,14 @@ class UserRepositoryTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToUpdateWithEntityThatIsNotUser(): void
     {
-        $person = new InvalidUser();
-        $person->setId(1);
-        $person->setName('test');
+        $entity = new InvalidUser();
+        $entity->setId(1);
+        $entity->setName('test');
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The entity must be an instance of User.');
 
-        $this->userRepository->save($person);
+        $this->userRepository->save($entity);
     }
 
     //

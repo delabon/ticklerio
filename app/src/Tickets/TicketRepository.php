@@ -3,6 +3,8 @@
 namespace App\Tickets;
 
 use App\Abstracts\Repository;
+use App\Users\User;
+use InvalidArgumentException;
 use OutOfBoundsException;
 
 class TicketRepository extends Repository
@@ -26,6 +28,8 @@ class TicketRepository extends Repository
      */
     protected function update(object $entity): void
     {
+        $this->validateEntity($entity);
+
         $result = $this->find($entity->getId());
 
         if (!$result) {
@@ -59,6 +63,8 @@ class TicketRepository extends Repository
      */
     protected function insert(object $entity): void
     {
+        $this->validateEntity($entity);
+
         $stmt = $this->pdo->prepare("
             INSERT INTO
                 tickets
@@ -77,5 +83,12 @@ class TicketRepository extends Repository
         ]);
 
         $entity->setId((int) $this->pdo->lastInsertId());
+    }
+
+    private function validateEntity(object $entity): void
+    {
+        if (!is_a($entity, Ticket::class)) {
+            throw new InvalidArgumentException('The entity must be an instance of Ticket.');
+        }
     }
 }
