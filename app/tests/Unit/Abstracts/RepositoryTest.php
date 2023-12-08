@@ -191,7 +191,7 @@ class RepositoryTest extends IntegrationTestCase
         $this->assertEquals($foundPerson, $person);
     }
 
-    public function testFindReturnsNullWhenTryingToFindNonExistentEntity(): void
+    public function testReturnsNullWhenTryingToFindNonExistentEntity(): void
     {
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
@@ -207,6 +207,11 @@ class RepositoryTest extends IntegrationTestCase
             ->willReturn($this->pdoStatementMock);
 
         $this->assertNull($this->personRepository->find(999));
+    }
+
+    public function testReturnsNullWhenTryingToFindEntityWithAnIdOfZero(): void
+    {
+        $this->assertNull($this->personRepository->find(0));
     }
 
     public function testFindsAllEntitiesSuccessfully(): void
@@ -254,7 +259,7 @@ class RepositoryTest extends IntegrationTestCase
         $this->assertSame('two', $found[1]->getName());
     }
 
-    public function testAllReturnsEmptyArrayWhenNoEntriesInDatabase(): void
+    public function testFindsAllWithNoEntitiesInTableShouldReturnEmptyArray(): void
     {
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
@@ -346,7 +351,7 @@ class RepositoryTest extends IntegrationTestCase
      * This prevents from passing an invalid column and SQL injection attacks.
      * @return void
      */
-    public function testThrowsExceptionWhenTryingToFindEntityWithAnInvalidColumnName(): void
+    public function testThrowsExceptionWhenTryingToFindByWithAnInvalidColumnName(): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Invalid column name 'and 1=1'.");

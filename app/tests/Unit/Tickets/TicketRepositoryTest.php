@@ -5,6 +5,7 @@ namespace Tests\Unit\Tickets;
 use App\Abstracts\Entity;
 use App\Tickets\TicketRepository;
 use InvalidArgumentException;
+use PHPUnit\Framework\MockObject\Exception;
 use PHPUnit\Framework\TestCase;
 use App\Tickets\TicketStatus;
 use Tests\_data\TicketData;
@@ -12,6 +13,9 @@ use OutOfBoundsException;
 use App\Tickets\Ticket;
 use PDOStatement;
 use PDO;
+use Tests\Unit\Abstracts\Person;
+
+use function Symfony\Component\String\u;
 
 class TicketRepositoryTest extends TestCase
 {
@@ -305,7 +309,7 @@ class TicketRepositoryTest extends TestCase
         $this->assertNull($this->ticketRepository->find(0));
     }
 
-    public function testFindsAllTickets(): void
+    public function testFindsAllTicketsSuccessfully(): void
     {
         $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
@@ -366,6 +370,112 @@ class TicketRepositoryTest extends TestCase
         $this->assertCount(0, $this->ticketRepository->all());
     }
 
+    /**
+     * Prevents SQL injection attacks
+     * @return void
+     */
+    public function testThrowsExceptionWhenTryingToFindAllUsingInvalidColumns(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid column name '' and 1=1'.");
+
+        $this->ticketRepository->all(['id', "' and 1=1", 'invalid_column']);
+    }
+
+    /**
+     * @dataProvider validTicketDataProvider
+     * @param $data
+     * @return void
+     * @throws Exception
+     */
+    public function testFindsByColumnValue($data): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () {
+                $ticketOneData = TicketData::one();
+                $ticketOneData['id'] = 1;
+
+                return [
+                    $ticketOneData,
+                ];
+            });
+
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->pdoMock->expects($this->once())
+            ->method('lastInsertId')
+            ->willReturn("1");
+
+        $ticketData = TicketData::one();
+        $ticket = $this->ticketRepository->make($ticketData);
+        $this->ticketRepository->save($ticket);
+
+        $found = $this->ticketRepository->findBy($data['key'], $data['value']);
+
+        $this->assertInstanceOf(Ticket::class, $found[0]);
+        $this->assertEquals($found[0], $ticket);
+        $method = u('get_' . $data['key'])->camel()->toString();
+        $this->assertSame($data['value'], $found[0]->$method());
+    }
+
+    public static function validTicketDataProvider(): array
+    {
+        $ticketData = TicketData::one();
+
+        return [
+            'Find by id' => [
+                [
+                    'key' => 'id',
+                    'value' => 1,
+                ]
+            ],
+            'Find by user id' => [
+                [
+                    'key' => 'user_id',
+                    'value' => $ticketData['user_id'],
+                ]
+            ],
+            'Find by title' => [
+                [
+                    'key' => 'title',
+                    'value' => $ticketData['title'],
+                ]
+            ],
+            'Find by description' => [
+                [
+                    'key' => 'description',
+                    'value' => $ticketData['description'],
+                ]
+            ],
+            'Find by status' => [
+                [
+                    'key' => 'status',
+                    'value' => $ticketData['status'],
+                ]
+            ],
+        ];
+    }
+
+    /**
+     * This prevents from passing an invalid column and SQL injection attacks.
+     * @return void
+     */
+    public function testThrowsExceptionWhenTryingToFindByWithAnInvalidColumnName(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid column name 'and 1=1'.");
+
+        $this->ticketRepository->findBy('and 1=1', 1);
+    }
+
     //
     // Make
     //
@@ -396,7 +506,6 @@ class TicketRepositoryTest extends TestCase
 
         $this->assertSame($ticket, TicketRepository::make(TicketData::one(), $ticket));
     }
-
 }
 
 class InvalidTicket extends Entity // phpcs:ignore
