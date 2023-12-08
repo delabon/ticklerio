@@ -83,11 +83,7 @@ abstract class Repository implements RepositoryInterface
      */
     public function findBy(string $column, mixed $value): array
     {
-        $column = strtolower($column);
-
-        if (!in_array($column, $this->validColumns)) {
-            throw new InvalidArgumentException("Invalid column name.");
-        }
+        $this->validateColumns([$column]);
 
         $stmt = $this->pdo->prepare("
             SELECT
@@ -128,6 +124,8 @@ abstract class Repository implements RepositoryInterface
      */
     public function all(array $columns = ['*']): array
     {
+        $this->validateColumns($columns);
+
         $stmt = $this->pdo->prepare("
             SELECT
                 " . implode(',', $columns) . "
@@ -181,5 +179,24 @@ abstract class Repository implements RepositoryInterface
         $className = str_replace('Repository', '', $className);
 
         return implode('\\', $parts) . '\\' . $className;
+    }
+
+    /**
+     * @param array<string> $columns
+     * @return void
+     */
+    private function validateColumns(array $columns): void
+    {
+        foreach ($columns as $column) {
+            $column = strtolower($column);
+
+            if ($column === '*') {
+                continue;
+            }
+
+            if (!in_array($column, $this->validColumns)) {
+                throw new InvalidArgumentException("Invalid column name '{$column}'.");
+            }
+        }
     }
 }

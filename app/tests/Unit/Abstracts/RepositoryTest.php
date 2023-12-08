@@ -274,6 +274,14 @@ class RepositoryTest extends IntegrationTestCase
         $this->assertCount(0, $this->personRepository->all());
     }
 
+    public function testThrowsExceptionWhenTryingToFindAllUsingInvalidColumns(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid column name 'invalid_column'.");
+
+        $this->personRepository->all(['id', 'invalid_column']);
+    }
+
     /**
      * @dataProvider validPersonDataProvider
      * @param $data
@@ -339,15 +347,40 @@ class RepositoryTest extends IntegrationTestCase
     /**
      * This prevents from passing an invalid column and SQL injection attacks.
      * @return void
-     * @throws Exception
      */
     public function testThrowsExceptionWhenTryingToFindEntityWithAnInvalidColumnName(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid column name.');
+        $this->expectExceptionMessage("Invalid column name 'and 1=1'.");
 
         $this->personRepository->findBy('and 1=1', 1);
     }
+
+    //
+    // Make
+    //
+
+    public function testMakesEntityFromAnArrayOfData(): void
+    {
+        $personData = self::personData();
+        $personData['id'] = 1;
+        $person = PersonRepository::make($personData);
+
+        $this->assertInstanceOf(Person::class, $person);
+        $this->assertSame($personData['id'], $person->getId());
+        $this->assertSame($personData['name'], $person->getName());
+    }
+
+    public function testPassingEntityInstanceToMakeShouldUpdateThatInstanceShouldNotCreateDifferentOne(): void
+    {
+        $person = new Person();
+
+        $this->assertSame($person, PersonRepository::make(self::personData(), $person));
+    }
+
+    //
+    // Helpers
+    //
 
     public static function personData(): array
     {

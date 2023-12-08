@@ -328,7 +328,7 @@ class UserRepositoryTest extends TestCase
     public function testThrowsExceptionWhenFindUserWithAnInvalidColumnName(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid column name.');
+        $this->expectExceptionMessage("Invalid column name 'not_a_valid_column_name'.");
 
         $this->userRepository->findBy('not_a_valid_column_name', 1);
     }
