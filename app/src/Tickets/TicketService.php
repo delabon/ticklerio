@@ -4,10 +4,13 @@ namespace App\Tickets;
 
 use App\Core\Auth;
 
-class TicketService
+readonly class TicketService
 {
-    public function __construct(private TicketRepository $ticketRepository, private Auth $auth)
-    {
+    public function __construct(
+        private TicketRepository $ticketRepository,
+        private TicketValidator $ticketValidator,
+        private Auth $auth
+    ) {
     }
 
     /**
@@ -16,17 +19,13 @@ class TicketService
      */
     public function createTicket(array $data): void
     {
-        if (empty($data['created_at']) || !(int) $data['created_at']) {
-            $data['created_at'] = time();
-        }
-
-        if (empty($data['updated_at']) || !(int) $data['updated_at']) {
-            $data['updated_at'] = $data['created_at'];
-        }
-
+        // Overwrite these
+        $now = time();
+        $data['created_at'] = $now;
+        $data['updated_at'] = $now;
         $data['user_id'] = $this->auth->getUserId();
         $data['status'] = TicketStatus::Publish->value;
-
+        $this->ticketValidator->validate($data);
         $ticket = TicketRepository::make($data);
         $this->ticketRepository->save($ticket);
     }

@@ -8,7 +8,7 @@ class TicketData
 {
     public static function one(int $userId = 1, ?int $now = null): array
     {
-        if (!$now) {
+        if (is_null($now)) {
             $now = time();
         }
 

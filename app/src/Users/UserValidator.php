@@ -2,10 +2,11 @@
 
 namespace App\Users;
 
+use App\Interfaces\ValidatorInterface;
 use App\Utilities\PasswordUtils;
 use InvalidArgumentException;
 
-class UserValidator
+class UserValidator implements ValidatorInterface
 {
     /**
      * @param mixed[]|array $data

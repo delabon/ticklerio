@@ -7,6 +7,7 @@ use App\Tickets\Ticket;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketService;
 use App\Tickets\TicketStatus;
+use App\Tickets\TicketValidator;
 use App\Users\User;
 use Tests\IntegrationTestCase;
 
@@ -27,7 +28,7 @@ class TicketServiceTest extends IntegrationTestCase
         $user->setId(1);
         $auth->login($user);
         $ticketRepository = new TicketRepository($this->pdo);
-        $ticketService = new TicketService($ticketRepository, $auth);
+        $ticketService = new TicketService($ticketRepository, new TicketValidator(), $auth);
 
         $ticketService->createTicket([
             'title' => 'Test ticket',
