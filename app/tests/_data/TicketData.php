@@ -37,4 +37,17 @@ class TicketData
             'updated_at' => $now,
         ];
     }
+
+    public static function unsanitized(): array
+    {
+
+        return [
+            'user_id' => '1',
+            'title' => ' <h1>Test\=`{ ticket. </h1>    ',
+            'description' => " Test <script>alert('ticket');</script> description    ",
+            'status' => TicketStatus::Publish->value,
+            'created_at' => '1234567890',
+            'updated_at' => '1234567890',
+        ];
+    }
 }

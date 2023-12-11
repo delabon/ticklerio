@@ -2,40 +2,46 @@
 
 namespace Tests\Integration\Tickets;
 
+use App\Tickets\TicketRepository;
+use App\Tickets\TicketSanitizer;
 use App\Core\Auth;
 use App\Tickets\Ticket;
-use App\Tickets\TicketRepository;
 use App\Tickets\TicketService;
 use App\Tickets\TicketStatus;
 use App\Tickets\TicketValidator;
 use App\Users\User;
+use Tests\_data\TicketData;
 use Tests\IntegrationTestCase;
 
 class TicketServiceTest extends IntegrationTestCase
 {
-    // test: throws exception if ticket title is empty
-    // test: throws exception if ticket description is empty
-    // test: throws exception if ticket status is empty
-    // test: throws exception if ticket status is invalid
-    // test: throws exception if ticket user is not logged in
-    // test: throws exception if ticket user does not exist
-    // test: throws exception if ticket user is not an admin or member
+    private Auth $auth;
+    private TicketRepository $ticketRepository;
+    private TicketService $ticketService;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->auth = new Auth($this->session);
+        $this->ticketRepository = new TicketRepository($this->pdo);
+        $this->ticketService = new TicketService($this->ticketRepository, new TicketValidator(), new TicketSanitizer(), $this->auth);
+    }
+
+    //
+    // Create
+    //
 
     public function testAddsTicketSuccessfully(): void
     {
-        $auth = new Auth($this->session);
-        $user = new User();
-        $user->setId(1);
-        $auth->login($user);
-        $ticketRepository = new TicketRepository($this->pdo);
-        $ticketService = new TicketService($ticketRepository, new TicketValidator(), $auth);
+        $this->logInUser();
 
-        $ticketService->createTicket([
+        $this->ticketService->createTicket([
             'title' => 'Test ticket',
             'description' => 'Test ticket description',
         ]);
 
-        $ticket = $ticketRepository->find(1);
+        $ticket = $this->ticketRepository->find(1);
 
         $this->assertInstanceOf(Ticket::class, $ticket);
         $this->assertSame(1, $ticket->getId());
@@ -43,5 +49,44 @@ class TicketServiceTest extends IntegrationTestCase
         $this->assertSame(TicketStatus::Publish->value, $ticket->getStatus());
         $this->assertSame('Test ticket', $ticket->getTitle());
         $this->assertSame('Test ticket description', $ticket->getDescription());
+    }
+
+    public function testTicketStatusMustBePublishWhenCreatingTicket(): void
+    {
+        $this->logInUser();
+
+        $ticketData = TicketData::one();
+        $ticketData['status'] = TicketStatus::Draft->value;
+        $this->ticketService->createTicket($ticketData);
+
+        $ticket = $this->ticketRepository->find(1);
+        $this->assertInstanceOf(Ticket::class, $ticket);
+        $this->assertSame(1, $ticket->getId());
+        $this->assertSame(TicketStatus::Publish->value, $ticket->getStatus());
+    }
+
+    public function testSanitizesDataBeforeInserting(): void
+    {
+        $this->logInUser();
+
+        $this->ticketService->createTicket(TicketData::unsanitized());
+
+        $ticket = $this->ticketRepository->find(1);
+        $this->assertInstanceOf(Ticket::class, $ticket);
+        $this->assertSame(1, $ticket->getId());
+        $this->assertSame(1, $ticket->getUserId());
+        $this->assertSame('Test` ticket.', $ticket->getTitle());
+        $this->assertSame("Test alert('ticket'); description", $ticket->getDescription());
+        $this->assertSame(TicketStatus::Publish->value, $ticket->getStatus());
+    }
+
+    /**
+     * @return void
+     */
+    protected function logInUser(): void
+    {
+        $user = new User();
+        $user->setId(1);
+        $this->auth->login($user);
     }
 }

@@ -96,7 +96,7 @@ class TicketValidator implements ValidatorInterface
             throw new InvalidArgumentException('The title cannot be shorter than 3 characters.');
         }
 
-        if (!preg_match('/^[a-z0-9 \.\,\?\!\-\_\(\)\'\@\#\$\%\&\*]+$/ui', $data['title'])) {
+        if (!preg_match('/^[a-z0-9 \.\,\?\!\-\_\(\)\'\`\@\#\$\%\&\*]+$/ui', $data['title'])) {
             throw new InvalidArgumentException('The title contains invalid characters. Only alphanumeric characters, spaces, and the following symbols are allowed: .,!?_-()\'@#$%&*');
         }
     }

@@ -103,7 +103,7 @@ class TicketValidatorTest extends TestCase
                 InvalidArgumentException::class,
                 'The title is required.'
             ],
-            'Invalid title' => [
+            'Empty title' => [
                 [
                     'user_id' => 1,
                     'title' => '',
@@ -154,7 +154,7 @@ class TicketValidatorTest extends TestCase
                 InvalidArgumentException::class,
                 'The description is required.'
             ],
-            'Invalid description' => [
+            'Empty description' => [
                 [
                     'user_id' => 1,
                     'title' => 'test title',

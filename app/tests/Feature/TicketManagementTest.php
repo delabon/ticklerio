@@ -167,16 +167,6 @@ class TicketManagementTest extends FeatureTestCase
                     'updated_at' => time(),
                 ]
             ],
-            'Title contains invalid characters' => [
-                [
-                    'user_id' => 1,
-                    'title' => 'Test ticket <script>alert("XSS")</script>#',
-                    'description' => 'Test ticket description',
-                    'status' => TicketStatus::Publish->value,
-                    'created_at' => time(),
-                    'updated_at' => time(),
-                ]
-            ],
             'Missing description' => [
                 [
                     'user_id' => 1,

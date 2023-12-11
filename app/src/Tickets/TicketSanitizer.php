@@ -47,7 +47,7 @@ class TicketSanitizer implements SanitizerInterface
         }
 
         $data['title'] = strip_tags($data['title']);
-        $data['title'] = preg_replace("/[^a-z0-9 \.\,\?\!\-\_\(\)\'\@\#\$\%\&\*]/i", "", $data['title']);
+        $data['title'] = preg_replace("/[^a-z0-9 \.\,\?\!\-\_\(\)\'\`\@\#\$\%\&\*]/i", "", $data['title']);
         $data['title'] = preg_replace("/[ ]+/", " ", $data['title']);
         $data['title'] = trim($data['title']);
 

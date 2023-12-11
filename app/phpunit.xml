@@ -4,13 +4,15 @@
       xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.4/phpunit.xsd"
       bootstrap="tests/bootstrap.php"
       colors="true"
-      displayDetailsOnTestsThatTriggerWarnings="true"
-      displayDetailsOnTestsThatTriggerErrors="true"
-      displayDetailsOnTestsThatTriggerDeprecations="true"
-      testdox="true"
       stopOnFailure="true"
       stopOnError="true"
       stopOnWarning="true"
+      stopOnNotice="true"
+      displayDetailsOnTestsThatTriggerWarnings="true"
+      displayDetailsOnTestsThatTriggerErrors="true"
+      displayDetailsOnTestsThatTriggerDeprecations="true"
+      displayDetailsOnTestsThatTriggerNotices="true"
+      testdox="true"
 >
   <testsuites>
     <testsuite name="Feature">

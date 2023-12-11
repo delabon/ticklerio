@@ -17,6 +17,7 @@ use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Middlewares\CheckUserMiddleware;
 use App\Tickets\TicketRepository;
+use App\Tickets\TicketSanitizer;
 use App\Tickets\TicketService;
 use App\Tickets\TicketValidator;
 use App\Users\AdminService;
@@ -115,6 +116,7 @@ if ($uri === '/') {
         new TicketService(
             new TicketRepository($container->get(PDO::class)),
             new TicketValidator(),
+            new TicketSanitizer(),
             $container->get(Auth::class)
         ),
         $container->get(Auth::class),
