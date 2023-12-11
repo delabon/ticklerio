@@ -20,7 +20,7 @@ abstract class Factory implements FactoryInterface
      */
     public function count(int $howMany): self
     {
-        $this->count = $howMany;
+        $this->count = max(0, $howMany);
 
         return $this;
     }

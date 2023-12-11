@@ -56,6 +56,11 @@ class FactoryTest extends TestCase
         $this->assertCount(0, $this->personFactory->count(0)->make());
     }
 
+    public function testMakeReturnsEmptyArrayWhenCountCalledWithNegativeNumber(): void
+    {
+        $this->assertCount(0, $this->personFactory->count(-5)->make());
+    }
+
     public function testMakeOverwritesAttributes(): void
     {
         $result = $this->personFactory->count(2)->make([
