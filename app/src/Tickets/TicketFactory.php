@@ -2,16 +2,10 @@
 
 namespace App\Tickets;
 
-use App\Interfaces\FactoryInterface;
+use App\Abstracts\Factory;
 
-class TicketFactory implements FactoryInterface
+class TicketFactory extends Factory
 {
-    public function count(int $howMany): FactoryInterface
-    {
-
-        return $this;
-    }
-
     public function make(array $attributes = []): array
     {
         return [];
