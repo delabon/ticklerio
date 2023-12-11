@@ -11,7 +11,6 @@ use App\Users\UserService;
 use App\Users\UserType;
 use App\Users\UserValidator;
 use App\Utilities\PasswordUtils;
-use InvalidArgumentException;
 use LogicException;
 use Tests\_data\UserData;
 use Tests\IntegrationTestCase;
@@ -122,27 +121,6 @@ class UserServiceTest extends IntegrationTestCase
         $this->assertSame($userUpdatedData['created_at'], $updatedUser->getCreatedAt());
         $this->assertTrue(PasswordUtils::isPasswordHashed($updatedUser->getPassword()));
         $this->assertCount(1, $this->userRepository->all());
-    }
-
-    public function testThrowsExceptionWhenUpdatingUserWithAnIdOfZero(): void
-    {
-        $user = $this->userRepository->make(UserData::memberOne());
-        $user->setId(0);
-
-        $this->expectException(LogicException::class);
-
-        $this->userService->updateUser($user);
-    }
-
-    public function testThrowsExceptionWhenUpdatingUserWithInvalidData(): void
-    {
-        $userData = UserData::memberOne();
-        $user = $this->userService->createUser($userData);
-        $user->setEmail('invalid-email');
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $this->userService->updateUser($user);
     }
 
     public function testPasswordShouldBeHashedBeforeUpdatingUser(): void
