@@ -10,7 +10,7 @@ class UserFactory extends Factory
     /**
      * Instantiates Users and persists them to database
      * @param array<string, mixed> $attributes
-     * @return User[]|array
+     * @return User[]
      */
     public function make(array $attributes = []): array
     {
@@ -37,7 +37,7 @@ class UserFactory extends Factory
     /**
      * Instantiates Users and persists them to database
      * @param array<string, mixed> $attributes
-     * @return User[]|array
+     * @return User[]
      */
     public function create(array $attributes = []): array
     {

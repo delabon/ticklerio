@@ -14,6 +14,10 @@ abstract class Factory implements FactoryInterface
     {
     }
 
+    /**
+     * @param int $howMany
+     * @return $this
+     */
     public function count(int $howMany): self
     {
         $this->count = $howMany;
