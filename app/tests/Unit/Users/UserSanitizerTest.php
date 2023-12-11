@@ -2,12 +2,27 @@
 
 namespace Tests\Unit\Users;
 
+use App\Interfaces\SanitizerInterface;
 use App\Users\UserSanitizer;
 use PHPUnit\Framework\TestCase;
 use Tests\_data\UserData;
 
 class UserSanitizerTest extends TestCase
 {
+    private UserSanitizer $userSanitizer;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->userSanitizer = new UserSanitizer();
+    }
+
+    public function testCreatesInstanceOfSanitizerInterface(): void
+    {
+        $this->assertInstanceOf(SanitizerInterface::class, $this->userSanitizer);
+    }
+
     /**
      * @dataProvider userDataProvider
      * @param $key
@@ -19,8 +34,7 @@ class UserSanitizerTest extends TestCase
     {
         $userData = UserData::memberOne();
         $userData[$key] = $value;
-        $userSanitizer = new UserSanitizer();
-        $sanitizedData = $userSanitizer->sanitize($userData);
+        $sanitizedData = $this->userSanitizer->sanitize($userData);
 
         $this->assertSame($expectedValue, $sanitizedData[$key]);
     }
@@ -49,6 +63,11 @@ class UserSanitizerTest extends TestCase
                 'expectedValue' => "MochaIMG SRCmochacode"
             ],
             'Sanitizes email' => [
+                'key' => 'email',
+                'value' => 'MyEmail”.a=_a @gmail.com',
+                'expectedValue' => 'MyEmail.a=_a@gmail.com'
+            ],
+            'Sanitizes email from XSS' => [
                 'key' => 'email',
                 'value' => '“><svg/onload=confirm(1)>”@gmail.com',
                 'expectedValue' => 'svgonload=confirm1@gmail.com'
