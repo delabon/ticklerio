@@ -32,9 +32,25 @@ class TicketData
             'user_id' => $userId,
             'title' => 'Test ticket 2',
             'description' => 'Test ticket description 2',
-            'status' => TicketStatus::Draft->value,
+            'status' => TicketStatus::Closed->value,
             'created_at' => $now,
             'updated_at' => $now,
+        ];
+    }
+
+    public static function updated(int $userId = 1, ?int $updateAts = null): array
+    {
+        if (!$updateAts) {
+            $updateAts = time();
+        }
+
+        return [
+            'user_id' => $userId,
+            'title' => 'Updated ticket title',
+            'description' => 'Updated ticket description 2',
+            'status' => TicketStatus::Solved->value,
+            'created_at' => $updateAts,
+            'updated_at' => $updateAts,
         ];
     }
 

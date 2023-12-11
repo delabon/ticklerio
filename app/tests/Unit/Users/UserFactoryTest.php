@@ -2,13 +2,15 @@
 
 namespace Tests\Unit\Users;
 
+use App\Abstracts\Factory;
+use App\Interfaces\FactoryInterface;
 use App\Users\User;
 use App\Users\UserFactory;
 use App\Users\UserRepository;
 use App\Users\UserType;
 use App\Users\UserValidator;
 use App\Utilities\PasswordUtils;
-use Faker\Factory;
+use Faker\Factory as FakerFactory;
 use PDO;
 use PDOStatement;
 use PHPUnit\Framework\TestCase;
@@ -29,11 +31,20 @@ class UserFactoryTest extends TestCase
         $this->pdoMock = $this->createMock(PDO::class);
         $this->userValidator = new UserValidator();
         $this->userRepository = new UserRepository($this->pdoMock);
-        $this->userFactory = new UserFactory($this->userRepository, Factory::create());
+        $this->userFactory = new UserFactory($this->userRepository, FakerFactory::create());
+    }
+
+    public function testCreatesInstanceSuccessfully(): void
+    {
+        $userFactory = new UserFactory($this->userRepository, FakerFactory::create());
+
+        $this->assertInstanceOf(UserFactory::class, $userFactory);
+        $this->assertInstanceOf(Factory::class, $userFactory);
+        $this->assertInstanceOf(FactoryInterface::class, $userFactory);
     }
 
     /**
-     * I decided to not mock the Generator::class (Factory::create()) to keep the test simple
+     * I decided to not mock the Generator::class (FakerFactory::self::create()) to keep the test simple
      * @return void
      */
     public function testMakesUsersSuccessfully(): void
@@ -48,7 +59,7 @@ class UserFactoryTest extends TestCase
     }
 
     /**
-     * I decided to not mock the Generator::class (Factory::create()) to keep the test simple
+     * I decided to not mock the Generator::class (FakerFactory::self::create()) to keep the test simple
      * @return void
      */
     public function testMakesNoUsersWhenHowManyParamIsZero(): void
@@ -59,7 +70,7 @@ class UserFactoryTest extends TestCase
     }
 
     /**
-     * I decided to not mock the Generator::class (Factory::create()) to keep the test simple
+     * I decided to not mock the Generator::class (FakerFactory::self::create()) to keep the test simple
      * @return void
      */
     public function testCreatesUsersAndPersistsThemToDatabaseSuccessfully(): void
@@ -136,7 +147,6 @@ class UserFactoryTest extends TestCase
         $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturnOnConsecutiveCalls("1");
-
 
         $password = PasswordUtils::hashPasswordIfNotHashed('123456789');
         $now = time();

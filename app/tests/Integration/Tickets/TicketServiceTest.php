@@ -56,7 +56,7 @@ class TicketServiceTest extends IntegrationTestCase
         $this->logInUser();
 
         $ticketData = TicketData::one();
-        $ticketData['status'] = TicketStatus::Draft->value;
+        $ticketData['status'] = TicketStatus::Closed->value;
         $this->ticketService->createTicket($ticketData);
 
         $ticket = $this->ticketRepository->find(1);

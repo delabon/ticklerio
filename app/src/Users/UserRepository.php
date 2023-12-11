@@ -5,7 +5,6 @@ namespace App\Users;
 use App\Exceptions\UserDoesNotExistException;
 use App\Abstracts\Repository;
 use InvalidArgumentException;
-use Tests\Unit\Abstracts\Person;
 
 class UserRepository extends Repository
 {

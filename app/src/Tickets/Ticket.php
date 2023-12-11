@@ -10,7 +10,7 @@ class Ticket extends Entity
     protected int $userId = 0;
     protected string $title = '';
     protected string $description = '';
-    protected string $status = TicketStatus::Draft->value;
+    protected string $status = TicketStatus::Publish->value;
     protected int $createdAt = 0;
     protected int $updatedAt = 0;
 

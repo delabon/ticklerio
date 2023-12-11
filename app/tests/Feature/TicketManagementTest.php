@@ -26,8 +26,13 @@ class TicketManagementTest extends FeatureTestCase
 
         $this->ticketRepository = new TicketRepository($this->pdo);
         $this->userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
+        $this->ticketFactory = new TicketFactory(new TicketRepository($this->pdo), Factory::create());
         $this->auth = new Auth($this->session);
     }
+
+    //
+    // Create
+    //
 
     public function testAddsTicketSuccessfully(): void
     {
@@ -207,5 +212,42 @@ class TicketManagementTest extends FeatureTestCase
                 ]
             ],
         ];
+    }
+
+    //
+    // Update
+    //
+
+    public function testUpdatesTicketSuccessfully(): void
+    {
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value,
+        ])[0];
+        $this->auth->login($user);
+        $ticket = $this->ticketFactory->create([
+            'status' => TicketStatus::Publish->value,
+        ]);
+
+        $response = $this->post(
+            '/ajax/ticket/update',
+            [
+                'id' => $ticket->getId(),
+                'title' => 'Updated test ticket',
+                'description' => 'Updated test ticket description',
+                'status' => TicketStatus::Closed->value,
+                'csrf_token' => $this->csrf->generate(),
+            ]
+        );
+
+        $tickets = $this->ticketRepository->all();
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertCount(1, $tickets);
+        $this->assertSame(1, $tickets[0]->getId());
+        $this->assertSame($user->getId(), $tickets[0]->getUserId());
+        $this->assertSame(TicketStatus::Closed->value, $tickets[0]->getStatus());
+        $this->assertSame('Updated test ticket', $tickets[0]->getTitle());
+        $this->assertSame('Updated test ticket description', $tickets[0]->getDescription());
+        $this->assertGreaterThan(0, $tickets[0]->getCreatedAt());
+        $this->assertGreaterThan(0, $tickets[0]->getUpdatedAt());
     }
 }

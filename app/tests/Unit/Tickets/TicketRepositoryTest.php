@@ -112,7 +112,7 @@ class TicketRepositoryTest extends TestCase
                     'user_id' => 1,
                     'title' => 'Test ticket number two',
                     'description' => 'Test ticket description number two',
-                    'status' => TicketStatus::Draft->value,
+                    'status' => TicketStatus::Closed->value,
                     'created_at' => time(),
                     'updated_at' => time(),
                 ]

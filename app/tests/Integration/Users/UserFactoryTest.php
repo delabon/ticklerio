@@ -24,29 +24,6 @@ class UserFactoryTest extends IntegrationTestCase
         $this->userFactory = new UserFactory($this->userRepository, Factory::create());
     }
 
-    public function testMakesUsersSuccessfully(): void
-    {
-        $users = $this->userFactory->count(2)->make();
-        $userValidator = new UserValidator();
-        $userValidator->validate($users[0]->toArray());
-        $userValidator->validate($users[1]->toArray());
-
-        $this->assertCount(2, $users);
-        $this->assertInstanceOf(User::class, $users[0]);
-        $this->assertInstanceOf(User::class, $users[1]);
-    }
-
-    /**
-     * I decided to not mock the Generator::class (Factory::create()) to keep the test simple
-     * @return void
-     */
-    public function testMakesNoUsersWhenHowManyParamIsZero(): void
-    {
-        $users = $this->userFactory->count(0)->make();
-
-        $this->assertCount(0, $users);
-    }
-
     public function testCreatesUsersAndPersistsThemToDatabaseSuccessfully(): void
     {
         $users = $this->userFactory->count(2)->create();
@@ -63,30 +40,6 @@ class UserFactoryTest extends IntegrationTestCase
         $this->assertSame(2, $users[1]->getId());
         $this->assertSame(1, $usersFromRepository[0]->getId());
         $this->assertSame(2, $usersFromRepository[1]->getId());
-    }
-
-    public function testOverridesAttributesWhenMakingUser(): void
-    {
-        $password = PasswordUtils::hashPasswordIfNotHashed('123456789');
-        $now = time();
-        $user = $this->userFactory->count(1)->make([
-            'first_name' => 'Sam',
-            'last_name' => 'Doe',
-            'password' => $password,
-            'email' => 'example@gmail.com',
-            'type' => UserType::Admin->value,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ])[0];
-
-        $this->assertSame('Sam', $user->getFirstName());
-        $this->assertSame('Doe', $user->getLastName());
-        $this->assertSame($password, $user->getPassword());
-        $this->assertSame('example@gmail.com', $user->getEmail());
-        $this->assertSame(UserType::Admin->value, $user->getType());
-        $this->assertSame($now, $user->getCreatedAt());
-        $this->assertSame($now, $user->getUpdatedAt());
-        $this->assertSame(0, $user->getId());
     }
 
     public function testOverridesAttributesWhenCreatingUser(): void
