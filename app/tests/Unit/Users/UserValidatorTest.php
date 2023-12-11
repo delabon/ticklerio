@@ -27,7 +27,7 @@ class UserValidatorTest extends TestCase
         $this->assertInstanceOf(ValidatorInterface::class, $this->userValidator);
     }
 
-    public function testValidAllData(): void
+    public function testValidatesDataSuccessfully(): void
     {
         $this->userValidator->validate($this->userData);
 

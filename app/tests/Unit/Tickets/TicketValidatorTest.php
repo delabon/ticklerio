@@ -7,6 +7,7 @@ use App\Tickets\TicketStatus;
 use App\Tickets\TicketValidator;
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
+use Tests\_data\TicketData;
 
 class TicketValidatorTest extends TestCase
 {
@@ -22,6 +23,13 @@ class TicketValidatorTest extends TestCase
     public function testCreatesInstanceOfValidatorInterface(): void
     {
         $this->assertInstanceOf(ValidatorInterface::class, $this->ticketValidator);
+    }
+
+    public function testValidatesDataSuccessfully(): void
+    {
+        $this->ticketValidator->validate(TicketData::one());
+
+        $this->expectNotToPerformAssertions();
     }
 
     /**
