@@ -163,4 +163,3 @@ class TicketValidator implements ValidatorInterface
         }
     }
 }
-
