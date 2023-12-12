@@ -13,8 +13,8 @@ use PHPUnit\Framework\TestCase;
 
 class FactoryTest extends TestCase
 {
-    private PersonFactory $personFactory;
-    private PersonRepository $personRepository;
+    private DogFactory $dogFactory;
+    private dogRepository $dogRepository;
     private object $pdoMock;
     private object $pdoStatementMock;
 
@@ -24,28 +24,28 @@ class FactoryTest extends TestCase
 
         $this->pdoStatementMock = $this->createMock(PDOStatement::class);
         $this->pdoMock = $this->createMock(PDO::class);
-        $this->personRepository = new PersonRepository($this->pdoMock);
-        $this->personFactory = new PersonFactory($this->personRepository, FakerFactory::create());
+        $this->dogRepository = new dogRepository($this->pdoMock);
+        $this->dogFactory = new DogFactory($this->dogRepository, FakerFactory::create());
     }
 
     public function testCreatesInstanceSuccessfully(): void
     {
-        $this->assertInstanceOf(PersonFactory::class, $this->personFactory);
-        $this->assertInstanceOf(Factory::class, $this->personFactory);
-        $this->assertInstanceOf(FactoryInterface::class, $this->personFactory);
+        $this->assertInstanceOf(DogFactory::class, $this->dogFactory);
+        $this->assertInstanceOf(Factory::class, $this->dogFactory);
+        $this->assertInstanceOf(FactoryInterface::class, $this->dogFactory);
     }
 
     public function testCountReturnsSelf(): void
     {
-        $this->assertInstanceOf(PersonFactory::class, $this->personFactory->count(5));
+        $this->assertInstanceOf(DogFactory::class, $this->dogFactory->count(5));
     }
 
-    public function testMakeReturnsArrayOfPerson(): void
+    public function testMakeReturnsArrayOfDog(): void
     {
-        $result = $this->personFactory->count(5)->make();
+        $result = $this->dogFactory->count(5)->make();
 
         $this->assertCount(5, $result);
-        $this->assertSame(Person::class, $result[2]::class);
+        $this->assertSame(Dog::class, $result[2]::class);
         $this->assertSame(0, $result[3]->getId());
         $this->assertIsString($result[0]->getName());
         $this->assertGreaterThan(0, strlen($result[4]->getName()));
@@ -53,23 +53,24 @@ class FactoryTest extends TestCase
 
     public function testMakeReturnsEmptyArrayWhenCountCalledWithZero(): void
     {
-        $this->assertCount(0, $this->personFactory->count(0)->make());
+        $this->assertCount(0, $this->dogFactory->count(0)->make());
     }
 
     public function testMakeReturnsEmptyArrayWhenCountCalledWithNegativeNumber(): void
     {
-        $this->assertCount(0, $this->personFactory->count(-5)->make());
+        $this->assertCount(0, $this->dogFactory->count(-5)->make());
     }
 
-    public function testMakeOverwritesAttributes(): void
+    public function testCreateCallsMake(): void
     {
-        $result = $this->personFactory->count(2)->make([
-            'name' => 'Ahmed Doe',
-        ]);
+        $dogFactoryMock = $this->getMockBuilder(DogFactory::class)
+            ->setConstructorArgs([$this->dogRepository, FakerFactory::create()])
+            ->onlyMethods(['make'])
+            ->getMock();
 
-        $this->assertCount(2, $result);
-        $this->assertSame('Ahmed Doe', $result[0]->getName());
-        $this->assertSame('Ahmed Doe', $result[1]->getName());
+        $dogFactoryMock->expects($this->once())->method('make')->willReturn([]);
+
+        $dogFactoryMock->create();
     }
 
     public function testCreatePersistsIntoDatabase(): void
@@ -83,11 +84,11 @@ class FactoryTest extends TestCase
             ->willReturn([
                     [
                         'id' => 1,
-                        'name' => 'Ahmed Doe',
+                        'name' => 'Lila',
                     ],
                     [
                         'id' => 2,
-                        'name' => 'Jane Doe',
+                        'name' => 'Rex',
                     ],
 
                 ]);
@@ -100,13 +101,24 @@ class FactoryTest extends TestCase
             ->method('lastInsertId')
             ->willReturn("1", "2");
 
-        $this->personFactory->count(2)->create();
+        $this->dogFactory->count(2)->create();
 
-        $people = $this->personRepository->all();
+        $dogs = $this->dogRepository->all();
 
-        $this->assertCount(2, $people);
-        $this->assertSame(Person::class, $people[0]::class);
-        $this->assertSame(Person::class, $people[1]::class);
+        $this->assertCount(2, $dogs);
+        $this->assertSame(Dog::class, $dogs[0]::class);
+        $this->assertSame(Dog::class, $dogs[1]::class);
+    }
+
+    public function testMakeOverwritesAttributes(): void
+    {
+        $result = $this->dogFactory->count(2)->make([
+            'name' => 'Rex',
+        ]);
+
+        $this->assertCount(2, $result);
+        $this->assertSame('Rex', $result[0]->getName());
+        $this->assertSame('Rex', $result[1]->getName());
     }
 
     public function testCreateOverwritesAttributes(): void
@@ -120,11 +132,11 @@ class FactoryTest extends TestCase
             ->willReturn([
                 [
                     'id' => 1,
-                    'name' => 'Sarah Doe',
+                    'name' => 'Lila',
                 ],
                 [
                     'id' => 2,
-                    'name' => 'Sarah Doe',
+                    'name' => 'Lila',
                 ],
 
             ]);
@@ -137,20 +149,20 @@ class FactoryTest extends TestCase
             ->method('lastInsertId')
             ->willReturn("1", "2");
 
-        $this->personFactory->count(2)->create([
-            'name' => 'Sarah Doe',
+        $this->dogFactory->count(2)->create([
+            'name' => 'Lila',
         ]);
 
-        $people = $this->personRepository->all();
-        $this->assertCount(2, $people);
-        $this->assertSame('Sarah Doe', $people[0]->getName());
-        $this->assertSame('Sarah Doe', $people[1]->getName());
+        $dogs = $this->dogRepository->all();
+        $this->assertCount(2, $dogs);
+        $this->assertSame('Lila', $dogs[0]->getName());
+        $this->assertSame('Lila', $dogs[1]->getName());
     }
 }
 
-class PersonRepository extends Repository // phpcs:ignore
+class dogRepository extends Repository // phpcs:ignore
 {
-    protected string $table = 'people';
+    protected string $table = 'dogs';
 
     /** @var array|string[] */
     protected array $validColumns = [
@@ -179,16 +191,16 @@ class PersonRepository extends Repository // phpcs:ignore
     }
 }
 
-class PersonFactory extends Factory // phpcs:ignore
+class DogFactory extends Factory // phpcs:ignore
 {
     public function make(array $attributes = []): array
     {
         $entities = [];
 
         for ($i = 0; $i < $this->count; $i++) {
-            $person = new Person();
-            $person->setName($attributes['name'] ?? $this->faker->name);
-            $entities[] = $person;
+            $dog = new Dog();
+            $dog->setName($attributes['name'] ?? $this->faker->name);
+            $entities[] = $dog;
         }
 
         return $entities;
@@ -206,7 +218,7 @@ class PersonFactory extends Factory // phpcs:ignore
     }
 }
 
-class Person extends Entity // phpcs:ignore
+class Dog extends Entity // phpcs:ignore
 {
     private int $id = 0;
     private string $name = '';

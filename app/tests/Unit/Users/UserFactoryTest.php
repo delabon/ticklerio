@@ -62,7 +62,7 @@ class UserFactoryTest extends TestCase
      * I decided to not mock the Generator::class (FakerFactory::self::create()) to keep the test simple
      * @return void
      */
-    public function testMakesNoUsersWhenHowManyParamIsZero(): void
+    public function testMakesNoUsersWhenCountIsZero(): void
     {
         $users = $this->userFactory->count(0)->make();
 

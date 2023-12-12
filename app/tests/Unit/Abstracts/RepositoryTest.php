@@ -17,7 +17,7 @@ class RepositoryTest extends TestCase
 {
     private object $pdoStatementMock;
     private object $pdoMock;
-    private PersonRepository $personRepository;
+    private personRepository $personRepository;
 
     protected function setUp(): void
     {
@@ -25,7 +25,7 @@ class RepositoryTest extends TestCase
 
         $this->pdoStatementMock = $this->createMock(PDOStatement::class);
         $this->pdoMock = $this->createMock(PDO::class);
-        $this->personRepository = new PersonRepository($this->pdoMock);
+        $this->personRepository = new personRepository($this->pdoMock);
     }
 
     //
@@ -420,7 +420,7 @@ class RepositoryTest extends TestCase
     {
         $personData = self::personData();
         $personData['id'] = 1;
-        $person = PersonRepository::make($personData);
+        $person = personRepository::make($personData);
 
         $this->assertInstanceOf(Person::class, $person);
         $this->assertSame($personData['id'], $person->getId());
@@ -431,7 +431,7 @@ class RepositoryTest extends TestCase
     {
         $person = new Person();
 
-        $this->assertSame($person, PersonRepository::make(self::personData(), $person));
+        $this->assertSame($person, personRepository::make(self::personData(), $person));
     }
 
     //

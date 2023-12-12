@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Core\Auth;
 use App\Core\Http\HttpStatusCode;
+use App\Tickets\TicketFactory;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketStatus;
 use App\Users\UserFactory;
@@ -19,6 +20,7 @@ class TicketManagementTest extends FeatureTestCase
     private TicketRepository $ticketRepository;
     private UserFactory $userFactory;
     private Auth $auth;
+    private TicketFactory $ticketFactory;
 
     protected function setUp(): void
     {
@@ -26,7 +28,7 @@ class TicketManagementTest extends FeatureTestCase
 
         $this->ticketRepository = new TicketRepository($this->pdo);
         $this->userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
-        $this->ticketFactory = new TicketFactory(new TicketRepository($this->pdo), Factory::create());
+        $this->ticketFactory = new TicketFactory($this->ticketRepository, Factory::create());
         $this->auth = new Auth($this->session);
     }
 
@@ -231,7 +233,7 @@ class TicketManagementTest extends FeatureTestCase
         $response = $this->post(
             '/ajax/ticket/update',
             [
-                'id' => $ticket->getId(),
+                'id' => $ticket[0]->getId(),
                 'title' => 'Updated test ticket',
                 'description' => 'Updated test ticket description',
                 'status' => TicketStatus::Closed->value,
