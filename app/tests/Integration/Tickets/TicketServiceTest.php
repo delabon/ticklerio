@@ -104,32 +104,20 @@ class TicketServiceTest extends IntegrationTestCase
         $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
     }
 
-    public function testStatusShouldAlwaysBePublishWhenUpdatingUsingUpdateTicket(): void
-    {
-        $this->logInUser();
-
-        $ticket = TicketRepository::make(TicketData::one());
-        $this->ticketRepository->save($ticket);
-
-        $updatedData = TicketData::updated();
-        $updatedData['id'] = 1;
-        $updatedData['status'] = TicketStatus::Solved->value;
-        $this->ticketService->updateTicket($updatedData);
-
-        $updatedTicket = $this->ticketRepository->find(1);
-        $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
-    }
-
-    public function testCreatedAtShouldNotBeUpdatedWhenUpdatingUsingUpdateTicket(): void
+    /**
+     * This test makes sure that the data is overwritten before updating.
+     * the updateTicket method should not update the created_at, user_id, status fields. It should update the updated_at field with the current time.
+     * @return void
+     */
+    public function testOverwritesDataBeforeUpdating(): void
     {
         $this->logInUser();
 
         $ticketData = TicketData::one();
         $ticketData['created_at'] = strtotime('1999');
         $ticketData['updated_at'] = strtotime('1999');
-
+        $ticketData['status'] = TicketStatus::Publish->value;
         $ticket = TicketRepository::make($ticketData);
-        $ticket->setCreatedAt(strtotime('1999'));
         $this->ticketRepository->save($ticket);
 
         $updatedData = TicketData::updated();
@@ -138,9 +126,12 @@ class TicketServiceTest extends IntegrationTestCase
 
         $updatedTicket = $this->ticketRepository->find(1);
         $this->assertInstanceOf(Ticket::class, $updatedTicket);
-        $this->assertSame($ticketData['created_at'], $updatedTicket->getCreatedAt());
+        $this->assertSame(1, $updatedTicket->getId());
+        $this->assertSame(1, $updatedTicket->getUserId());
+        $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
+        $this->assertSame(strtotime('1999'), $updatedTicket->getCreatedAt());
+        $this->assertNotSame(strtotime('1999'), $updatedTicket->getUpdatedAt());
     }
-
     public function testSanitizesDataBeforeUpdating(): void
     {
         $this->logInUser();

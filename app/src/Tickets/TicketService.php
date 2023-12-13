@@ -68,6 +68,12 @@ readonly class TicketService
             throw new LogicException('You cannot update a ticket that is not published.');
         }
 
+        // Overwrite these
+        $data['user_id'] = $this->auth->getUserId();
+        $data['status'] = TicketStatus::Publish->value;
+        $data['created_at'] = $ticket->getCreatedAt();
+        $data['updated_at'] = time();
+
         $data = $this->ticketSanitizer->sanitize($data);
         $this->ticketValidator->validate($data);
 

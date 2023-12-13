@@ -305,63 +305,19 @@ class TicketServiceTest extends TestCase
         $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
     }
 
-    public function testStatusShouldAlwaysBePublishWhenUpdatingUsingUpdateTicket(): void
+    /**
+     * This test makes sure that the data is overwritten before updating.
+     * the updateTicket method should not update the created_at, user_id, status fields. It should update the updated_at field with the current time.
+     * @return void
+     */
+    public function testOverwritesDataBeforeUpdating(): void
     {
-        $this->pdoStatementMock->expects($this->exactly(5))
-            ->method('execute')
-            ->willReturn(true);
-
-        $this->pdoStatementMock->expects($this->exactly(3))
-            ->method('fetch')
-            ->willReturnOnConsecutiveCalls(
-                (function () {
-                    $data = TicketData::one();
-                    $data['id'] = 1;
-
-                    return $data;
-                })(),
-                (function () {
-                    $data = TicketData::one();
-                    $data['id'] = 1;
-
-                    return $data;
-                })(),
-                (function () {
-                    $data = TicketData::updated();
-                    $data['id'] = 1;
-                    $data['status'] = TicketStatus::Publish->value;
-
-                    return $data;
-                })()
-            );
-
-        $this->pdoMock->expects($this->exactly(5))
-            ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
-
-        $this->pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturn("1");
-
         $this->logInUser();
 
-        $ticket = TicketRepository::make(TicketData::one());
-        $this->ticketRepository->save($ticket);
-
-        $updatedData = TicketData::updated();
-        $updatedData['id'] = 1;
-        $updatedData['status'] = TicketStatus::Solved->value;
-        $this->ticketService->updateTicket($updatedData);
-
-        $updatedTicket = $this->ticketRepository->find(1);
-        $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
-    }
-
-    public function testCreatedAtShouldNotBeUpdatedWhenUpdatingUsingUpdateTicket(): void
-    {
         $ticketData = TicketData::one();
         $ticketData['created_at'] = strtotime('1999');
         $ticketData['updated_at'] = strtotime('1999');
+        $ticketData['status'] = TicketStatus::Publish->value;
 
         $this->pdoStatementMock->expects($this->exactly(5))
             ->method('execute')
@@ -380,12 +336,14 @@ class TicketServiceTest extends TestCase
 
                     return $ticketData;
                 })(),
-                (function () {
-                    $data = TicketData::updated();
-                    $data['id'] = 1;
-                    $data['created_at'] = strtotime('1999');
+                (function () use ($ticketData) {
+                    $updatedData = TicketData::updated();
+                    $updatedData['id'] = 1;
+                    $updatedData['status'] = $ticketData['status'];
+                    $updatedData['created_at'] = $ticketData['created_at'];
+                    $updatedData['updated_at'] = time();
 
-                    return $data;
+                    return $updatedData;
                 })()
             );
 
@@ -397,10 +355,7 @@ class TicketServiceTest extends TestCase
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $this->logInUser();
-
         $ticket = TicketRepository::make($ticketData);
-        $ticket->setCreatedAt(strtotime('1999'));
         $this->ticketRepository->save($ticket);
 
         $updatedData = TicketData::updated();
@@ -409,7 +364,11 @@ class TicketServiceTest extends TestCase
 
         $updatedTicket = $this->ticketRepository->find(1);
         $this->assertInstanceOf(Ticket::class, $updatedTicket);
-        $this->assertSame($ticketData['created_at'], $updatedTicket->getCreatedAt());
+        $this->assertSame(1, $updatedTicket->getId());
+        $this->assertSame(1, $updatedTicket->getUserId());
+        $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
+        $this->assertSame(strtotime('1999'), $updatedTicket->getCreatedAt());
+        $this->assertNotSame(strtotime('1999'), $updatedTicket->getUpdatedAt());
     }
 
     public function testThrowsExceptionWhenTryingToUpdateTicketWithIdOfZero(): void
@@ -562,7 +521,6 @@ class TicketServiceTest extends TestCase
 
         $this->logInUser();
         $data['id'] = 1;
-        $data['user_id'] = 1;
 
         $this->expectException($expectedException);
         $this->expectExceptionMessage($expectedExceptionMessage);

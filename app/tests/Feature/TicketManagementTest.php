@@ -202,7 +202,6 @@ class TicketManagementTest extends FeatureTestCase
                 'id' => $ticket->getId(),
                 'title' => 'Updated test ticket',
                 'description' => 'Updated test ticket description',
-                'status' => TicketStatus::Closed->value,
                 'csrf_token' => $this->csrf->generate(),
             ]
         );
@@ -212,7 +211,7 @@ class TicketManagementTest extends FeatureTestCase
         $this->assertCount(1, $tickets);
         $this->assertSame(1, $tickets[0]->getId());
         $this->assertSame($user->getId(), $tickets[0]->getUserId());
-        $this->assertSame(TicketStatus::Closed->value, $tickets[0]->getStatus());
+        $this->assertSame(TicketStatus::Publish->value, $tickets[0]->getStatus());
         $this->assertSame('Updated test ticket', $tickets[0]->getTitle());
         $this->assertSame('Updated test ticket description', $tickets[0]->getDescription());
         $this->assertGreaterThan(0, $tickets[0]->getCreatedAt());
