@@ -244,6 +244,23 @@ class TicketManagementTest extends FeatureTestCase
         $this->assertSame('Invalid CSRF token.', $response->getBody()->getContents());
     }
 
+    public function testReturnsForbiddenResponseWhenTryingToUpdateTicketUsingIdOfZero(): void
+    {
+        $response = $this->post(
+            '/ajax/ticket/update',
+            [
+                'id' => 0,
+                'title' => 'Updated test ticket',
+                'description' => 'Updated test ticket description',
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::BadRequest->value, $response->getStatusCode());
+        $this->assertSame('The id of the ticket cannot be zero.', $response->getBody()->getContents());
+    }
+
     public function testReturnsForbiddenResponseWhenTryingToUpdateTicketWhenNotLoggedIn(): void
     {
         $user = $this->userFactory->create([
