@@ -11,6 +11,7 @@ use App\Tickets\TicketService;
 use Exception;
 use InvalidArgumentException;
 use LogicException;
+use OutOfBoundsException;
 
 class TicketController
 {
@@ -35,7 +36,21 @@ class TicketController
 
     public function update(Request $request, TicketService $ticketService, Auth $auth, Csrf $csrf): Response
     {
-        $ticketService->updateTicket($request->postParams);
+        if (!$csrf->validate($request->postParams['csrf_token'] ?? '')) {
+            return new Response('Invalid CSRF token.', HttpStatusCode::Forbidden);
+        }
+
+        try {
+            $ticketService->updateTicket($request->postParams);
+        } catch (InvalidArgumentException $e) {
+            return new Response($e->getMessage(), HttpStatusCode::BadRequest);
+        } catch (OutOfBoundsException $e) {
+            return new Response($e->getMessage(), HttpStatusCode::NotFound);
+        } catch (LogicException $e) {
+            return new Response($e->getMessage(), HttpStatusCode::Forbidden);
+        } catch (Exception $e) {
+            return new Response($e->getMessage(), HttpStatusCode::InternalServerError);
+        }
 
         return new Response('The ticket has been updated successfully.', HttpStatusCode::OK);
     }
