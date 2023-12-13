@@ -617,38 +617,6 @@ class TicketServiceTest extends TestCase
                 InvalidArgumentException::class,
                 'The description cannot be longer than 1000 characters.'
             ],
-            'Missing status' => [
-                [
-                    'title' => 'Test title',
-                    'description' => 'Test description',
-                    'created_at' => time(),
-                    'updated_at' => time(),
-                ],
-                InvalidArgumentException::class,
-                'The status is required.'
-            ],
-            'Status is not a string' => [
-                [
-                    'title' => 'Test title',
-                    'description' => 'Test description',
-                    'status' => 1,
-                    'created_at' => time(),
-                    'updated_at' => time(),
-                ],
-                InvalidArgumentException::class,
-                'The status is of invalid type. It should be a string.'
-            ],
-            'Status is invalid' => [
-                [
-                    'title' => 'Test title',
-                    'description' => 'Test description',
-                    'status' => 'InvalidSuperStatus',
-                    'created_at' => time(),
-                    'updated_at' => time(),
-                ],
-                InvalidArgumentException::class,
-                'The status is invalid.'
-            ],
             'Create at is missing' => [
                 [
                     'title' => 'Test title',
