@@ -80,6 +80,88 @@ class TicketServiceTest extends IntegrationTestCase
         $this->assertSame(TicketStatus::Publish->value, $ticket->getStatus());
     }
 
+    //
+    // Update
+    //
+
+    public function testUpdatesTicketSuccessfully(): void
+    {
+        $this->logInUser();
+
+        $ticket = TicketRepository::make(TicketData::one());
+        $this->ticketRepository->save($ticket);
+
+        $updatedData = TicketData::updated();
+        $updatedData['id'] = 1;
+        $this->ticketService->updateTicket($updatedData);
+
+        $updatedTicket = $this->ticketRepository->find(1);
+        $this->assertInstanceOf(Ticket::class, $updatedTicket);
+        $this->assertSame(1, $updatedTicket->getId());
+        $this->assertSame(1, $updatedTicket->getUserId());
+        $this->assertSame('Updated ticket title', $updatedTicket->getTitle());
+        $this->assertSame('Updated ticket description 2', $updatedTicket->getDescription());
+        $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
+    }
+
+    public function testStatusShouldAlwaysBePublishWhenUpdatingUsingUpdateTicket(): void
+    {
+        $this->logInUser();
+
+        $ticket = TicketRepository::make(TicketData::one());
+        $this->ticketRepository->save($ticket);
+
+        $updatedData = TicketData::updated();
+        $updatedData['id'] = 1;
+        $updatedData['status'] = TicketStatus::Solved->value;
+        $this->ticketService->updateTicket($updatedData);
+
+        $updatedTicket = $this->ticketRepository->find(1);
+        $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
+    }
+
+    public function testCreatedAtShouldNotBeUpdatedWhenUpdatingUsingUpdateTicket(): void
+    {
+        $this->logInUser();
+
+        $ticketData = TicketData::one();
+        $ticketData['created_at'] = strtotime('1999');
+        $ticketData['updated_at'] = strtotime('1999');
+
+        $ticket = TicketRepository::make($ticketData);
+        $ticket->setCreatedAt(strtotime('1999'));
+        $this->ticketRepository->save($ticket);
+
+        $updatedData = TicketData::updated();
+        $updatedData['id'] = 1;
+        $this->ticketService->updateTicket($updatedData);
+
+        $updatedTicket = $this->ticketRepository->find(1);
+        $this->assertInstanceOf(Ticket::class, $updatedTicket);
+        $this->assertSame($ticketData['created_at'], $updatedTicket->getCreatedAt());
+    }
+
+    public function testSanitizesDataBeforeUpdating(): void
+    {
+        $this->logInUser();
+        $ticketData = TicketData::one();
+        $ticket = TicketRepository::make($ticketData);
+        $this->ticketRepository->save($ticket);
+
+        $updatedData = TicketData::unsanitized();
+        $updatedData['id'] = $ticket->getId();
+
+        $this->ticketService->updateTicket($updatedData);
+
+        $updatedTicket = $this->ticketRepository->find(1);
+        $this->assertInstanceOf(Ticket::class, $updatedTicket);
+        $this->assertSame(1, $updatedTicket->getId());
+        $this->assertSame(1, $updatedTicket->getUserId());
+        $this->assertSame('Test` ticket.', $updatedTicket->getTitle());
+        $this->assertSame("Test alert('ticket'); description", $updatedTicket->getDescription());
+        $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
+    }
+
     /**
      * @return void
      */

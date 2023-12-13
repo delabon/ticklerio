@@ -3,7 +3,9 @@
 namespace App\Tickets;
 
 use App\Core\Auth;
+use InvalidArgumentException;
 use LogicException;
+use OutOfBoundsException;
 
 readonly class TicketService
 {
@@ -38,5 +40,40 @@ readonly class TicketService
         $this->ticketRepository->save($ticket);
 
         return $ticket;
+    }
+
+    public function updateTicket(array $data): void
+    {
+        $id = $data['id'] ? (int)$data['id'] : 0;
+
+        if (!$id) {
+            throw new InvalidArgumentException('The id of the ticket cannot be zero.');
+        }
+
+        if (!$this->auth->getUserId()) {
+            throw new LogicException('You must be logged in to update a ticket.');
+        }
+
+        $ticket = $this->ticketRepository->find($data['id']);
+
+        if (!$ticket) {
+            throw new OutOfBoundsException('The ticket does not exist.');
+        }
+
+        if ($ticket->getUserId() !== $this->auth->getUserId()) {
+            throw new LogicException('You cannot update a ticket that you did not create.');
+        }
+
+        if ($ticket->getStatus() !== TicketStatus::Publish->value) {
+            throw new LogicException('You cannot update a ticket that is not published.');
+        }
+
+        $data = $this->ticketSanitizer->sanitize($data);
+        $this->ticketValidator->validate($data);
+
+        $ticket->setTitle($data['title']);
+        $ticket->setDescription($data['description']);
+        $ticket->setStatus(TicketStatus::Publish->value);
+        $this->ticketRepository->save($ticket);
     }
 }

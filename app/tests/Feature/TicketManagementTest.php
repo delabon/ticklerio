@@ -132,85 +132,50 @@ class TicketManagementTest extends FeatureTestCase
     public static function invalidTicketDataProvider(): array
     {
         return [
-            'Empty data' => [
-                []
-            ],
             'Missing title' => [
                 [
-                    'user_id' => 1,
                     'description' => 'Test ticket description',
-                    'status' => TicketStatus::Publish->value,
-                    'created_at' => time(),
-                    'updated_at' => time(),
                 ]
             ],
             'Empty title' => [
                 [
-                    'user_id' => 1,
                     'title' => '',
                     'description' => 'Test ticket description',
-                    'status' => TicketStatus::Publish->value,
-                    'created_at' => time(),
-                    'updated_at' => time(),
                 ]
             ],
             'Title is too long' => [
                 [
-                    'user_id' => 1,
                     'title' => str_repeat('a', 256),
                     'description' => 'Test ticket description',
-                    'status' => TicketStatus::Publish->value,
-                    'created_at' => time(),
-                    'updated_at' => time(),
                 ]
             ],
             'Title is too short' => [
                 [
-                    'user_id' => 1,
                     'title' => 'a',
                     'description' => 'Test ticket description',
-                    'status' => TicketStatus::Publish->value,
-                    'created_at' => time(),
-                    'updated_at' => time(),
                 ]
             ],
             'Missing description' => [
                 [
-                    'user_id' => 1,
                     'title' => 'Test ticket',
-                    'status' => TicketStatus::Publish->value,
-                    'created_at' => time(),
-                    'updated_at' => time(),
                 ]
             ],
             'Empty description' => [
                 [
-                    'user_id' => 1,
                     'title' => 'Test ticket',
                     'description' => '',
-                    'status' => TicketStatus::Publish->value,
-                    'created_at' => time(),
-                    'updated_at' => time(),
                 ]
             ],
             'Description is too long' => [
                 [
-                    'user_id' => 1,
                     'title' => 'Test ticket',
                     'description' => str_repeat('a', 2000),
-                    'status' => TicketStatus::Publish->value,
-                    'created_at' => time(),
-                    'updated_at' => time(),
                 ]
             ],
             'Description is too short' => [
                 [
-                    'user_id' => 1,
                     'title' => 'Test ticket',
                     'description' => 'a',
-                    'status' => TicketStatus::Publish->value,
-                    'created_at' => time(),
-                    'updated_at' => time(),
                 ]
             ],
         ];
@@ -228,12 +193,13 @@ class TicketManagementTest extends FeatureTestCase
         $this->auth->login($user);
         $ticket = $this->ticketFactory->create([
             'status' => TicketStatus::Publish->value,
-        ]);
+            'user_id' => $user->getId(),
+        ])[0];
 
         $response = $this->post(
             '/ajax/ticket/update',
             [
-                'id' => $ticket[0]->getId(),
+                'id' => $ticket->getId(),
                 'title' => 'Updated test ticket',
                 'description' => 'Updated test ticket description',
                 'status' => TicketStatus::Closed->value,

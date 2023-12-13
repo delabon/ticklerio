@@ -10,6 +10,7 @@ use App\Core\Http\Response;
 use App\Tickets\TicketService;
 use Exception;
 use InvalidArgumentException;
+use LogicException;
 
 class TicketController
 {
@@ -19,18 +20,23 @@ class TicketController
             return new Response('Invalid CSRF token.', HttpStatusCode::Forbidden);
         }
 
-        if (!$auth->getUserId()) {
-            return new Response('You must be logged in to create a ticket.', HttpStatusCode::Forbidden);
-        }
-
         try {
             $ticketService->createTicket($request->postParams);
 
             return new Response('The ticket has been created successfully.', HttpStatusCode::OK);
         } catch (InvalidArgumentException $e) {
             return new Response($e->getMessage(), HttpStatusCode::BadRequest);
+        } catch (LogicException $e) {
+            return new Response($e->getMessage(), HttpStatusCode::Forbidden);
         } catch (Exception $e) {
             return new Response($e->getMessage(), HttpStatusCode::InternalServerError);
         }
+    }
+
+    public function update(Request $request, TicketService $ticketService, Auth $auth, Csrf $csrf): Response
+    {
+        $ticketService->updateTicket($request->postParams);
+
+        return new Response('The ticket has been updated successfully.', HttpStatusCode::OK);
     }
 }

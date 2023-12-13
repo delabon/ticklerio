@@ -9,6 +9,7 @@ use App\Tickets\TicketSanitizer;
 use App\Tickets\TicketValidator;
 use InvalidArgumentException;
 use LogicException;
+use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
 use App\Tickets\TicketService;
 use App\Tickets\TicketStatus;
@@ -240,6 +241,519 @@ class TicketServiceTest extends TestCase
                 ],
                 InvalidArgumentException::class,
                 'The description cannot be longer than 1000 characters.'
+            ],
+        ];
+    }
+
+    //
+    // Update
+    //
+
+    public function testUpdatesTicketSuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(5))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(3))
+            ->method('fetch')
+            ->willReturnOnConsecutiveCalls(
+                (function () {
+                    $data = TicketData::one();
+                    $data['id'] = 1;
+
+                    return $data;
+                })(),
+                (function () {
+                    $data = TicketData::one();
+                    $data['id'] = 1;
+
+                    return $data;
+                })(),
+                (function () {
+                    $data = TicketData::updated();
+                    $data['id'] = 1;
+                    $data['status'] = TicketStatus::Publish->value;
+
+                    return $data;
+                })()
+            );
+
+        $this->pdoMock->expects($this->exactly(5))
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->pdoMock->expects($this->once())
+            ->method('lastInsertId')
+            ->willReturn("1");
+
+        $this->logInUser();
+
+        $ticket = TicketRepository::make(TicketData::one());
+        $this->ticketRepository->save($ticket);
+
+        $updatedData = TicketData::updated();
+        $updatedData['id'] = 1;
+        $this->ticketService->updateTicket($updatedData);
+
+        $updatedTicket = $this->ticketRepository->find(1);
+        $this->assertInstanceOf(Ticket::class, $updatedTicket);
+        $this->assertSame(1, $updatedTicket->getId());
+        $this->assertSame(1, $updatedTicket->getUserId());
+        $this->assertSame('Updated ticket title', $updatedTicket->getTitle());
+        $this->assertSame('Updated ticket description 2', $updatedTicket->getDescription());
+        $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
+    }
+
+    public function testStatusShouldAlwaysBePublishWhenUpdatingUsingUpdateTicket(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(5))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(3))
+            ->method('fetch')
+            ->willReturnOnConsecutiveCalls(
+                (function () {
+                    $data = TicketData::one();
+                    $data['id'] = 1;
+
+                    return $data;
+                })(),
+                (function () {
+                    $data = TicketData::one();
+                    $data['id'] = 1;
+
+                    return $data;
+                })(),
+                (function () {
+                    $data = TicketData::updated();
+                    $data['id'] = 1;
+                    $data['status'] = TicketStatus::Publish->value;
+
+                    return $data;
+                })()
+            );
+
+        $this->pdoMock->expects($this->exactly(5))
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->pdoMock->expects($this->once())
+            ->method('lastInsertId')
+            ->willReturn("1");
+
+        $this->logInUser();
+
+        $ticket = TicketRepository::make(TicketData::one());
+        $this->ticketRepository->save($ticket);
+
+        $updatedData = TicketData::updated();
+        $updatedData['id'] = 1;
+        $updatedData['status'] = TicketStatus::Solved->value;
+        $this->ticketService->updateTicket($updatedData);
+
+        $updatedTicket = $this->ticketRepository->find(1);
+        $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
+    }
+
+    public function testCreatedAtShouldNotBeUpdatedWhenUpdatingUsingUpdateTicket(): void
+    {
+        $ticketData = TicketData::one();
+        $ticketData['created_at'] = strtotime('1999');
+        $ticketData['updated_at'] = strtotime('1999');
+
+        $this->pdoStatementMock->expects($this->exactly(5))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(3))
+            ->method('fetch')
+            ->willReturnOnConsecutiveCalls(
+                (function () use ($ticketData) {
+                    $ticketData['id'] = 1;
+
+                    return $ticketData;
+                })(),
+                (function () use ($ticketData) {
+                    $ticketData['id'] = 1;
+
+                    return $ticketData;
+                })(),
+                (function () {
+                    $data = TicketData::updated();
+                    $data['id'] = 1;
+                    $data['created_at'] = strtotime('1999');
+
+                    return $data;
+                })()
+            );
+
+        $this->pdoMock->expects($this->exactly(5))
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->pdoMock->expects($this->once())
+            ->method('lastInsertId')
+            ->willReturn("1");
+
+        $this->logInUser();
+
+        $ticket = TicketRepository::make($ticketData);
+        $ticket->setCreatedAt(strtotime('1999'));
+        $this->ticketRepository->save($ticket);
+
+        $updatedData = TicketData::updated();
+        $updatedData['id'] = 1;
+        $this->ticketService->updateTicket($updatedData);
+
+        $updatedTicket = $this->ticketRepository->find(1);
+        $this->assertInstanceOf(Ticket::class, $updatedTicket);
+        $this->assertSame($ticketData['created_at'], $updatedTicket->getCreatedAt());
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateTicketWithIdOfZero(): void
+    {
+        $data = TicketData::updated();
+        $data['id'] = 0;
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The id of the ticket cannot be zero.');
+
+        $this->ticketService->updateTicket($data);
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateTicketWhenNotLoggedIn(): void
+    {
+        $data = TicketData::updated();
+        $data['id'] = 11;
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('You must be logged in to update a ticket.');
+
+        $this->ticketService->updateTicket($data);
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateTicketThatDoesNotExist(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn(false);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->logInUser();
+        $data = TicketData::updated();
+        $data['id'] = 999;
+
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('The ticket does not exist.');
+
+        $this->ticketService->updateTicket($data);
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateTicketWhenLoggedInUserIsNotTheOwnerOfTheTicket(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () {
+                $data = TicketData::one();
+                $data['id'] = 1;
+                $data['user_id'] = 999;
+
+                return $data;
+            });
+
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->pdoMock->expects($this->once())
+            ->method('lastInsertId')
+            ->willReturn("1");
+
+        $this->logInUser();
+
+        $ticketData = TicketData::one();
+        $ticketData['user_id'] = 999;
+        $ticket = TicketRepository::make($ticketData);
+        $this->ticketRepository->save($ticket);
+
+        $updatedData = TicketData::updated();
+        $updatedData['id'] = $ticket->getId();
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('You cannot update a ticket that you did not create.');
+
+        $this->ticketService->updateTicket($updatedData);
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateTicketWhenTicketStatusIsNotPublish(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () {
+                $data = TicketData::one();
+                $data['id'] = 1;
+                $data['user_id'] = 1;
+                $data['status'] = TicketStatus::Closed->value;
+
+                return $data;
+            });
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->logInUser();
+
+        $updatedData = TicketData::updated();
+        $updatedData['id'] = 1;
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('You cannot update a ticket that is not published.');
+
+        $this->ticketService->updateTicket($updatedData);
+    }
+
+    /**
+     * @dataProvider ticketUpdateDataProvider
+     * @param $data
+     * @param $expectedException
+     * @param $expectedExceptionMessage
+     * @return void
+     */
+    public function testValidatesData($data, $expectedException, $expectedExceptionMessage): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->willReturnCallback(function () {
+                $data = TicketData::one();
+                $data['id'] = 1;
+                $data['status'] = TicketStatus::Publish->value;
+
+                return $data;
+            });
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->logInUser();
+        $data['id'] = 1;
+        $data['user_id'] = 1;
+
+        $this->expectException($expectedException);
+        $this->expectExceptionMessage($expectedExceptionMessage);
+
+        $this->ticketService->updateTicket($data);
+    }
+
+    public static function ticketUpdateDataProvider(): array
+    {
+        return [
+            'Missing title' => [
+                [
+                    'description' => 'test description',
+                    'status' => TicketStatus::Publish->value,
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ],
+                InvalidArgumentException::class,
+                'The title is required.'
+            ],
+            'Empty title' => [
+                [
+                    'title' => '',
+                    'description' => 'test description',
+                    'status' => TicketStatus::Publish->value,
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ],
+                InvalidArgumentException::class,
+                'The title cannot be empty.'
+            ],
+            'Title length should not be more than 255 chars' => [
+                [
+                    'title' => str_repeat('a', 256),
+                    'description' => 'test description',
+                    'status' => TicketStatus::Publish->value,
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ],
+                InvalidArgumentException::class,
+                'The title cannot be longer than 255 characters.'
+            ],
+            'Title length should not be less than 3 chars' => [
+                [
+                    'title' => 'Lo',
+                    'description' => 'test description',
+                    'status' => TicketStatus::Publish->value,
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ],
+                InvalidArgumentException::class,
+                'The title cannot be shorter than 3 characters.'
+            ],
+            'Missing description' => [
+                [
+                    'title' => 'test title',
+                    'status' => TicketStatus::Publish->value,
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ],
+                InvalidArgumentException::class,
+                'The description is required.'
+            ],
+            'Invalid description' => [
+                [
+                    'title' => 'test title',
+                    'description' => '',
+                    'status' => TicketStatus::Publish->value,
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ],
+                InvalidArgumentException::class,
+                'The description cannot be empty.'
+            ],
+            'Description length should not be less than 10 chars' => [
+                [
+                    'title' => 'Test title',
+                    'description' => 'Haha text',
+                    'status' => TicketStatus::Publish->value,
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ],
+                InvalidArgumentException::class,
+                'The description cannot be shorter than 10 characters.'
+            ],
+            'Description length should not be more than 1000 chars' => [
+                [
+                    'title' => 'Test title',
+                    'description' => str_repeat('a', 1001),
+                    'status' => TicketStatus::Publish->value,
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ],
+                InvalidArgumentException::class,
+                'The description cannot be longer than 1000 characters.'
+            ],
+            'Missing status' => [
+                [
+                    'title' => 'Test title',
+                    'description' => 'Test description',
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ],
+                InvalidArgumentException::class,
+                'The status is required.'
+            ],
+            'Status is not a string' => [
+                [
+                    'title' => 'Test title',
+                    'description' => 'Test description',
+                    'status' => 1,
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ],
+                InvalidArgumentException::class,
+                'The status is of invalid type. It should be a string.'
+            ],
+            'Status is invalid' => [
+                [
+                    'title' => 'Test title',
+                    'description' => 'Test description',
+                    'status' => 'InvalidSuperStatus',
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ],
+                InvalidArgumentException::class,
+                'The status is invalid.'
+            ],
+            'Create at is missing' => [
+                [
+                    'title' => 'Test title',
+                    'description' => 'Test description',
+                    'status' => TicketStatus::Publish->value,
+                    'updated_at' => time(),
+                ],
+                InvalidArgumentException::class,
+                'The created at is required.'
+            ],
+            'Create at must be a number' => [
+                [
+                    'title' => 'Test title',
+                    'description' => 'Test description',
+                    'status' => TicketStatus::Publish->value,
+                    'created_at' => false,
+                    'updated_at' => time(),
+                ],
+                InvalidArgumentException::class,
+                'The created at must be a positive number.'
+            ],
+            'Create at must be a positive number' => [
+                [
+                    'title' => 'Test title',
+                    'description' => 'Test description',
+                    'status' => TicketStatus::Publish->value,
+                    'created_at' => 0,
+                    'updated_at' => time(),
+                ],
+                InvalidArgumentException::class,
+                'The created at must be a positive number.'
+            ],
+            'Updated at is missing' => [
+                [
+                    'title' => 'Test title',
+                    'description' => 'Test description',
+                    'status' => TicketStatus::Publish->value,
+                    'created_at' => time(),
+                ],
+                InvalidArgumentException::class,
+                'The updated at is required.'
+            ],
+            'Updated at must be a number' => [
+                [
+                    'title' => 'Test title',
+                    'description' => 'Test description',
+                    'status' => TicketStatus::Publish->value,
+                    'created_at' => time(),
+                    'updated_at' => 'invalid date',
+                ],
+                InvalidArgumentException::class,
+                'The updated at must be a positive number.'
+            ],
+            'Updated at must be a positive number' => [
+                [
+                    'title' => 'Test title',
+                    'description' => 'Test description',
+                    'status' => TicketStatus::Publish->value,
+                    'created_at' => time(),
+                    'updated_at' => 0,
+                ],
+                InvalidArgumentException::class,
+                'The updated at must be a positive number.'
             ],
         ];
     }
