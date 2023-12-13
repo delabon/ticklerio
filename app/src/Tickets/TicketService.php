@@ -42,6 +42,10 @@ readonly class TicketService
         return $ticket;
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @return void
+     */
     public function updateTicket(array $data): void
     {
         $id = $data['id'] ? (int)$data['id'] : 0;
