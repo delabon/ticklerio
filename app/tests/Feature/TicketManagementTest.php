@@ -450,4 +450,150 @@ class TicketManagementTest extends FeatureTestCase
             ],
         ];
     }
+
+    //
+    // Status update by admins
+    //
+
+    public function testUpdatesTicketStatusByAdminSuccessfully(): void
+    {
+        $user = $this->userFactory->create([
+            'type' => UserType::Admin->value,
+        ])[0];
+        $this->auth->login($user);
+        $ticket = $this->ticketFactory->create([
+            'status' => TicketStatus::Publish->value,
+            'user_id' => $user->getId(),
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/ticket/status/update',
+            [
+                'id' => $ticket->getId(),
+                'status' => TicketStatus::Solved->value,
+                'csrf_token' => $this->csrf->generate(),
+            ]
+        );
+
+        $ticket = $this->ticketRepository->find($ticket->getId());
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertSame('The status of the ticket has been updated.', $response->getBody()->getContents());
+        $this->assertSame(TicketStatus::Solved->value, $ticket->getStatus());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToUpdateTheTicketStatusWithInvalidCsrf(): void
+    {
+        $response = $this->post(
+            '/ajax/ticket/status/update',
+            [
+                'id' => 1,
+                'status' => TicketStatus::Solved->value,
+                'csrf_token' => 'invalid csrf',
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame('Invalid CSRF token.', $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToUpdateTheTicketStatusWhenNotLoggedIn(): void
+    {
+        $response = $this->post(
+            '/ajax/ticket/status/update',
+            [
+                'id' => 1,
+                'status' => TicketStatus::Solved->value,
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame('Cannot update the status of a ticket when not logged in.', $response->getBody()->getContents());
+    }
+
+    public function testReturnsBadRequestResponseWhenTryingToUpdateTheTicketStatusUsingNonPositiveId(): void
+    {
+        $user = $this->userFactory->create([
+            'type' => UserType::Admin->value,
+        ])[0];
+        $this->auth->login($user);
+
+        $response = $this->post(
+            '/ajax/ticket/status/update',
+            [
+                'id' => 0,
+                'status' => TicketStatus::Solved->value,
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::BadRequest->value, $response->getStatusCode());
+        $this->assertSame('Cannot update the status of a ticket with a non positive id.', $response->getBody()->getContents());
+    }
+
+    public function testReturnsBadRequestResponseWhenTryingToUpdateTheTicketStatusUsingInvalidStatus(): void
+    {
+        $user = $this->userFactory->create([
+            'type' => UserType::Admin->value,
+        ])[0];
+        $this->auth->login($user);
+
+        $response = $this->post(
+            '/ajax/ticket/status/update',
+            [
+                'id' => 99,
+                'status' => 'invalid status goes here',
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::BadRequest->value, $response->getStatusCode());
+        $this->assertSame('Cannot update the status of a ticket with an invalid status.', $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToUpdateTheTicketStatusWhenLoggedInAsNonAdmin(): void
+    {
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value,
+        ])[0];
+        $this->auth->login($user);
+
+        $response = $this->post(
+            '/ajax/ticket/status/update',
+            [
+                'id' => 99,
+                'status' => TicketStatus::Solved->value,
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame('Cannot update the status of a ticket using a non-admin account.', $response->getBody()->getContents());
+    }
+
+    public function testReturnsNotFoundResponseWhenTryingToUpdateTheTicketStatusOfTicketThatDoesNotExist(): void
+    {
+        $user = $this->userFactory->create([
+            'type' => UserType::Admin->value,
+        ])[0];
+        $this->auth->login($user);
+
+        $response = $this->post(
+            '/ajax/ticket/status/update',
+            [
+                'id' => 99,
+                'status' => TicketStatus::Solved->value,
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::NotFound->value, $response->getStatusCode());
+        $this->assertSame('Cannot update the status of a ticket that does not exist.', $response->getBody()->getContents());
+    }
 }

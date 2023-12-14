@@ -6,7 +6,11 @@ use App\Core\Auth;
 use App\Core\Session\ArraySessionHandler;
 use App\Core\Session\Session;
 use App\Core\Session\SessionHandlerType;
+use App\Exceptions\TicketDoesNotExistException;
 use App\Exceptions\UserDoesNotExistException;
+use App\Tickets\Ticket;
+use App\Tickets\TicketRepository;
+use App\Tickets\TicketStatus;
 use App\Users\AdminService;
 use App\Users\User;
 use App\Users\UserRepository;
@@ -14,10 +18,12 @@ use App\Users\UserSanitizer;
 use App\Users\UserService;
 use App\Users\UserType;
 use App\Users\UserValidator;
+use InvalidArgumentException;
 use LogicException;
 use PDO;
 use PDOStatement;
 use PHPUnit\Framework\TestCase;
+use Tests\_data\TicketData;
 use Tests\_data\UserData;
 
 class AdminServiceTest extends TestCase
@@ -29,6 +35,7 @@ class AdminServiceTest extends TestCase
     private AdminService $adminService;
     private UserService $userService;
     private Auth $auth;
+    private TicketRepository $ticketRepository;
 
     protected function setUp(): void
     {
@@ -51,7 +58,8 @@ class AdminServiceTest extends TestCase
         $this->pdoStatementMock = $this->createMock(PDOStatement::class);
         $this->pdoMock = $this->createMock(PDO::class);
         $this->userRepository = new UserRepository($this->pdoMock);
-        $this->adminService = new AdminService($this->userRepository, new Auth($this->session));
+        $this->ticketRepository = new TicketRepository($this->pdoMock);
+        $this->adminService = new AdminService($this->userRepository, $this->ticketRepository, new Auth($this->session));
         $this->userService = new UserService($this->userRepository, new UserValidator(), new UserSanitizer());
         $this->auth = new Auth($this->session);
     }
@@ -446,5 +454,182 @@ class AdminServiceTest extends TestCase
         $this->expectException(LogicException::class);
 
         $this->adminService->unbanUser($user->getId());
+    }
+
+    //
+    // Update ticket status
+    //
+
+    public function testUpdatesTicketStatusSuccessfully(): void
+    {
+        $this->logInAdmin();
+        $ticketData = TicketData::one();
+        $ticketData['status'] = TicketStatus::Publish->value;
+
+        $this->pdoStatementMock->expects($this->exactly(7))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(5))
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnOnConsecutiveCalls(
+                (function () {
+                    $userData = UserData::adminData();
+                    $userData['id'] = 1;
+
+                    return $userData;
+                })(),
+                (function () use ($ticketData) {
+                    $ticketData['id'] = 1;
+
+                    return $ticketData;
+                })(),
+                (function () use ($ticketData) {
+                    $ticketData['id'] = 1;
+
+                    return $ticketData;
+                })(),
+                (function () use ($ticketData) {
+                    $ticketData['id'] = 1;
+
+                    return $ticketData;
+                })(),
+                (function () use ($ticketData) {
+                    $ticketData['id'] = 1;
+                    $ticketData['status'] = TicketStatus::Solved->value;
+
+                    return $ticketData;
+                })(),
+            );
+
+        $this->pdoMock->expects($this->exactly(7))
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->pdoMock->expects($this->once())
+            ->method('lastInsertId')
+            ->willReturn("1");
+
+        /** @var Ticket $ticket */
+        $ticket = TicketRepository::make($ticketData);
+        $this->ticketRepository->save($ticket);
+
+        $this->adminService->updateTicketStatus($ticket->getId(), TicketStatus::Solved->value);
+
+        /** @var Ticket $updatedTicket */
+        $updatedTicket = $this->ticketRepository->find($ticket->getId());
+        $this->assertSame(1, $updatedTicket->getId());
+        $this->assertSame(TicketStatus::Solved->value, $updatedTicket->getStatus());
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateTicketStatusWhenNotLoggedIn(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("Cannot update the status of a ticket when not logged in.");
+
+        $this->adminService->updateTicketStatus(1, TicketStatus::Solved->value);
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateTicketStatusWithNonPositiveNumber(): void
+    {
+        $this->logInMember();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Cannot update the status of a ticket with a non positive id.");
+
+        $this->adminService->updateTicketStatus(0, TicketStatus::Solved->value);
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateTicketStatusWithInvalidStatus(): void
+    {
+        $this->logInMember();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Cannot update the status of a ticket with an invalid status.");
+
+        $this->adminService->updateTicketStatus(1, 'invalid status goes here');
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateTicketStatusWhenLoggedInAsNonAdminUser(): void
+    {
+        $this->logInMember();
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () {
+                $userData = UserData::memberOne();
+                $userData['id'] = 1;
+                $userData['type'] = UserType::Member->value;
+
+                return $userData;
+            });
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("Cannot update the status of a ticket using a non-admin account.");
+
+        $this->adminService->updateTicketStatus(1, TicketStatus::Solved->value);
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateTicketStatusOfTicketThatDoesNotExist(): void
+    {
+        $this->logInAdmin();
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnOnConsecutiveCalls(
+                (function () {
+                    $userData = UserData::adminData();
+                    $userData['id'] = 1;
+
+                    return $userData;
+                })(),
+                false
+            );
+
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->expectException(TicketDoesNotExistException::class);
+        $this->expectExceptionMessage("Cannot update the status of a ticket that does not exist.");
+
+        $this->adminService->updateTicketStatus(1, TicketStatus::Solved->value);
+    }
+
+    /**
+     * @return void
+     */
+    protected function logInMember(): void
+    {
+        $user = new User();
+        $user->setId(1);
+        $user->setType(UserType::Member->value);
+        $this->auth->login($user);
+    }
+
+    /**
+     * @return void
+     */
+    protected function logInAdmin(): void
+    {
+        $user = new User();
+        $user->setId(1);
+        $user->setType(UserType::Admin->value);
+        $this->auth->login($user);
     }
 }

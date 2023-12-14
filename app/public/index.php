@@ -83,6 +83,7 @@ if ($uri === '/') {
         $container->get(Request::class),
         new AdminService(
             new UserRepository($container->get(PDO::class)),
+            new TicketRepository($container->get(PDO::class)),
             $container->get(Auth::class)
         ),
         $container->get(Csrf::class)
@@ -93,6 +94,7 @@ if ($uri === '/') {
         $container->get(Request::class),
         new AdminService(
             new UserRepository($container->get(PDO::class)),
+            new TicketRepository($container->get(PDO::class)),
             $container->get(Auth::class)
         ),
         $container->get(Csrf::class)
@@ -119,7 +121,6 @@ if ($uri === '/') {
             new TicketSanitizer(),
             $container->get(Auth::class)
         ),
-        $container->get(Auth::class),
         $container->get(Csrf::class)
     );
 } elseif (preg_match("/^\/ajax\/ticket\/update\/?$/", $uri)) {
@@ -132,7 +133,17 @@ if ($uri === '/') {
             new TicketSanitizer(),
             $container->get(Auth::class)
         ),
-        $container->get(Auth::class),
+        $container->get(Csrf::class)
+    );
+} elseif (preg_match("/^\/ajax\/ticket\/status\/update\/?$/", $uri)) {
+    // Updates the status of a ticket via ajax
+    $response = (new TicketController())->updateStatus(
+        $container->get(Request::class),
+        new AdminService(
+            new UserRepository($container->get(PDO::class)),
+            new TicketRepository($container->get(PDO::class)),
+            $container->get(Auth::class)
+        ),
         $container->get(Csrf::class)
     );
 }

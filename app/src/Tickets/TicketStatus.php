@@ -7,5 +7,16 @@ enum TicketStatus: string
     case Publish = 'publish';
     case Closed = 'closed';
     case Solved = 'solved';
-    case Deleted = 'deleted';
+
+    /**
+     * @return array<string>
+     */
+    public static function toArray(): array
+    {
+        return [
+            self::Publish->value,
+            self::Closed->value,
+            self::Solved->value,
+        ];
+    }
 }

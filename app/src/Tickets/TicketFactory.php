@@ -22,7 +22,6 @@ class TicketFactory extends Factory
             $ticket->setStatus($attributes['status'] ?? $this->faker->randomElement([
                 TicketStatus::Publish->value,
                 TicketStatus::Closed->value,
-                TicketStatus::Deleted->value,
                 TicketStatus::Solved->value,
             ]));
             $ticket->setCreatedAt($attributes['created_at'] ?? $this->faker->dateTimeThisYear->getTimestamp());

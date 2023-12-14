@@ -61,13 +61,11 @@ class TicketFactoryTest extends TestCase
         $this->assertTrue(in_array($tickets[0]->getStatus(), [
             TicketStatus::Publish->value,
             TicketStatus::Closed->value,
-            TicketStatus::Deleted->value,
             TicketStatus::Solved->value,
         ]));
         $this->assertTrue(in_array($tickets[1]->getStatus(), [
             TicketStatus::Publish->value,
             TicketStatus::Closed->value,
-            TicketStatus::Deleted->value,
             TicketStatus::Solved->value,
         ]));
         $this->assertIsInt($tickets[0]->getCreatedAt());

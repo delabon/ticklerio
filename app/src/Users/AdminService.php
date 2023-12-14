@@ -3,13 +3,18 @@
 namespace App\Users;
 
 use App\Core\Auth;
+use App\Exceptions\TicketDoesNotExistException;
 use App\Exceptions\UserDoesNotExistException;
+use App\Tickets\TicketRepository;
+use App\Tickets\TicketStatus;
+use InvalidArgumentException;
 use LogicException;
 
 readonly class AdminService
 {
     public function __construct(
         private UserRepository $userRepository,
+        private TicketRepository $ticketRepository,
         private Auth $auth
     ) {
     }
@@ -76,5 +81,36 @@ readonly class AdminService
         $this->userRepository->save($user);
 
         return $user;
+    }
+
+    public function updateTicketStatus(int $id, string $status): void
+    {
+        if (!$this->auth->getUserId()) {
+            throw new LogicException("Cannot update the status of a ticket when not logged in.");
+        }
+
+        if ($id < 1) {
+            throw new InvalidArgumentException("Cannot update the status of a ticket with a non positive id.");
+        }
+
+        if (!in_array($status, TicketStatus::toArray())) {
+            throw new InvalidArgumentException("Cannot update the status of a ticket with an invalid status.");
+        }
+
+        $admin = $this->userRepository->find($this->auth->getUserId());
+
+        if ($admin->getType() !== UserType::Admin->value) {
+            throw new LogicException("Cannot update the status of a ticket using a non-admin account.");
+        }
+
+        $ticket = $this->ticketRepository->find($id);
+
+        if (!$ticket) {
+            throw new TicketDoesNotExistException("Cannot update the status of a ticket that does not exist.");
+        }
+
+        $ticket = $this->ticketRepository->find($id);
+        $ticket->setStatus($status);
+        $this->ticketRepository->save($ticket);
     }
 }
