@@ -25,9 +25,12 @@ use PDOStatement;
 use PHPUnit\Framework\TestCase;
 use Tests\_data\TicketData;
 use Tests\_data\UserData;
+use Tests\Traits\AuthenticatesUsers;
 
 class AdminServiceTest extends TestCase
 {
+    use AuthenticatesUsers;
+
     private ?Session $session;
     private object $pdoStatementMock;
     private object $pdoMock;
@@ -538,7 +541,7 @@ class AdminServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToUpdateTicketStatusWithNonPositiveNumber(): void
     {
-        $this->logInMember();
+        $this->logInUser();
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Cannot update the status of a ticket with a non positive id.");
@@ -548,7 +551,7 @@ class AdminServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToUpdateTicketStatusWithInvalidStatus(): void
     {
-        $this->logInMember();
+        $this->logInUser();
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Cannot update the status of a ticket with an invalid status.");
@@ -558,7 +561,7 @@ class AdminServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToUpdateTicketStatusWhenLoggedInAsNonAdminUser(): void
     {
-        $this->logInMember();
+        $this->logInUser();
 
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
@@ -614,27 +617,5 @@ class AdminServiceTest extends TestCase
         $this->expectExceptionMessage("Cannot update the status of a ticket that does not exist.");
 
         $this->adminService->updateTicketStatus(1, TicketStatus::Solved->value);
-    }
-
-    /**
-     * @return void
-     */
-    protected function logInMember(): void
-    {
-        $user = new User();
-        $user->setId(1);
-        $user->setType(UserType::Member->value);
-        $this->auth->login($user);
-    }
-
-    /**
-     * @return void
-     */
-    protected function logInAdmin(): void
-    {
-        $user = new User();
-        $user->setId(1);
-        $user->setType(UserType::Admin->value);
-        $this->auth->login($user);
     }
 }
