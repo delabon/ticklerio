@@ -135,6 +135,18 @@ if ($uri === '/') {
         ),
         $container->get(Csrf::class)
     );
+} elseif (preg_match("/^\/ajax\/ticket\/delete\/?$/", $uri)) {
+    // Deletes a ticket via ajax
+    $response = (new TicketController())->delete(
+        $container->get(Request::class),
+        new TicketService(
+            new TicketRepository($container->get(PDO::class)),
+            new TicketValidator(),
+            new TicketSanitizer(),
+            $container->get(Auth::class)
+        ),
+        $container->get(Csrf::class)
+    );
 } elseif (preg_match("/^\/ajax\/ticket\/status\/update\/?$/", $uri)) {
     // Updates the status of a ticket via ajax
     $response = (new TicketController())->updateStatus(

@@ -8,4 +8,17 @@ enum UserType: string
     case Admin = 'admin';
     case Banned = 'banned';
     case Deleted = 'deleted';
+
+    /**
+     * @return array<string>
+     */
+    public static function toArray(): array
+    {
+        return [
+            self::Admin->value,
+            self::Member->value,
+            self::Banned->value,
+            self::Deleted->value,
+        ];
+    }
 }

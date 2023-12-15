@@ -189,6 +189,10 @@ class dogRepository extends Repository // phpcs:ignore
 
         $entity->setId($this->pdo->lastInsertId());
     }
+
+    public function delete(int $id): void
+    {
+    }
 }
 
 class DogFactory extends Factory // phpcs:ignore

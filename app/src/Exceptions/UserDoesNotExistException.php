@@ -2,8 +2,8 @@
 
 namespace App\Exceptions;
 
-use LogicException;
+use OutOfBoundsException;
 
-class UserDoesNotExistException extends LogicException
+class UserDoesNotExistException extends OutOfBoundsException
 {
 }

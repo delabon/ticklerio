@@ -476,6 +476,36 @@ class UserRepositoryTest extends TestCase
 
         $this->assertSame($user, UserRepository::make(UserData::memberOne(), $user));
     }
+
+    //
+    // Delete
+    //
+
+    public function testDeletesTicketSuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn(false);
+
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturnCallback(function ($sql) {
+                if (stripos($sql, 'DELETE FROM') !== false) {
+                    $this->assertMatchesRegularExpression('/DELETE.+FROM.+users.+WHERE.+id = \?/is', $sql);
+                }
+
+                return $this->pdoStatementMock;
+            });
+
+        $this->userRepository->delete(1);
+
+        $this->assertNull($this->userRepository->find(1));
+    }
 }
 
 class InvalidUser extends Entity // phpcs:ignore

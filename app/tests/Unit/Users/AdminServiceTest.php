@@ -181,8 +181,10 @@ class AdminServiceTest extends TestCase
     {
         $user = new User();
         $user->setId(0);
+        $user->setType(UserType::Member->value);
         $admin = new User();
         $admin->setId(55);
+        $admin->setType(UserType::Admin->value);
         $this->auth->login($admin);
 
         $this->expectException(LogicException::class);
@@ -215,6 +217,7 @@ class AdminServiceTest extends TestCase
         $user->setType(UserType::Banned->value);
         $admin = new User();
         $admin->setId(55);
+        $admin->setType(UserType::Admin->value);
         $this->auth->login($admin);
 
         $this->expectException(LogicException::class);
@@ -248,6 +251,7 @@ class AdminServiceTest extends TestCase
         $user->setType(UserType::Banned->value);
         $admin = new User();
         $admin->setId(55);
+        $admin->setType(UserType::Admin->value);
         $this->auth->login($admin);
 
         $this->expectException(LogicException::class);
@@ -274,6 +278,7 @@ class AdminServiceTest extends TestCase
         $user->setId(999);
         $admin = new User();
         $admin->setId(55);
+        $admin->setType(UserType::Admin->value);
         $this->auth->login($admin);
 
         $this->expectException(UserDoesNotExistException::class);

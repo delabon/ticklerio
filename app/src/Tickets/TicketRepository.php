@@ -38,7 +38,7 @@ class TicketRepository extends Repository
 
         $stmt = $this->pdo->prepare("
             UPDATE
-                tickets
+                {$this->table}
             SET
                 title = ?,
                 description = ?,
@@ -67,7 +67,7 @@ class TicketRepository extends Repository
 
         $stmt = $this->pdo->prepare("
             INSERT INTO
-                tickets
+                {$this->table}
                 (user_id, title, description, status, created_at, updated_at)
             VALUES
                 (?, ?, ?, ?, ?, ?)
@@ -90,5 +90,17 @@ class TicketRepository extends Repository
         if (!is_a($entity, Ticket::class)) {
             throw new InvalidArgumentException('The entity must be an instance of Ticket.');
         }
+    }
+
+    public function delete(int $id): void
+    {
+        $this->pdo->prepare("
+            DELETE FROM
+                {$this->table}
+            WHERE
+                id = ?
+        ")->execute([
+            $id,
+        ]);
     }
 }

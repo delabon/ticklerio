@@ -2,8 +2,8 @@
 
 namespace App\Exceptions;
 
-use LogicException;
+use OutOfBoundsException;
 
-class TicketDoesNotExistException extends LogicException
+class TicketDoesNotExistException extends OutOfBoundsException
 {
 }

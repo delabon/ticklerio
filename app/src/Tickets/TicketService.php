@@ -3,6 +3,8 @@
 namespace App\Tickets;
 
 use App\Core\Auth;
+use App\Exceptions\TicketDoesNotExistException;
+use App\Users\UserType;
 use InvalidArgumentException;
 use LogicException;
 use OutOfBoundsException;
@@ -85,5 +87,32 @@ readonly class TicketService
         $ticket->setDescription($data['description']);
         $ticket->setStatus(TicketStatus::Publish->value);
         $this->ticketRepository->save($ticket);
+    }
+
+    public function deleteTicket(int $id): void
+    {
+        if (!$this->auth->getUserId()) {
+            throw new LogicException('Cannot delete a ticket when not logged in.');
+        }
+
+        if ($id < 1) {
+            throw new InvalidArgumentException('The id of the ticket cannot be a non-positive number.');
+        }
+
+        $ticket = $this->ticketRepository->find($id);
+
+        if (!$ticket) {
+            throw new TicketDoesNotExistException('The ticket does not exist.');
+        }
+
+        if ($ticket->getUserId() !== $this->auth->getUserId() && $this->auth->getUserType() !== UserType::Admin->value) {
+            throw new LogicException('You cannot delete a ticket that you did not create.');
+        }
+
+        if ($ticket->getStatus() !== TicketStatus::Publish->value && $this->auth->getUserType() !== UserType::Admin->value) {
+            throw new LogicException("You cannot delete a ticket that has been {$ticket->getStatus()}.");
+        }
+
+        $this->ticketRepository->delete($id);
     }
 }

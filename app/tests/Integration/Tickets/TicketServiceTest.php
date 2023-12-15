@@ -2,6 +2,7 @@
 
 namespace Tests\Integration\Tickets;
 
+use App\Exceptions\TicketDoesNotExistException;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketSanitizer;
 use App\Core\Auth;
@@ -10,6 +11,8 @@ use App\Tickets\TicketService;
 use App\Tickets\TicketStatus;
 use App\Tickets\TicketValidator;
 use App\Users\User;
+use App\Users\UserType;
+use LogicException;
 use Tests\_data\TicketData;
 use Tests\IntegrationTestCase;
 
@@ -153,13 +156,91 @@ class TicketServiceTest extends IntegrationTestCase
         $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
     }
 
+    //
+    // Delete
+    //
+
+    public function testDeletesTicketSuccessfully(): void
+    {
+        $this->logInUser();
+        $ticket = TicketRepository::make(TicketData::one());
+        $this->ticketRepository->save($ticket);
+
+        $this->ticketService->deleteTicket($ticket->getId());
+
+        $this->assertNull($this->ticketRepository->find($ticket->getId()));
+    }
+
+    public function testThrowsExceptionWhenTryingToDeleteTicketThatDoesNotExist(): void
+    {
+        $this->logInUser();
+
+        $this->expectException(TicketDoesNotExistException::class);
+        $this->expectExceptionMessage('The ticket does not exist.');
+
+        $this->ticketService->deleteTicket(99);
+    }
+
+    public function testThrowsExceptionWhenTryingToDeleteTicketWhenLoggedInAsNotTheAuthorAndNotAnAdmin(): void
+    {
+        $this->logInUser();
+
+        $ticket = TicketRepository::make(TicketData::one(222));
+        $this->ticketRepository->save($ticket);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('You cannot delete a ticket that you did not create.');
+
+        $this->ticketService->deleteTicket($ticket->getId());
+    }
+
+    public function testDeletesTicketWhenLoggedInAsAdminWhoIsNotTheAuthorOfTheTicket(): void
+    {
+        $this->logInAdmin();
+
+        $ticket = TicketRepository::make(TicketData::one(222));
+        $this->ticketRepository->save($ticket);
+
+        $this->ticketService->deleteTicket($ticket->getId());
+
+        $this->assertNull($this->ticketRepository->find(1));
+    }
+
+    public function testThrowsExceptionWhenTryingToDeleteTicketWhenLoggedInAsTheAuthorButTheTicketIsNotPublished(): void
+    {
+        $this->logInUser();
+
+        $ticketData = TicketData::one();
+        $ticketData['status'] = TicketStatus::Closed->value;
+        $ticket = TicketRepository::make($ticketData);
+        $this->ticketRepository->save($ticket);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("You cannot delete a ticket that has been " . TicketStatus::Closed->value . ".");
+
+        $this->ticketService->deleteTicket($ticket->getId());
+    }
+
+    //
+    // Helpers
+    //
+
     /**
      * @return void
      */
-    protected function logInUser(): void
+    private function logInUser(): void
     {
         $user = new User();
         $user->setId(1);
+        $user->setType(UserType::Member->value);
+        $this->auth->login($user);
+    }
+
+    private function logInAdmin(): void
+    {
+        $user = new User();
+        $user->setId(2);
+        $user->setType(UserType::Admin->value);
         $this->auth->login($user);
     }
 }

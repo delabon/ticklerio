@@ -12,6 +12,13 @@ interface RepositoryInterface
     public function save(EntityInterface $entity): void;
 
     /**
+     * Deletes an entity by id
+     * @param int $id
+     * @return void
+     */
+    public function delete(int $id): void;
+
+    /**
      * Finds an entity by column and value
      * @param string $column
      * @param mixed $value

@@ -47,6 +47,7 @@ class AuthTest extends FeatureTestCase
         $this->assertArrayHasKey('auth', $_SESSION);
         $this->assertIsArray($_SESSION['auth']);
         $this->assertArrayHasKey('id', $_SESSION['auth']);
+        $this->assertArrayHasKey('type', $_SESSION['auth']);
     }
 
     public function testLogsOutUserSuccessfully(): void

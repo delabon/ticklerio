@@ -80,4 +80,11 @@ class TicketController
 
         return new Response('The status of the ticket has been updated.', HttpStatusCode::OK);
     }
+
+    public function delete(Request $request, TicketService $ticketService, Csrf $csrf): Response
+    {
+        $ticketService->deleteTicket($request->postParams['id'] ? (int) $request->postParams['id'] : 0);
+
+        return new Response('The ticket has been deleted.', HttpStatusCode::OK);
+    }
 }

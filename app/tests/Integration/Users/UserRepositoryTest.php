@@ -201,4 +201,20 @@ class UserRepositoryTest extends IntegrationTestCase
     {
         $this->assertCount(0, $this->userRepository->all());
     }
+
+    //
+    // Delete
+    //
+
+    public function testDeletesTicketSuccessfully(): void
+    {
+        $user = $this->userRepository->make(UserData::memberOne());
+        $this->userRepository->save($user);
+
+        $this->assertCount(1, $this->userRepository->all());
+
+        $this->userRepository->delete($user->getId());
+
+        $this->assertNull($this->userRepository->find($user->getId()));
+    }
 }

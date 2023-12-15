@@ -540,6 +540,36 @@ class TicketRepositoryTest extends TestCase
 
         $this->assertSame($ticket, TicketRepository::make(TicketData::one(), $ticket));
     }
+
+    //
+    // Delete
+    //
+
+    public function testDeletesTicketSuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn(false);
+
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturnCallback(function ($sql) {
+                if (stripos($sql, 'DELETE FROM') !== false) {
+                    $this->assertMatchesRegularExpression('/DELETE.+FROM.+tickets.+WHERE.+id = \?/is', $sql);
+                }
+
+                return $this->pdoStatementMock;
+            });
+
+        $this->ticketRepository->delete(1);
+
+        $this->assertNull($this->ticketRepository->find(1));
+    }
 }
 
 class InvalidTicket extends Entity // phpcs:ignore

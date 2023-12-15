@@ -18,16 +18,21 @@ readonly class Auth
     public function login(User $user): void
     {
         if (!$user->getId()) {
-            throw new LogicException('Cannot log in a user with an id of 0.');
+            throw new LogicException('Cannot log in a user with a non-positive id.');
+        }
+
+        if (!in_array($user->getType(), UserType::toArray())) {
+            throw new LogicException("Cannot log in a user with invalid type.");
         }
 
         if (in_array($user->getType(), [UserType::Deleted->value, UserType::Banned->value])) {
-            throw new LogicException("Cannot log in a '{$user->getType()}' or pending user.");
+            throw new LogicException("Cannot log in a user that has been {$user->getType()}.");
         }
 
         $this->session->regenerateId();
         $this->session->add('auth', [
-            'id' => $user->getId()
+            'id' => $user->getId(),
+            'type' => $user->getType(),
         ]);
     }
 
@@ -36,6 +41,7 @@ readonly class Auth
         return $this->session->has('auth') &&
             is_array($this->session->get('auth')) &&
             isset($this->session->get('auth')['id']) &&
+            isset($this->session->get('auth')['type']) &&
             $this->session->get('auth')['id'] === $user->getId();
     }
 
@@ -71,5 +77,18 @@ readonly class Auth
         }
 
         return $this->session->get('auth')['id'];
+    }
+
+    public function getUserType(): ?string
+    {
+        if (!$this->session->get('auth')) {
+            return null;
+        }
+
+        if (!isset($this->session->get('auth')['type'])) {
+            return null;
+        }
+
+        return $this->session->get('auth')['type'];
     }
 }

@@ -146,4 +146,20 @@ class TicketRepositoryTest extends IntegrationTestCase
     {
         $this->assertCount(0, $this->ticketRepository->all());
     }
+
+    //
+    // Delete
+    //
+
+    public function testDeletesTicketSuccessfully(): void
+    {
+        $ticket = TicketRepository::make(TicketData::one());
+        $this->ticketRepository->save($ticket);
+
+        $this->assertCount(1, $this->ticketRepository->all());
+
+        $this->ticketRepository->delete($ticket->getId());
+
+        $this->assertNull($this->ticketRepository->find($ticket->getId()));
+    }
 }

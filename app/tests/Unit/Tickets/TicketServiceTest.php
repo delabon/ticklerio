@@ -4,6 +4,7 @@ namespace Tests\Unit\Tickets;
 
 use App\Core\Session\ArraySessionHandler;
 use App\Core\Session\SessionHandlerType;
+use App\Exceptions\TicketDoesNotExistException;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketSanitizer;
 use App\Tickets\TicketValidator;
@@ -620,6 +621,179 @@ class TicketServiceTest extends TestCase
         ];
     }
 
+    //
+    // Delete
+    //
+
+    public function testDeletesTicketSuccessfully(): void
+    {
+        $this->logInUser();
+
+        $this->pdoStatementMock->expects($this->exactly(3))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnOnConsecutiveCalls(
+                [
+                    'id' => 1,
+                    'user_id' => 1,
+                    'status' => TicketStatus::Publish->value,
+                ],
+                false
+            );
+
+        $this->pdoMock->expects($this->exactly(3))
+            ->method('prepare')
+            ->willReturnCallback(function ($sql) {
+                if (stripos($sql, 'DELETE FROM') !== false) {
+                    $this->assertMatchesRegularExpression('/DELETE.+FROM.+tickets.+WHERE.+id = \?/is', $sql);
+                }
+
+                return $this->pdoStatementMock;
+            });
+
+        $this->ticketService->deleteTicket(1);
+
+        $this->assertNull($this->ticketRepository->find(1));
+    }
+
+    public function testThrowsExceptionWhenTryingToDeleteTicketWhenNotLoggedIn(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Cannot delete a ticket when not logged in.');
+
+        $this->ticketService->deleteTicket(1);
+    }
+
+    public function testThrowsExceptionWhenTryingToDeleteTicketUsingNonPositiveId(): void
+    {
+        $this->logInUser();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The id of the ticket cannot be a non-positive number.');
+
+        $this->ticketService->deleteTicket(0);
+    }
+
+    public function testThrowsExceptionWhenTryingToDeleteTicketThatDoesNotExist(): void
+    {
+        $this->logInUser();
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn(false);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->expectException(TicketDoesNotExistException::class);
+        $this->expectExceptionMessage('The ticket does not exist.');
+
+        $this->ticketService->deleteTicket(99);
+    }
+
+    public function testThrowsExceptionWhenTryingToDeleteTicketWhenLoggedInAsNotTheAuthorAndNotAnAdmin(): void
+    {
+        $this->logInUser();
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                'id' => 1,
+                'user_id' => 999,
+                'status' => TicketStatus::Publish->value,
+            ]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('You cannot delete a ticket that you did not create.');
+
+        $this->ticketService->deleteTicket(1);
+    }
+
+    public function testDeletesTicketWhenLoggedInAsAdminWhoIsNotTheAuthorOfTheTicket(): void
+    {
+        $this->logInAdmin();
+
+        $this->pdoStatementMock->expects($this->exactly(3))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnOnConsecutiveCalls(
+                [
+                    'id' => 1,
+                    'user_id' => 999,
+                    'status' => TicketStatus::Publish->value,
+                ],
+                false
+            );
+
+        $this->pdoMock->expects($this->exactly(3))
+            ->method('prepare')
+            ->willReturnCallback(function ($sql) {
+                if (stripos($sql, 'DELETE FROM') !== false) {
+                    $this->assertMatchesRegularExpression('/DELETE.+FROM.+tickets.+WHERE.+id = \?/is', $sql);
+                }
+
+                return $this->pdoStatementMock;
+            });
+
+        $this->ticketService->deleteTicket(1);
+
+        $this->assertNull($this->ticketRepository->find(1));
+    }
+
+    public function testThrowsExceptionWhenTryingToDeleteTicketWhenLoggedInAsTheAuthorButTheTicketIsNotPublished(): void
+    {
+        $this->logInUser();
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                'id' => 1,
+                'user_id' => 1,
+                'status' => TicketStatus::Closed->value,
+            ]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("You cannot delete a ticket that has been " . TicketStatus::Closed->value . ".");
+
+        $this->ticketService->deleteTicket(1);
+    }
+
+    //
+    // Helpers
+    //
+
     /**
      * @return void
      */
@@ -628,6 +802,17 @@ class TicketServiceTest extends TestCase
         $user = new User();
         $user->setId(1);
         $user->setType(UserType::Member->value);
+        $this->auth->login($user);
+    }
+
+    /**
+     * @return void
+     */
+    protected function logInAdmin(): void
+    {
+        $user = new User();
+        $user->setId(2);
+        $user->setType(UserType::Admin->value);
         $this->auth->login($user);
     }
 }

@@ -435,6 +435,36 @@ class RepositoryTest extends TestCase
     }
 
     //
+    // Delete
+    //
+
+    public function testDeletesEntitySuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn(false);
+
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturnCallback(function ($sql) {
+                if (stripos($sql, 'DELETE FROM') !== false) {
+                    $this->assertMatchesRegularExpression('/DELETE.+FROM.+test_repository.+WHERE.+id = \?/is', $sql);
+                }
+
+                return $this->pdoStatementMock;
+            });
+
+        $this->personRepository->delete(1);
+
+        $this->assertNull($this->personRepository->find(1));
+    }
+
+    //
     // Helpers
     //
 
@@ -461,7 +491,7 @@ class PersonRepository extends Repository // phpcs:ignore
 
         $stmt = $this->pdo->prepare("
             UPDATE
-                users
+                {$this->table}
             SET
                 name = ?
             WHERE
@@ -479,7 +509,7 @@ class PersonRepository extends Repository // phpcs:ignore
 
         $stmt = $this->pdo->prepare("
             INSERT INTO
-                test_repository
+                {$this->table}
                 (name)
                 VALUES (?)
         ");
@@ -494,6 +524,18 @@ class PersonRepository extends Repository // phpcs:ignore
         if (!is_a($entity, Person::class)) {
             throw new InvalidArgumentException('The entity must be an instance of Person.');
         }
+    }
+
+    public function delete(int $id): void
+    {
+        $this->pdo->prepare("
+            DELETE FROM
+                {$this->table}
+            WHERE
+                id = ?
+        ")->execute([
+            $id,
+        ]);
     }
 }
 

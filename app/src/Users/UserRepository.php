@@ -38,7 +38,7 @@ class UserRepository extends Repository
 
         $stmt = $this->pdo->prepare("
             UPDATE
-                users
+                {$this->table}
             SET
                 email = ?,
                 type = ?,
@@ -72,7 +72,7 @@ class UserRepository extends Repository
 
         $stmt = $this->pdo->prepare("
             INSERT INTO
-                users
+                {$this->table}
                 (email, type, first_name, last_name, password, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
         ");
@@ -93,5 +93,17 @@ class UserRepository extends Repository
         if (!is_a($entity, User::class)) {
             throw new InvalidArgumentException('The entity must be an instance of User.');
         }
+    }
+
+    public function delete(int $id): void
+    {
+        $this->pdo->prepare("
+            DELETE FROM
+                {$this->table}
+            WHERE
+                id = ?
+        ")->execute([
+            $id,
+        ]);
     }
 }

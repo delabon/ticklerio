@@ -49,18 +49,21 @@ class AuthTest extends TestCase
     {
         $user = new User();
         $user->setId(1);
+        $user->setType(UserType::Admin->value);
 
         $this->auth->login($user);
 
         $this->assertArrayHasKey('auth', $_SESSION);
         $this->assertArrayHasKey('id', $_SESSION['auth']);
         $this->assertSame(1, $this->session->get('auth')['id']);
+        $this->assertSame(UserType::Admin->value, $this->session->get('auth')['type']);
     }
 
     public function testForceLogsOutUser(): void
     {
         $user = new User();
         $user->setId(1);
+        $user->setType(UserType::Admin->value);
         $this->auth->login($user);
 
         $this->auth->forceLogout();
@@ -72,6 +75,7 @@ class AuthTest extends TestCase
     {
         $user = new User();
         $user->setId(1);
+        $user->setType(UserType::Admin->value);
         $this->auth->login($user);
 
         $this->assertTrue($this->auth->isAuth($user));
@@ -90,6 +94,7 @@ class AuthTest extends TestCase
         $oldSessionId = session_id();
         $user = new User();
         $user->setId(1);
+        $user->setType(UserType::Admin->value);
 
         $this->auth->login($user);
         $newSessionId = session_id();
@@ -98,12 +103,25 @@ class AuthTest extends TestCase
         $this->assertNotSame($newSessionId, $oldSessionId);
     }
 
-    public function testThrowsExceptionWhenLoggingInUserWithIdOfZero(): void
+    public function testThrowsExceptionWhenLoggingInUserWithNonPositiveId(): void
     {
         $user = new User();
         $user->setId(0);
 
         $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Cannot log in a user with a non-positive id.');
+
+        $this->auth->login($user);
+    }
+
+    public function testThrowsExceptionWhenLoggingInUserWithInvalidType(): void
+    {
+        $user = new User();
+        $user->setId(5);
+        $user->setType('');
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("Cannot log in a user with invalid type.");
 
         $this->auth->login($user);
     }
@@ -122,6 +140,7 @@ class AuthTest extends TestCase
     {
         $user = new User();
         $user->setId(1);
+        $user->setType(UserType::Admin->value);
         $this->auth->login($user);
 
         $this->assertSame(1, $this->auth->getUserId());
@@ -132,6 +151,22 @@ class AuthTest extends TestCase
         $this->assertSame(0, $this->auth->getUserId());
     }
 
+    public function testReturnsLoggedInUserTypeSuccessfully(): void
+    {
+        $user = new User();
+        $user->setId(1);
+        $user->setType(UserType::Admin->value);
+
+        $this->auth->login($user);
+
+        $this->assertSame(UserType::Admin->value, $this->auth->getUserType());
+    }
+
+    public function testGetUserTypeMethodReturnsNullWhenNoUserIsLoggedIn(): void
+    {
+        $this->assertNull($this->auth->getUserType());
+    }
+
     public function testThrowsExceptionWhenTryingToLoginBannedUser(): void
     {
         $user = new User();
@@ -139,6 +174,7 @@ class AuthTest extends TestCase
         $user->setType(UserType::Banned->value);
 
         $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("Cannot log in a user that has been banned.");
 
         $this->auth->login($user);
     }
@@ -150,6 +186,7 @@ class AuthTest extends TestCase
         $user->setType(UserType::Deleted->value);
 
         $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("Cannot log in a user that has been deleted.");
 
         $this->auth->login($user);
     }

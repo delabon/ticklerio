@@ -73,6 +73,7 @@ class CheckUserMiddlewareTest extends TestCase
 
         $user = new User();
         $user->setId(1);
+        $user->setType(UserType::Member->value);
 
         $this->auth->login($user);
         $middleware = new CheckUserMiddleware($this->auth, new UserRepository($pdoMock));

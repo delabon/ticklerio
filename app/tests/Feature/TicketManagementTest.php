@@ -596,4 +596,41 @@ class TicketManagementTest extends FeatureTestCase
         $this->assertSame(HttpStatusCode::NotFound->value, $response->getStatusCode());
         $this->assertSame('Cannot update the status of a ticket that does not exist.', $response->getBody()->getContents());
     }
+
+    //
+    // Delete
+    //
+
+    public function testDeletesTicketSuccessfully(): void
+    {
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value,
+        ])[0];
+        $this->auth->login($user);
+        $ticket = $this->ticketFactory->create([
+            'status' => TicketStatus::Publish->value,
+            'user_id' => $user->getId(),
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/ticket/delete',
+            [
+                'id' => $ticket->getId(),
+                'csrf_token' => $this->csrf->generate(),
+            ]
+        );
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertSame('The ticket has been deleted.', $response->getBody()->getContents());
+        $this->assertCount(0, $this->ticketRepository->all());
+    }
+
+
+    // TODO: Add tests for deleting tickets
+    // TODO: Returns bad request response when trying to delete a ticket with invalid csrf token
+    // TODO: Returns forbidden response when trying to delete a ticket when not logged in
+    // TODO: Returns bad request response when trying to delete a ticket with a non-positive id
+    // TODO: Returns not found response when trying to delete a ticket that does not exist
+    // TODO: Returns forbidden response when trying to delete a ticket when not the author of the ticket and not an admin
+    // TODO: Returns forbidden response when trying to delete a ticket that is not published using the ticket author account
 }
