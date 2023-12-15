@@ -2,18 +2,18 @@
 
 namespace App\Users;
 
-use function Symfony\Component\String\u;
+use App\Abstracts\Entity;
 
-class User
+class User extends Entity
 {
-    private int $id = 0;
-    private string $email = '';
-    private string $firstName = '';
-    private string $lastName = '';
-    private string $password = '';
-    private string $type = '';
-    private int $createdAt = 0;
-    private int $updatedAt = 0;
+    protected int $id = 0;
+    protected string $email = '';
+    protected string $firstName = '';
+    protected string $lastName = '';
+    protected string $password = '';
+    protected string $type = '';
+    protected int $createdAt = 0;
+    protected int $updatedAt = 0;
 
     public function getId(): int
     {
@@ -93,20 +93,6 @@ class User
     public function setUpdatedAt(int $updatedAt): void
     {
         $this->updatedAt = $updatedAt;
-    }
-
-    /**
-     * @return array|mixed[]
-     */
-    public function toArray(): array
-    {
-        $data = [];
-
-        foreach (get_object_vars($this) as $key => $value) {
-            $data[u($key)->snake()->toString()] = $value;
-        }
-
-        return $data;
     }
 
     public function isBanned(): bool

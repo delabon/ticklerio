@@ -108,13 +108,14 @@ class UserRepositoryTest extends IntegrationTestCase
 
         $this->assertSame(1, $userFound->getId());
         $this->assertEquals($user, $userFound);
+        $this->assertInstanceOf(User::class, $userFound);
     }
 
     public function testFindsNonExistentUserShouldFail(): void
     {
         $userFound = $this->userRepository->find(99999);
 
-        $this->assertFalse($userFound);
+        $this->assertNull($userFound);
     }
 
     /**
@@ -133,6 +134,7 @@ class UserRepositoryTest extends IntegrationTestCase
         $this->assertCount(1, $usersFound);
         $this->assertSame(1, $usersFound[0]->getId());
         $this->assertSame($findData['value'], $usersFound[0]->$method());
+        $this->assertInstanceOf(User::class, $usersFound[0]);
     }
 
     /**
@@ -177,5 +179,42 @@ class UserRepositoryTest extends IntegrationTestCase
                 ]
             ],
         ];
+    }
+
+    public function testFindsAllUsers(): void
+    {
+        $userOne = $this->userRepository->make(UserData::memberOne());
+        $this->userRepository->save($userOne);
+        $userTwo = $this->userRepository->make(UserData::memberTwo());
+        $this->userRepository->save($userTwo);
+
+        $usersFound = $this->userRepository->all();
+
+        $this->assertCount(2, $usersFound);
+        $this->assertSame(1, $usersFound[0]->getId());
+        $this->assertSame(2, $usersFound[1]->getId());
+        $this->assertInstanceOf(User::class, $usersFound[0]);
+        $this->assertInstanceOf(User::class, $usersFound[1]);
+    }
+
+    public function testFindsAllWithNoUsersInTableShouldReturnEmptyArray(): void
+    {
+        $this->assertCount(0, $this->userRepository->all());
+    }
+
+    //
+    // Delete
+    //
+
+    public function testDeletesTicketSuccessfully(): void
+    {
+        $user = $this->userRepository->make(UserData::memberOne());
+        $this->userRepository->save($user);
+
+        $this->assertCount(1, $this->userRepository->all());
+
+        $this->userRepository->delete($user->getId());
+
+        $this->assertNull($this->userRepository->find($user->getId()));
     }
 }

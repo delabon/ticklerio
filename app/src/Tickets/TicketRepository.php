@@ -1,29 +1,29 @@
 <?php
 
-namespace App\Users;
+namespace App\Tickets;
 
-use App\Exceptions\UserDoesNotExistException;
 use App\Abstracts\Repository;
+use App\Users\User;
 use InvalidArgumentException;
+use OutOfBoundsException;
 
-class UserRepository extends Repository
+class TicketRepository extends Repository
 {
-    protected string $table = 'users';
+    protected string $table = 'tickets';
 
     /** @var array|string[] */
     protected array $validColumns = [
         'id',
-        'email',
-        'password',
-        'first_name',
-        'last_name',
-        'type',
+        'user_id',
+        'title',
+        'description',
+        'status',
         'created_at',
         'updated_at',
     ];
 
     /**
-     * @param User $entity
+     * @param Ticket $entity
      * @return void
      */
     protected function update(object $entity): void
@@ -33,37 +33,32 @@ class UserRepository extends Repository
         $result = $this->find($entity->getId());
 
         if (!$result) {
-            throw new UserDoesNotExistException("The user with the id {$entity->getId()} does not exist in the database.");
+            throw new OutOfBoundsException("The ticket with the id {$entity->getId()} does not exist in the database.");
         }
 
         $stmt = $this->pdo->prepare("
             UPDATE
                 {$this->table}
             SET
-                email = ?,
-                type = ?,
-                first_name = ?,
-                last_name = ?,
-                password = ?,
-                created_at = ?,
+                title = ?,
+                description = ?,
+                status = ?,
                 updated_at = ?
             WHERE
                 id = ?
         ");
+
         $stmt->execute([
-            $entity->getEmail(),
-            $entity->getType(),
-            $entity->getFirstName(),
-            $entity->getLastName(),
-            $entity->getPassword(),
-            $entity->getCreatedAt(),
+            $entity->getTitle(),
+            $entity->getDescription(),
+            $entity->getStatus(),
             time(),
-            $entity->getId()
+            $entity->getId(),
         ]);
     }
 
     /**
-     * @param User $entity
+     * @param Ticket $entity
      * @return void
      */
     protected function insert(object $entity): void
@@ -73,25 +68,27 @@ class UserRepository extends Repository
         $stmt = $this->pdo->prepare("
             INSERT INTO
                 {$this->table}
-                (email, type, first_name, last_name, password, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (user_id, title, description, status, created_at, updated_at)
+            VALUES
+                (?, ?, ?, ?, ?, ?)
         ");
+
         $stmt->execute([
-            $entity->getEmail(),
-            $entity->getType(),
-            $entity->getFirstName(),
-            $entity->getLastName(),
-            $entity->getPassword(),
+            $entity->getUserId(),
+            $entity->getTitle(),
+            $entity->getDescription(),
+            $entity->getStatus(),
             $entity->getCreatedAt(),
             $entity->getUpdatedAt(),
         ]);
-        $entity->setId((int)$this->pdo->lastInsertId());
+
+        $entity->setId((int) $this->pdo->lastInsertId());
     }
 
     private function validateEntity(object $entity): void
     {
-        if (!is_a($entity, User::class)) {
-            throw new InvalidArgumentException('The entity must be an instance of User.');
+        if (!is_a($entity, Ticket::class)) {
+            throw new InvalidArgumentException('The entity must be an instance of Ticket.');
         }
     }
 

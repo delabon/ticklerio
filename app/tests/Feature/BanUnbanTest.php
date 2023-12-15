@@ -41,7 +41,7 @@ class BanUnbanTest extends FeatureTestCase
         $this->auth->login($admin);
 
         $response = $this->post(
-            '/ajax/ban',
+            '/ajax/user/ban',
             [
                 'id' => $user->getId(),
                 'csrf_token' => $this->csrf->generate(),
@@ -65,7 +65,7 @@ class BanUnbanTest extends FeatureTestCase
         $this->auth->login($admin);
 
         $response = $this->post(
-            '/ajax/ban',
+            '/ajax/user/ban',
             [
                 'id' => $user->getId(),
                 'csrf_token' => 'invalid-token',
@@ -86,7 +86,7 @@ class BanUnbanTest extends FeatureTestCase
         $this->auth->login($admin);
 
         $response = $this->post(
-            '/ajax/ban',
+            '/ajax/user/ban',
             [
                 'id' => 99999,
                 'csrf_token' => $this->csrf->generate(),
@@ -108,7 +108,7 @@ class BanUnbanTest extends FeatureTestCase
         $this->auth->login($adminPretender);
 
         $response = $this->post(
-            '/ajax/ban',
+            '/ajax/user/ban',
             [
                 'id' => $user->getId(),
                 'csrf_token' => $this->csrf->generate(),
@@ -127,7 +127,7 @@ class BanUnbanTest extends FeatureTestCase
         ])[0];
 
         $response = $this->post(
-            '/ajax/ban',
+            '/ajax/user/ban',
             [
                 'id' => $user->getId(),
                 'csrf_token' => $this->csrf->generate(),
@@ -153,7 +153,7 @@ class BanUnbanTest extends FeatureTestCase
         $this->auth->login($admin);
 
         $response = $this->post(
-            '/ajax/unban',
+            '/ajax/user/unban',
             [
                 'id' => $user->getId(),
                 'csrf_token' => $this->csrf->generate(),
@@ -176,7 +176,7 @@ class BanUnbanTest extends FeatureTestCase
         $this->auth->login($admin);
 
         $response = $this->post(
-            '/ajax/unban',
+            '/ajax/user/unban',
             [
                 'id' => $user->getId(),
                 'csrf_token' => 'test-token',
@@ -195,7 +195,7 @@ class BanUnbanTest extends FeatureTestCase
         ])[0];
 
         $response = $this->post(
-            '/ajax/unban',
+            '/ajax/user/unban',
             [
                 'id' => $user->getId(),
                 'csrf_token' => $this->csrf->generate(),
@@ -218,7 +218,7 @@ class BanUnbanTest extends FeatureTestCase
         $this->auth->login($userTwo);
 
         $response = $this->post(
-            '/ajax/unban',
+            '/ajax/user/unban',
             [
                 'id' => $user->getId(),
                 'csrf_token' => $this->csrf->generate(),
@@ -238,7 +238,7 @@ class BanUnbanTest extends FeatureTestCase
         $this->auth->login($admin);
 
         $response = $this->post(
-            '/ajax/unban',
+            '/ajax/user/unban',
             [
                 'id' => 999,
                 'csrf_token' => $this->csrf->generate(),

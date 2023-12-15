@@ -2,7 +2,9 @@
 
 namespace App\Users;
 
-class UserSanitizer
+use App\Interfaces\SanitizerInterface;
+
+class UserSanitizer implements SanitizerInterface
 {
     /**
      * @param mixed[]|array $data
@@ -47,6 +49,7 @@ class UserSanitizer
         }
 
         $data['email'] = filter_var($data['email'], FILTER_SANITIZE_EMAIL);
+        $data['email'] = trim($data['email']);
 
         return $data;
     }

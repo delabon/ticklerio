@@ -4,6 +4,6 @@ namespace App\Exceptions;
 
 use OutOfBoundsException;
 
-class UserDoesNotExistException extends OutOfBoundsException
+class TicketDoesNotExistException extends OutOfBoundsException
 {
 }

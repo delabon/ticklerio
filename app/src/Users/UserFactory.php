@@ -2,28 +2,15 @@
 
 namespace App\Users;
 
+use App\Abstracts\Factory;
 use App\Utilities\PasswordUtils;
-use Faker\Generator;
 
-class UserFactory
+class UserFactory extends Factory
 {
-    private int $count = 1;
-
-    public function __construct(private UserRepository $userRepository, private Generator $faker)
-    {
-    }
-
-    public function count(int $howMany): self
-    {
-        $this->count = $howMany;
-
-        return $this;
-    }
-
     /**
      * Instantiates Users and persists them to database
      * @param array<string, mixed> $attributes
-     * @return User[]|array
+     * @return User[]
      */
     public function make(array $attributes = []): array
     {
@@ -50,14 +37,14 @@ class UserFactory
     /**
      * Instantiates Users and persists them to database
      * @param array<string, mixed> $attributes
-     * @return User[]|array
+     * @return User[]
      */
     public function create(array $attributes = []): array
     {
         $users = $this->make($attributes);
 
         foreach ($users as $user) {
-            $this->userRepository->save($user);
+            $this->repository->save($user);
         }
 
         return $users;

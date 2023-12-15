@@ -9,12 +9,17 @@ use App\Controllers\BanUnbanController;
 use App\Controllers\DeleteUserController;
 use App\Controllers\HomeController;
 use App\Controllers\RegisterController;
+use App\Controllers\TicketController;
 use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\Http\HttpStatusCode;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Middlewares\CheckUserMiddleware;
+use App\Tickets\TicketRepository;
+use App\Tickets\TicketSanitizer;
+use App\Tickets\TicketService;
+use App\Tickets\TicketValidator;
 use App\Users\AdminService;
 use App\Users\UserRepository;
 use App\Users\UserSanitizer;
@@ -46,7 +51,7 @@ if ($uri === '/') {
     // Home
     $response = (new HomeController())->index();
 } elseif (preg_match("/^\/ajax\/register\/?$/", $uri)) {
-    // Register a user via ajax
+    // Registers a user via ajax
     $response = (new RegisterController())->register(
         $container->get(Request::class),
         new UserService(
@@ -57,7 +62,7 @@ if ($uri === '/') {
         $container->get(Csrf::class)
     );
 } elseif (preg_match("/^\/ajax\/auth\/login\/?$/", $uri)) {
-    // Log in a user via ajax
+    // Logs in a user via ajax
     $response = (new AuthController())->login(
         $container->get(Request::class),
         $container->get(Auth::class),
@@ -65,35 +70,37 @@ if ($uri === '/') {
         $container->get(Csrf::class)
     );
 } elseif (preg_match("/^\/ajax\/auth\/logout\/?$/", $uri)) {
-    // Log out a user via ajax
+    // Logs out a user via ajax
     $response = (new AuthController())->logout(
         $container->get(Request::class),
         $container->get(Auth::class),
         new UserRepository($container->get(PDO::class)),
         $container->get(Csrf::class)
     );
-} elseif (preg_match("/^\/ajax\/ban\/?$/", $uri)) {
-    // Ban a user via ajax
+} elseif (preg_match("/^\/ajax\/user\/ban\/?$/", $uri)) {
+    // Bans a user via ajax
     $response = (new BanUnbanController())->ban(
         $container->get(Request::class),
         new AdminService(
             new UserRepository($container->get(PDO::class)),
+            new TicketRepository($container->get(PDO::class)),
             $container->get(Auth::class)
         ),
         $container->get(Csrf::class)
     );
-} elseif (preg_match("/^\/ajax\/unban\/?$/", $uri)) {
-    // Unban a user via ajax
+} elseif (preg_match("/^\/ajax\/user\/unban\/?$/", $uri)) {
+    // Unbans a user via ajax
     $response = (new BanUnbanController())->unban(
         $container->get(Request::class),
         new AdminService(
             new UserRepository($container->get(PDO::class)),
+            new TicketRepository($container->get(PDO::class)),
             $container->get(Auth::class)
         ),
         $container->get(Csrf::class)
     );
-} elseif (preg_match("/^\/ajax\/delete-user\/?$/", $uri)) {
-    // Delete a user via ajax
+} elseif (preg_match("/^\/ajax\/user\/delete\/?$/", $uri)) {
+    // Deletes a user via ajax
     $response = (new DeleteUserController())->delete(
         $container->get(Request::class),
         new UserService(
@@ -102,6 +109,53 @@ if ($uri === '/') {
             new UserSanitizer()
         ),
         $container->get(Auth::class),
+        $container->get(Csrf::class)
+    );
+} elseif (preg_match("/^\/ajax\/ticket\/create\/?$/", $uri)) {
+    // Creates a ticket via ajax
+    $response = (new TicketController())->create(
+        $container->get(Request::class),
+        new TicketService(
+            new TicketRepository($container->get(PDO::class)),
+            new TicketValidator(),
+            new TicketSanitizer(),
+            $container->get(Auth::class)
+        ),
+        $container->get(Csrf::class)
+    );
+} elseif (preg_match("/^\/ajax\/ticket\/update\/?$/", $uri)) {
+    // Updates a ticket via ajax
+    $response = (new TicketController())->update(
+        $container->get(Request::class),
+        new TicketService(
+            new TicketRepository($container->get(PDO::class)),
+            new TicketValidator(),
+            new TicketSanitizer(),
+            $container->get(Auth::class)
+        ),
+        $container->get(Csrf::class)
+    );
+} elseif (preg_match("/^\/ajax\/ticket\/delete\/?$/", $uri)) {
+    // Deletes a ticket via ajax
+    $response = (new TicketController())->delete(
+        $container->get(Request::class),
+        new TicketService(
+            new TicketRepository($container->get(PDO::class)),
+            new TicketValidator(),
+            new TicketSanitizer(),
+            $container->get(Auth::class)
+        ),
+        $container->get(Csrf::class)
+    );
+} elseif (preg_match("/^\/ajax\/ticket\/status\/update\/?$/", $uri)) {
+    // Updates the status of a ticket via ajax
+    $response = (new TicketController())->updateStatus(
+        $container->get(Request::class),
+        new AdminService(
+            new UserRepository($container->get(PDO::class)),
+            new TicketRepository($container->get(PDO::class)),
+            $container->get(Auth::class)
+        ),
         $container->get(Csrf::class)
     );
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Users;
 
+use App\Interfaces\ValidatorInterface;
 use App\Users\UserValidator;
 use App\Utilities\PasswordUtils;
 use InvalidArgumentException;
@@ -21,7 +22,12 @@ class UserValidatorTest extends TestCase
         $this->userValidator = new UserValidator();
     }
 
-    public function testValidAllData(): void
+    public function testCreatesInstanceOfValidatorInterface(): void
+    {
+        $this->assertInstanceOf(ValidatorInterface::class, $this->userValidator);
+    }
+
+    public function testValidatesDataSuccessfully(): void
     {
         $this->userValidator->validate($this->userData);
 
