@@ -21,12 +21,16 @@ readonly class AdminService
 
     public function banUser(int $id): User
     {
-        if (!$id) {
-            throw new LogicException("Cannot ban a user with an id of 0.");
-        }
-
         if (!$this->auth->getUserId()) {
             throw new LogicException("Cannot ban a user when not logged in.");
+        }
+
+        if ($this->auth->getUserType() !== UserType::Admin->value) {
+            throw new LogicException("Cannot ban a user using a non-admin account.");
+        }
+
+        if ($id < 1) {
+            throw new InvalidArgumentException("Cannot ban a user with a non-positive id.");
         }
 
         $user = $this->userRepository->find($id);
@@ -37,12 +41,6 @@ readonly class AdminService
 
         if (in_array($user->getType(), [UserType::Deleted->value, UserType::Banned->value])) {
             throw new LogicException("Cannot ban a user that has been {$user->getType()}.");
-        }
-
-        $admin = $this->userRepository->find($this->auth->getUserId());
-
-        if ($admin->getType() !== UserType::Admin->value) {
-            throw new LogicException("Cannot ban a user using a non-admin account.");
         }
 
         $user->setType(UserType::Banned->value);

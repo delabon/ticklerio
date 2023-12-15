@@ -12,7 +12,6 @@ use App\Tickets\Ticket;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketStatus;
 use App\Users\AdminService;
-use App\Users\User;
 use App\Users\UserRepository;
 use App\Users\UserSanitizer;
 use App\Users\UserService;
@@ -81,10 +80,13 @@ class AdminServiceTest extends TestCase
 
     public function testBansUserUsingAdminAccountSuccessfully(): void
     {
-        $this->pdoStatementMock->expects($this->exactly(7))
+        $this->logInAdmin();
+
+        $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
             ->willReturn(true);
-        $this->pdoStatementMock->expects($this->exactly(4))
+
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturnOnConsecutiveCalls(
@@ -93,12 +95,6 @@ class AdminServiceTest extends TestCase
                     $userData['id'] = 1;
 
                     return $userData;
-                })(),
-                (function () {
-                    $adminData = UserData::adminData();
-                    $adminData['id'] = 2;
-
-                    return $adminData;
                 })(),
                 (function () {
                     $userData = UserData::memberOne();
@@ -115,20 +111,15 @@ class AdminServiceTest extends TestCase
                 })()
             );
 
-        $this->pdoMock->expects($this->exactly(7))
+        $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
             ->willReturn($this->pdoStatementMock);
-        $this->pdoMock->expects($this->exactly(2))
-            ->method('lastInsertId')
-            ->willReturn("1", "2");
 
-        $user = $this->userService->createUser(UserData::memberOne());
-        $admin = $this->userService->createUser(UserData::adminData());
-        $this->auth->login($admin);
+        $user = UserRepository::make(UserData::memberOne());
+        $user->setId(1);
 
-        $this->adminService->banUser($user->getId());
+        $bannedUser = $this->adminService->banUser($user->getId());
 
-        $bannedUser = $this->userRepository->find($user->getId());
         $this->assertTrue($bannedUser->isBanned());
         $this->assertSame(UserType::Banned->value, $bannedUser->getType());
     }
@@ -136,67 +127,56 @@ class AdminServiceTest extends TestCase
     public function testThrowsExceptionWhenBanningUserUsingNonLoggedInAccount(): void
     {
         $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("Cannot ban a user when not logged in.");
 
         $this->adminService->banUser(1);
     }
 
     public function testThrowsExceptionWhenBanningUserUsingNonAdminAccount(): void
     {
-        $this->pdoStatementMock->expects($this->exactly(3))
-            ->method('execute')
-            ->willReturn(true);
-        $this->pdoStatementMock->expects($this->exactly(2))
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturnOnConsecutiveCalls(
-                (function () {
-                    $userData = UserData::memberOne();
-                    $userData['id'] = 999;
-
-                    return $userData;
-                })(),
-                (function () {
-                    $userData = UserData::memberTwo();
-                    $userData['id'] = 1;
-
-                    return $userData;
-                })()
-            );
-
-        $this->pdoMock->expects($this->exactly(3))
-            ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
-        $this->pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturn("1");
-
-        $user = new User();
-        $user->setId(999);
-        $userTwo = $this->userService->createUser(UserData::memberTwo());
-        $this->auth->login($userTwo);
+        $this->logInUser();
 
         $this->expectException(LogicException::class);
 
-        $this->adminService->banUser($user->getId());
+        $this->adminService->banUser(999);
     }
 
-    public function testThrowsExceptionWhenBanningUserWithIdOfZero(): void
+    public function testThrowsExceptionWhenBanningUserWithNonPositiveId(): void
     {
-        $user = new User();
-        $user->setId(0);
-        $user->setType(UserType::Member->value);
-        $admin = new User();
-        $admin->setId(55);
-        $admin->setType(UserType::Admin->value);
-        $this->auth->login($admin);
+        $this->logInAdmin();
 
-        $this->expectException(LogicException::class);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Cannot ban a user with a non-positive id.");
 
-        $this->adminService->banUser($user->getId());
+        $this->adminService->banUser(0);
+    }
+
+    public function testThrowsExceptionWhenBanningNonExistentUser(): void
+    {
+        $this->logInAdmin();
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn(false);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->expectException(UserDoesNotExistException::class);
+        $this->expectExceptionMessage("Cannot ban a user that does not exist.");
+
+        $this->adminService->banUser(9558);
     }
 
     public function testThrowsExceptionWhenBanningUserThatHasBeenBanned(): void
     {
+        $this->logInAdmin();
+
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
@@ -215,22 +195,16 @@ class AdminServiceTest extends TestCase
             ->method('prepare')
             ->willReturn($this->pdoStatementMock);
 
-        $user = new User();
-        $user->setId(999);
-        $user->setType(UserType::Banned->value);
-        $admin = new User();
-        $admin->setId(55);
-        $admin->setType(UserType::Admin->value);
-        $this->auth->login($admin);
-
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage("Cannot ban a user that has been banned.");
 
-        $this->adminService->banUser($user->getId());
+        $this->adminService->banUser(999);
     }
 
     public function testThrowsExceptionWhenBanningUserThatHasBeenDeleted(): void
     {
+        $this->logInAdmin();
+
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
@@ -249,45 +223,10 @@ class AdminServiceTest extends TestCase
             ->method('prepare')
             ->willReturn($this->pdoStatementMock);
 
-        $user = new User();
-        $user->setId(999);
-        $user->setType(UserType::Banned->value);
-        $admin = new User();
-        $admin->setId(55);
-        $admin->setType(UserType::Admin->value);
-        $this->auth->login($admin);
-
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage("Cannot ban a user that has been deleted.");
 
-        $this->adminService->banUser($user->getId());
-    }
-
-    public function testThrowsExceptionWhenBanningNonExistentUser(): void
-    {
-        $this->pdoStatementMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(true);
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturn(false);
-
-        $this->pdoMock->expects($this->once())
-            ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
-
-        $user = new User();
-        $user->setId(999);
-        $admin = new User();
-        $admin->setId(55);
-        $admin->setType(UserType::Admin->value);
-        $this->auth->login($admin);
-
-        $this->expectException(UserDoesNotExistException::class);
-        $this->expectExceptionMessage("Cannot ban a user that does not exist.");
-
-        $this->adminService->banUser($user->getId());
+        $this->adminService->banUser(999);
     }
 
     //
