@@ -15,16 +15,17 @@ use PHPUnit\Framework\TestCase;
 use App\Tickets\TicketService;
 use App\Tickets\TicketStatus;
 use App\Core\Session\Session;
-use App\Users\UserType;
 use Tests\_data\TicketData;
 use App\Tickets\Ticket;
 use App\Core\Auth;
-use App\Users\User;
 use PDO;
 use PDOStatement;
+use Tests\Traits\AuthenticatesUsers;
 
 class TicketServiceTest extends TestCase
 {
+    use AuthenticatesUsers;
+
     private ?Session $session;
     private ?Auth $auth;
     private object $pdoStatementMock;
@@ -823,31 +824,5 @@ class TicketServiceTest extends TestCase
         $this->ticketService->deleteTicket(1);
 
         $this->assertNull($this->ticketRepository->find(1));
-    }
-
-    //
-    // Helpers
-    //
-
-    /**
-     * @return void
-     */
-    protected function logInUser(): void
-    {
-        $user = new User();
-        $user->setId(1);
-        $user->setType(UserType::Member->value);
-        $this->auth->login($user);
-    }
-
-    /**
-     * @return void
-     */
-    protected function logInAdmin(): void
-    {
-        $user = new User();
-        $user->setId(2);
-        $user->setType(UserType::Admin->value);
-        $this->auth->login($user);
     }
 }

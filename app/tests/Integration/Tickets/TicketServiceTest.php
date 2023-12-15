@@ -10,14 +10,15 @@ use App\Tickets\Ticket;
 use App\Tickets\TicketService;
 use App\Tickets\TicketStatus;
 use App\Tickets\TicketValidator;
-use App\Users\User;
-use App\Users\UserType;
 use LogicException;
 use Tests\_data\TicketData;
 use Tests\IntegrationTestCase;
+use Tests\Traits\AuthenticatesUsers;
 
 class TicketServiceTest extends IntegrationTestCase
 {
+    use AuthenticatesUsers;
+
     private Auth $auth;
     private TicketRepository $ticketRepository;
     private TicketService $ticketService;
@@ -235,28 +236,5 @@ class TicketServiceTest extends IntegrationTestCase
         $this->ticketService->deleteTicket(1);
 
         $this->assertNull($this->ticketRepository->find(1));
-    }
-
-    //
-    // Helpers
-    //
-
-    /**
-     * @return void
-     */
-    private function logInUser(): void
-    {
-        $user = new User();
-        $user->setId(1);
-        $user->setType(UserType::Member->value);
-        $this->auth->login($user);
-    }
-
-    private function logInAdmin(): void
-    {
-        $user = new User();
-        $user->setId(2);
-        $user->setType(UserType::Admin->value);
-        $this->auth->login($user);
     }
 }
