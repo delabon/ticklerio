@@ -7,6 +7,7 @@ use App\Core\Http\HttpStatusCode;
 use App\Tickets\TicketFactory;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketStatus;
+use App\Users\User;
 use App\Users\UserFactory;
 use App\Users\UserRepository;
 use App\Users\UserType;
@@ -38,10 +39,7 @@ class TicketManagementTest extends FeatureTestCase
 
     public function testAddsTicketSuccessfully(): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value,
-        ])[0];
-        $this->auth->login($user);
+        $user = $this->createAndLogInMember();
 
         $response = $this->post(
             '/ajax/ticket/create',
@@ -66,12 +64,7 @@ class TicketManagementTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToAddTicketWithInvalidCsrf(): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value,
-        ])[0];
-        $this->auth->login($user);
-
-        $data = TicketData::one($user->getId());
+        $data = TicketData::one();
         $data['csrf_token'] = 'invalid csrf';
 
         $response = $this->post(
@@ -87,11 +80,7 @@ class TicketManagementTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToAddTicketWhenNotLoggedIn(): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value,
-        ])[0];
-
-        $data = TicketData::one($user->getId());
+        $data = TicketData::one();
         $data['csrf_token'] = $this->csrf->generate();
 
         $response = $this->post(
@@ -115,10 +104,7 @@ class TicketManagementTest extends FeatureTestCase
     public function testReturnsBadRequestResponseWhenTryingToAddTicketWithInvalidData($data): void
     {
         $data['csrf_token'] = $this->csrf->generate();
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value,
-        ])[0];
-        $this->auth->login($user);
+        $this->createAndLogInMember();
 
         $response = $this->post(
             '/ajax/ticket/create',
@@ -187,10 +173,7 @@ class TicketManagementTest extends FeatureTestCase
 
     public function testUpdatesTicketSuccessfully(): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value,
-        ])[0];
-        $this->auth->login($user);
+        $user = $this->createAndLogInMember();
         $ticket = $this->ticketFactory->create([
             'status' => TicketStatus::Publish->value,
             'user_id' => $user->getId(),
@@ -220,22 +203,13 @@ class TicketManagementTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToUpdateTicketWithInvalidCsrfToken(): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value,
-        ])[0];
-        $this->auth->login($user);
-        $ticket = $this->ticketFactory->create([
-            'status' => TicketStatus::Publish->value,
-            'user_id' => $user->getId(),
-        ])[0];
-
         $response = $this->post(
             '/ajax/ticket/update',
             [
-                'id' => $ticket->getId(),
+                'id' => 1,
                 'title' => 'Updated test ticket',
                 'description' => 'Updated test ticket description',
-                'csrf_token' => 'inlvalid csrf',
+                'csrf_token' => 'invalid csrf',
             ],
             self::DISABLE_GUZZLE_EXCEPTION
         );
@@ -244,7 +218,7 @@ class TicketManagementTest extends FeatureTestCase
         $this->assertSame('Invalid CSRF token.', $response->getBody()->getContents());
     }
 
-    public function testReturnsForbiddenResponseWhenTryingToUpdateTicketUsingIdOfZero(): void
+    public function testReturnsForbiddenResponseWhenTryingToUpdateTicketUsingNonPositiveId(): void
     {
         $response = $this->post(
             '/ajax/ticket/update',
@@ -263,18 +237,10 @@ class TicketManagementTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToUpdateTicketWhenNotLoggedIn(): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value,
-        ])[0];
-        $ticket = $this->ticketFactory->create([
-            'status' => TicketStatus::Publish->value,
-            'user_id' => $user->getId(),
-        ])[0];
-
         $response = $this->post(
             '/ajax/ticket/update',
             [
-                'id' => $ticket->getId(),
+                'id' => 1,
                 'title' => 'Updated test ticket',
                 'description' => 'Updated test ticket description',
                 'csrf_token' => $this->csrf->generate(),
@@ -288,10 +254,7 @@ class TicketManagementTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToUpdateTicketThatDoesNotExist(): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value,
-        ])[0];
-        $this->auth->login($user);
+        $this->createAndLogInMember();
 
         $response = $this->post(
             '/ajax/ticket/update',
@@ -310,10 +273,7 @@ class TicketManagementTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToUpdateTicketUsingNonAuthorAccount(): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value,
-        ])[0];
-        $this->auth->login($user);
+        $this->createAndLogInMember();
         $ticket = $this->ticketFactory->create([
             'status' => TicketStatus::Publish->value,
             'user_id' => 222,
@@ -336,10 +296,7 @@ class TicketManagementTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToUpdateTicketThatIsNotPublished(): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value,
-        ])[0];
-        $this->auth->login($user);
+        $user = $this->createAndLogInMember();
         $ticket = $this->ticketFactory->create([
             'status' => TicketStatus::Solved->value,
             'user_id' => $user->getId(),
@@ -370,10 +327,7 @@ class TicketManagementTest extends FeatureTestCase
      */
     public function testReturnsBadRequestResponseWhenTryingToUpdateTicketWithInvalidData($data, $expectedExceptionMessage): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value,
-        ])[0];
-        $this->auth->login($user);
+        $user = $this->createAndLogInMember();
         $ticket = $this->ticketFactory->create([
             'status' => TicketStatus::Publish->value,
             'user_id' => $user->getId(),
@@ -557,10 +511,7 @@ class TicketManagementTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToUpdateTheTicketStatusWhenLoggedInAsNonAdmin(): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value,
-        ])[0];
-        $this->auth->login($user);
+        $this->createAndLogInMember();
 
         $response = $this->post(
             '/ajax/ticket/status/update',
@@ -603,10 +554,7 @@ class TicketManagementTest extends FeatureTestCase
 
     public function testDeletesTicketSuccessfully(): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value,
-        ])[0];
-        $this->auth->login($user);
+        $user = $this->createAndLogInMember();
         $ticket = $this->ticketFactory->create([
             'status' => TicketStatus::Publish->value,
             'user_id' => $user->getId(),
@@ -625,12 +573,175 @@ class TicketManagementTest extends FeatureTestCase
         $this->assertCount(0, $this->ticketRepository->all());
     }
 
+    public function testReturnsForbiddenResponseWhenTryingToDeleteTicketWithInvalidCsrf(): void
+    {
+        $response = $this->post(
+            '/ajax/ticket/delete',
+            [
+                'id' => 1,
+                'csrf_token' => 'invalid csrf',
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
 
-    // TODO: Add tests for deleting tickets
-    // TODO: Returns bad request response when trying to delete a ticket with invalid csrf token
-    // TODO: Returns forbidden response when trying to delete a ticket when not logged in
-    // TODO: Returns bad request response when trying to delete a ticket with a non-positive id
-    // TODO: Returns not found response when trying to delete a ticket that does not exist
-    // TODO: Returns forbidden response when trying to delete a ticket when not the author of the ticket and not an admin
-    // TODO: Returns forbidden response when trying to delete a ticket that is not published using the ticket author account
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame('Invalid CSRF token.', $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToDeleteTicketWhenNotLoggedIn(): void
+    {
+        $response = $this->post(
+            '/ajax/ticket/delete',
+            [
+                'id' => 1,
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame('Cannot delete a ticket when not logged in.', $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToDeleteTicketWithNonPositiveId(): void
+    {
+        $this->createAndLogInMember();
+
+        $response = $this->post(
+            '/ajax/ticket/delete',
+            [
+                'id' => 0,
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::BadRequest->value, $response->getStatusCode());
+        $this->assertSame('The id of the ticket cannot be a non-positive number.', $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToDeleteTicketThatDoesNotExist(): void
+    {
+        $this->createAndLogInMember();
+
+        $response = $this->post(
+            '/ajax/ticket/delete',
+            [
+                'id' => 988,
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::NotFound->value, $response->getStatusCode());
+        $this->assertSame('The ticket does not exist.', $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToDeleteTicketWhenNotTheAuthorAndNotAnAdmin(): void
+    {
+        $this->createAndLogInMember();
+        $ticket = $this->ticketFactory->create([
+            'status' => TicketStatus::Publish->value,
+            'user_id' => 222,
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/ticket/delete',
+            [
+                'id' => $ticket->getId(),
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame('You cannot delete a ticket that you did not create.', $response->getBody()->getContents());
+    }
+
+    public function testDeletesTicketUsingAnAdminAccount(): void
+    {
+        $admin = $this->userFactory->create([
+            'type' => UserType::Admin->value,
+        ])[0];
+        $this->auth->login($admin);
+
+        $ticket = $this->ticketFactory->create([
+            'status' => TicketStatus::Publish->value,
+            'user_id' => 222,
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/ticket/delete',
+            [
+                'id' => $ticket->getId(),
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertSame('The ticket has been deleted.', $response->getBody()->getContents());
+        $this->assertCount(0, $this->ticketRepository->all());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToDeleteTicketThatIsNotPublishUsingTheAuthorsAccount(): void
+    {
+        $user = $this->createAndLogInMember();
+        $ticket = $this->ticketFactory->create([
+            'status' => TicketStatus::Solved->value,
+            'user_id' => $user->getId(),
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/ticket/delete',
+            [
+                'id' => $ticket->getId(),
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame('You cannot delete a ticket that has been solved.', $response->getBody()->getContents());
+    }
+
+    public function testSuccessfullyDeletesTicketWhenLoggedInAsAdminWhoIsNotTheAuthorOfTheTicketAndTheTicketStatusIsNotPublish(): void
+    {
+        $admin = $this->userFactory->create([
+            'type' => UserType::Admin->value,
+        ])[0];
+        $this->auth->login($admin);
+
+        $ticket = $this->ticketFactory->create([
+            'status' => TicketStatus::Closed->value,
+            'user_id' => 222,
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/ticket/delete',
+            [
+                'id' => $ticket->getId(),
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertSame('The ticket has been deleted.', $response->getBody()->getContents());
+        $this->assertCount(0, $this->ticketRepository->all());
+    }
+
+    //
+    // Helpers
+    //
+
+    private function createAndLogInMember(): User
+    {
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value,
+        ])[0];
+        $this->auth->login($user);
+
+        return $user;
+    }
 }

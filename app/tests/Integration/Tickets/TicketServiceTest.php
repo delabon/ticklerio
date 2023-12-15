@@ -221,6 +221,22 @@ class TicketServiceTest extends IntegrationTestCase
         $this->ticketService->deleteTicket($ticket->getId());
     }
 
+    public function testDeletesTicketWhenLoggedInAsAdminWhoIsNotTheAuthorOfTheTicketAndTheTicketStatusIsNotPublish(): void
+    {
+        $this->logInAdmin();
+
+        $ticketData = TicketData::one();
+        $ticketData['status'] = TicketStatus::Closed->value;
+        $ticket = TicketRepository::make($ticketData);
+        $this->ticketRepository->save($ticket);
+
+        $this->assertCount(1, $this->ticketRepository->all());
+
+        $this->ticketService->deleteTicket(1);
+
+        $this->assertNull($this->ticketRepository->find(1));
+    }
+
     //
     // Helpers
     //

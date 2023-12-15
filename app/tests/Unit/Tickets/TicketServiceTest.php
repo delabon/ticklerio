@@ -763,7 +763,7 @@ class TicketServiceTest extends TestCase
         $this->assertNull($this->ticketRepository->find(1));
     }
 
-    public function testThrowsExceptionWhenTryingToDeleteTicketWhenLoggedInAsTheAuthorButTheTicketIsNotPublished(): void
+    public function testThrowsExceptionWhenTryingToDeleteTicketWhenLoggedInAsTheAuthorButTheTicketIsNotPublish(): void
     {
         $this->logInUser();
 
@@ -788,6 +788,41 @@ class TicketServiceTest extends TestCase
         $this->expectExceptionMessage("You cannot delete a ticket that has been " . TicketStatus::Closed->value . ".");
 
         $this->ticketService->deleteTicket(1);
+    }
+
+    public function testDeletesTicketWhenLoggedInAsAdminWhoIsNotTheAuthorOfTheTicketAndTheTicketStatusIsNotPublish(): void
+    {
+        $this->logInAdmin();
+
+        $this->pdoStatementMock->expects($this->exactly(3))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnOnConsecutiveCalls(
+                [
+                    'id' => 1,
+                    'user_id' => 999,
+                    'status' => TicketStatus::Closed->value,
+                ],
+                false
+            );
+
+        $this->pdoMock->expects($this->exactly(3))
+            ->method('prepare')
+            ->willReturnCallback(function ($sql) {
+                if (stripos($sql, 'DELETE FROM') !== false) {
+                    $this->assertMatchesRegularExpression('/DELETE.+FROM.+tickets.+WHERE.+id = \?/is', $sql);
+                }
+
+                return $this->pdoStatementMock;
+            });
+
+        $this->ticketService->deleteTicket(1);
+
+        $this->assertNull($this->ticketRepository->find(1));
     }
 
     //

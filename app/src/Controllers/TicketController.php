@@ -83,7 +83,21 @@ class TicketController
 
     public function delete(Request $request, TicketService $ticketService, Csrf $csrf): Response
     {
-        $ticketService->deleteTicket($request->postParams['id'] ? (int) $request->postParams['id'] : 0);
+        if (!$csrf->validate($request->postParams['csrf_token'] ?? '')) {
+            return new Response('Invalid CSRF token.', HttpStatusCode::Forbidden);
+        }
+
+        try {
+            $ticketService->deleteTicket($request->postParams['id'] ? (int) $request->postParams['id'] : 0);
+        } catch (InvalidArgumentException $e) {
+            return new Response($e->getMessage(), HttpStatusCode::BadRequest);
+        } catch (TicketDoesNotExistException $e) {
+            return new Response($e->getMessage(), HttpStatusCode::NotFound);
+        } catch (LogicException $e) {
+            return new Response($e->getMessage(), HttpStatusCode::Forbidden);
+        } catch (Exception $e) {
+            return new Response($e->getMessage(), HttpStatusCode::InternalServerError);
+        }
 
         return new Response('The ticket has been deleted.', HttpStatusCode::OK);
     }
