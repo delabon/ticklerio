@@ -49,6 +49,7 @@ class RepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
+            ->with($this->matchesRegularExpression('/INSERT.+INTO.+VALUES+/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->pdoMock->expects($this->once())
@@ -72,6 +73,7 @@ class RepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->exactly(2))
             ->method('prepare')
+            ->with($this->matchesRegularExpression('/INSERT.+INTO.+VALUES+/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->pdoMock->expects($this->exactly(2))
@@ -110,11 +112,11 @@ class RepositoryTest extends TestCase
 
     public function testUpdatesEntitySuccessfully(): void
     {
-        $this->pdoStatementMock->expects($this->exactly(4))
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('execute')
             ->willReturn(true);
 
-        $this->pdoStatementMock->expects($this->exactly(2))
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturnOnConsecutiveCalls(
@@ -122,31 +124,26 @@ class RepositoryTest extends TestCase
                     'id' => 1,
                     'name' => 'test'
                 ],
-                [
-                    'id' => 1,
-                    'name' => 'updated'
-                ],
             );
 
-        $this->pdoMock->expects($this->exactly(4))
+        $this->pdoMock->expects($this->exactly(2))
             ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
+            ->willReturnCallback(function ($sql) {
+                if (stripos($sql, 'UPDATE') !== false) {
+                    $this->assertMatchesRegularExpression('/UPDATE.+SET.+WHERE.+id = \?/is', $sql);
+                }
 
-        $this->pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturn("1");
+                return $this->pdoStatementMock;
+            });
 
         $person = new Person();
-        $person->setName('test');
+        $person->setId(1);
+        $person->setName('updated test');
+
         $this->personRepository->save($person);
 
-        $person->setName('updated');
-        $this->personRepository->save($person);
-
-        $foundPerson = $this->personRepository->find(1);
         $this->assertSame(1, $person->getId());
-        $this->assertSame('updated', $person->getName());
-        $this->assertInstanceOf(Person::class, $foundPerson);
+        $this->assertSame('updated test', $person->getName());
     }
 
     public function testThrowsExceptionWhenTryingToUpdateWithEntityThatIsNotPerson(): void
@@ -166,6 +163,7 @@ class RepositoryTest extends TestCase
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
+
         $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
@@ -191,7 +189,7 @@ class RepositoryTest extends TestCase
 
     public function testFindsEntitySuccessfully(): void
     {
-        $this->pdoStatementMock->expects($this->exactly(2))
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
 
@@ -203,17 +201,14 @@ class RepositoryTest extends TestCase
                     'name' => 'test'
                 ]);
 
-        $this->pdoMock->expects($this->exactly(2))
+        $this->pdoMock->expects($this->once())
             ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+FROM.+WHERE.+id = \?/is'))
             ->willReturn($this->pdoStatementMock);
 
-        $this->pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturn("1");
-
         $person = new Person();
+        $person->setId(1);
         $person->setName('test');
-        $this->personRepository->save($person);
 
         $foundPerson = $this->personRepository->find(1);
         $this->assertInstanceOf(Person::class, $foundPerson);
@@ -233,19 +228,20 @@ class RepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+FROM.+WHERE.+id = \?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->assertNull($this->personRepository->find(999));
     }
 
-    public function testReturnsNullWhenTryingToFindEntityWithAnIdOfZero(): void
+    public function testReturnsNullWhenTryingToFindEntityUsingNonPositiveId(): void
     {
         $this->assertNull($this->personRepository->find(0));
     }
 
     public function testFindsAllEntitiesSuccessfully(): void
     {
-        $this->pdoStatementMock->expects($this->exactly(3))
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
 
@@ -263,22 +259,20 @@ class RepositoryTest extends TestCase
                 ]
             ]);
 
-        $this->pdoMock->expects($this->exactly(3))
+        $this->pdoMock->expects($this->once())
             ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+FROM.+test_repository/is'))
             ->willReturn($this->pdoStatementMock);
 
-        $this->pdoMock->expects($this->exactly(2))
-            ->method('lastInsertId')
-            ->willReturnOnConsecutiveCalls("1", "2");
-
         $personOne = new Person();
+        $personOne->setId(1);
         $personOne->setName('one');
-        $this->personRepository->save($personOne);
         $personTwo = new Person();
+        $personTwo->setId(2);
         $personTwo->setName('two');
-        $this->personRepository->save($personTwo);
 
         $found = $this->personRepository->all();
+
         $this->assertCount(2, $found);
         $this->assertInstanceOf(Person::class, $found[0]);
         $this->assertInstanceOf(Person::class, $found[1]);
@@ -301,6 +295,7 @@ class RepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+FROM.+test_repository/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->assertCount(0, $this->personRepository->all());
@@ -322,7 +317,7 @@ class RepositoryTest extends TestCase
      */
     public function testFindsByColumnValue($data): void
     {
-        $this->pdoStatementMock->expects($this->exactly(2))
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
 
@@ -336,20 +331,18 @@ class RepositoryTest extends TestCase
                 ]
             ]);
 
-        $this->pdoMock->expects($this->exactly(2))
-            ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
-
         $this->pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturn("1");
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+FROM.+WHERE.+' . $data['key'] . ' = \?/is'))
+            ->willReturn($this->pdoStatementMock);
 
         $personData = self::personData();
         $person = new Person();
+        $person->setId(1);
         $person->setName($personData['name']);
-        $this->personRepository->save($person);
 
         $found = $this->personRepository->findBy($data['key'], $data['value']);
+
         $this->assertInstanceOf(Person::class, $found[0]);
         $this->assertEquals($found[0], $person);
         $method = u('get_' . $data['key'])->camel()->toString();
@@ -366,6 +359,7 @@ class RepositoryTest extends TestCase
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
+
         $this->pdoStatementMock->expects($this->once())
             ->method('fetchAll')
             ->with(PDO::FETCH_ASSOC)
@@ -373,6 +367,7 @@ class RepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+FROM.+WHERE.+' . $findData['key'] . ' = \?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $usersFound = $this->personRepository->findBy($findData['key'], $findData['value']);

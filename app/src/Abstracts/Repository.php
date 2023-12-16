@@ -10,6 +10,8 @@ use PDO;
 abstract class Repository implements RepositoryInterface
 {
     protected string $table = '';
+
+    /** @var class-string */
     protected string $entityClass = '';
 
     /** @var array|string[] */
@@ -44,7 +46,7 @@ abstract class Repository implements RepositoryInterface
      */
     public function find(int $id): null|object
     {
-        if (!$id) {
+        if ($id < 1) {
             return null;
         }
 
