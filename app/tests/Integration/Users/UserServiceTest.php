@@ -138,7 +138,8 @@ class UserServiceTest extends IntegrationTestCase
 
     public function testSanitizesDataBeforeUpdatingAccount(): void
     {
-        $user = $this->userService->createUser(UserData::memberOne());
+        $userData = UserData::memberOne();
+        $user = $this->userService->createUser($userData);
         $unsanitizedData = UserData::userUnsanitizedData();
         $user->setEmail($unsanitizedData['email']);
         $user->setFirstName($unsanitizedData['first_name']);
@@ -152,7 +153,7 @@ class UserServiceTest extends IntegrationTestCase
         $this->assertSame('svgonload=confirm1@gmail.com', $user->getEmail());
         $this->assertSame('John', $user->getFirstName());
         $this->assertSame('Doe Test', $user->getLastName());
-        $this->assertSame(88, $user->getCreatedAt());
+        $this->assertSame($userData['created_at'], $user->getCreatedAt());
     }
 
     public function testThrowsExceptionWhenTryingToUpdateUserWithAnEmailThatAlreadyExists(): void
