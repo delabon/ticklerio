@@ -12,7 +12,7 @@ abstract class Repository implements RepositoryInterface
     protected string $table = '';
 
     /** @var class-string */
-    protected string $entityClass = '';
+    protected string $entityClass = Entity::class;
 
     /** @var array|string[] */
     protected array $validColumns = [];
