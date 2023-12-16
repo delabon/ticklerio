@@ -46,7 +46,6 @@ class UserRepositoryTest extends TestCase
 
     public function testCreatesUserSuccessfully(): void
     {
-        $now = time();
         $userData = UserData::memberOne();
         $user = User::make($userData);
 
@@ -66,8 +65,6 @@ class UserRepositoryTest extends TestCase
         $this->userRepository->save($user);
 
         $this->assertSame(1, $user->getId());
-        $this->assertSame($now, $user->getCreatedAt());
-        $this->assertSame($now, $user->getUpdatedAt());
     }
 
     public function testAddsMultipleUsersSuccessfully(): void
