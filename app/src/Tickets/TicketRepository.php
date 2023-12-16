@@ -3,6 +3,7 @@
 namespace App\Tickets;
 
 use App\Abstracts\Repository;
+use App\Exceptions\TicketDoesNotExistException;
 use App\Users\User;
 use InvalidArgumentException;
 use OutOfBoundsException;
@@ -10,6 +11,9 @@ use OutOfBoundsException;
 class TicketRepository extends Repository
 {
     protected string $table = 'tickets';
+
+    /** @var class-string */
+    protected string $entityClass = Ticket::class;
 
     /** @var array|string[] */
     protected array $validColumns = [
@@ -33,8 +37,10 @@ class TicketRepository extends Repository
         $result = $this->find($entity->getId());
 
         if (!$result) {
-            throw new OutOfBoundsException("The ticket with the id {$entity->getId()} does not exist in the database.");
+            throw new TicketDoesNotExistException("The ticket with the id {$entity->getId()} does not exist in the database.");
         }
+
+        $entity->setUpdatedAt(time());
 
         $stmt = $this->pdo->prepare("
             UPDATE
@@ -52,7 +58,7 @@ class TicketRepository extends Repository
             $entity->getTitle(),
             $entity->getDescription(),
             $entity->getStatus(),
-            time(),
+            $entity->getUpdatedAt(),
             $entity->getId(),
         ]);
     }

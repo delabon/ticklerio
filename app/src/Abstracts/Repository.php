@@ -7,11 +7,12 @@ use InvalidArgumentException;
 use PDOException;
 use PDO;
 
-use function Symfony\Component\String\u;
-
 abstract class Repository implements RepositoryInterface
 {
     protected string $table = '';
+
+    /** @var class-string */
+    protected string $entityClass = Entity::class;
 
     /** @var array|string[] */
     protected array $validColumns = [];
@@ -45,7 +46,7 @@ abstract class Repository implements RepositoryInterface
      */
     public function find(int $id): null|object
     {
-        if (!$id) {
+        if ($id < 1) {
             return null;
         }
 
@@ -72,7 +73,7 @@ abstract class Repository implements RepositoryInterface
             return null;
         }
 
-        return $this->make($result);
+        return $this->entityClass::make($result);
     }
 
     /**
@@ -111,7 +112,7 @@ abstract class Repository implements RepositoryInterface
         $return = [];
 
         foreach ($results as $result) {
-            $return[] = $this->make($result);
+            $return[] = $this->entityClass::make($result);
         }
 
         return $return;
@@ -142,43 +143,10 @@ abstract class Repository implements RepositoryInterface
         $return = [];
 
         foreach ($results as $result) {
-            $return[] = self::make($result);
+            $return[] = $this->entityClass::make($result);
         }
 
         return $return;
-    }
-
-    /**
-     * Instantiates an entity using the data passed
-     * @param mixed[] $data
-     * @param null|object $entity
-     * @return object
-     */
-    public static function make(array $data, null|object $entity = null): object
-    {
-        $entityClassName = self::getEntityClassName();
-        $entity = is_null($entity) ? new $entityClassName() : $entity;
-
-        foreach ($data as $key => $value) {
-            $method = u('set_' . $key)->camel()->toString();
-
-            if (!method_exists($entity, $method)) {
-                continue;
-            }
-
-            $entity->$method($value);
-        }
-
-        return $entity;
-    }
-
-    private static function getEntityClassName(): string
-    {
-        $parts = explode('\\', static::class);
-        $className = array_pop($parts);
-        $className = str_replace('Repository', '', $className);
-
-        return implode('\\', $parts) . '\\' . $className;
     }
 
     /**

@@ -26,6 +26,60 @@ class EntityTest extends TestCase
             'name' => 'Product 1',
         ], $product->toArray());
     }
+
+    public function testInstantiatesEntityUsingData(): void
+    {
+        $product = Product::make([
+            'id' => 1,
+            'name' => 'Product 1',
+        ]);
+
+        $this->assertInstanceOf(Product::class, $product);
+        $this->assertEquals(1, $product->getId());
+        $this->assertEquals('Product 1', $product->getName());
+    }
+
+    public function testInstantiatesEntityUsingDataAndEntity(): void
+    {
+        $product = new Product();
+        $product->setId(1);
+        $product->setName('Product 1');
+
+        $product = Product::make([
+            'id' => 2,
+            'name' => 'Product 2',
+        ], $product);
+
+        $this->assertInstanceOf(Product::class, $product);
+        $this->assertEquals(2, $product->getId());
+        $this->assertEquals('Product 2', $product->getName());
+    }
+
+    public function testInstantiatesEntityUsingDataAndEntityWithMissingData(): void
+    {
+        $product = new Product();
+        $product->setId(1);
+        $product->setName('Product 1');
+
+        $product = Product::make([
+            'id' => 2,
+        ], $product);
+
+        $this->assertInstanceOf(Product::class, $product);
+        $this->assertEquals(2, $product->getId());
+        $this->assertEquals('Product 1', $product->getName());
+    }
+
+    public function testInstantiateEntityUsingInvalidData(): void
+    {
+        $product = Product::make([
+            'invalidProp' => 2,
+        ]);
+
+        $this->assertInstanceOf(Product::class, $product);
+        $this->assertEquals(0, $product->getId());
+        $this->assertObjectNotHasProperty('invalidProp', $product);
+    }
 }
 
 class Product extends Entity // phpcs:ignore

@@ -10,6 +10,9 @@ class UserRepository extends Repository
 {
     protected string $table = 'users';
 
+    /** @var class-string */
+    protected string $entityClass = User::class;
+
     /** @var array|string[] */
     protected array $validColumns = [
         'id',
@@ -36,6 +39,8 @@ class UserRepository extends Repository
             throw new UserDoesNotExistException("The user with the id {$entity->getId()} does not exist in the database.");
         }
 
+        $entity->setUpdatedAt(time());
+
         $stmt = $this->pdo->prepare("
             UPDATE
                 {$this->table}
@@ -45,7 +50,6 @@ class UserRepository extends Repository
                 first_name = ?,
                 last_name = ?,
                 password = ?,
-                created_at = ?,
                 updated_at = ?
             WHERE
                 id = ?
@@ -56,8 +60,7 @@ class UserRepository extends Repository
             $entity->getFirstName(),
             $entity->getLastName(),
             $entity->getPassword(),
-            $entity->getCreatedAt(),
-            time(),
+            $entity->getUpdatedAt(),
             $entity->getId()
         ]);
     }

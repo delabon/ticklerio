@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Core\Auth;
 use App\Core\Http\HttpStatusCode;
+use App\Users\User;
 use App\Users\UserFactory;
 use App\Users\UserRepository;
 use App\Users\UserSanitizer;
@@ -171,7 +172,7 @@ class DeleteUserTest extends FeatureTestCase
      */
     public function testReturnsForbiddenResponseWhenTryingToSoftDeleteUserThatDoesNotExist(): void
     {
-        $user = $this->userRepository->make(UserData::memberOne());
+        $user = User::make(UserData::memberOne());
         $user->setId(999);
         $this->auth->login($user);
 

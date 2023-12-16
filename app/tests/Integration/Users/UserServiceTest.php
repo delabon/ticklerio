@@ -83,7 +83,7 @@ class UserServiceTest extends IntegrationTestCase
         $userUpdatedData = UserData::updatedData();
         $user = $this->userService->createUser($userData);
         $userUpdatedData['id'] = 1;
-        $user = $this->userRepository->make($userUpdatedData, $user);
+        $user = User::make($userUpdatedData, $user);
 
         $this->userService->updateUser($user);
 
@@ -107,7 +107,7 @@ class UserServiceTest extends IntegrationTestCase
 
         $userUpdatedData['id'] = 1;
         $userUpdatedData['email'] = $userData['email'];
-        $user = $this->userRepository->make($userUpdatedData, $user);
+        $user = User::make($userUpdatedData, $user);
 
         $this->userService->updateUser($user);
 
@@ -138,7 +138,8 @@ class UserServiceTest extends IntegrationTestCase
 
     public function testSanitizesDataBeforeUpdatingAccount(): void
     {
-        $user = $this->userService->createUser(UserData::memberOne());
+        $userData = UserData::memberOne();
+        $user = $this->userService->createUser($userData);
         $unsanitizedData = UserData::userUnsanitizedData();
         $user->setEmail($unsanitizedData['email']);
         $user->setFirstName($unsanitizedData['first_name']);
@@ -152,7 +153,7 @@ class UserServiceTest extends IntegrationTestCase
         $this->assertSame('svgonload=confirm1@gmail.com', $user->getEmail());
         $this->assertSame('John', $user->getFirstName());
         $this->assertSame('Doe Test', $user->getLastName());
-        $this->assertSame(88, $user->getCreatedAt());
+        $this->assertSame($userData['created_at'], $user->getCreatedAt());
     }
 
     public function testThrowsExceptionWhenTryingToUpdateUserWithAnEmailThatAlreadyExists(): void
@@ -222,7 +223,7 @@ class UserServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenTryingToSoftDeleteUserThatAlreadySoftDeleted(): void
     {
-        $user = $this->userRepository->make(UserData::memberOne());
+        $user = User::make(UserData::memberOne());
         $user->setType(UserType::Deleted->value);
         $this->userRepository->save($user);
 
@@ -234,7 +235,7 @@ class UserServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenTryingToSoftDeleteUserThatHasBeenBanned(): void
     {
-        $user = $this->userRepository->make(UserData::memberOne());
+        $user = User::make(UserData::memberOne());
         $user->setType(UserType::Banned->value);
         $this->userRepository->save($user);
 

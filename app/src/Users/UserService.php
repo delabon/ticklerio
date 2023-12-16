@@ -35,7 +35,7 @@ readonly class UserService
         $data = $this->userSanitizer->sanitize($data);
         $this->userValidator->validate($data);
         $data['password'] = PasswordUtils::hashPasswordIfNotHashed($data['password']);
-        $user = $this->userRepository->make($data);
+        $user = User::make($data);
         $this->saveUser($user, $data['email']);
 
         return $user;
@@ -54,7 +54,7 @@ readonly class UserService
 
         $data = $this->userSanitizer->sanitize($data);
         $this->userValidator->validate($data);
-        $user = $this->userRepository->make($data, $user);
+        $user = User::make($data, $user);
         $user->setPassword(PasswordUtils::hashPasswordIfNotHashed($data['password']));
         $this->saveUser($user, $data['email']);
     }

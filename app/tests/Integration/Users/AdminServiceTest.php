@@ -9,11 +9,9 @@ use App\Tickets\Ticket;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketStatus;
 use App\Users\AdminService;
+use App\Users\User;
 use App\Users\UserRepository;
-use App\Users\UserSanitizer;
-use App\Users\UserService;
 use App\Users\UserType;
-use App\Users\UserValidator;
 use LogicException;
 use Tests\_data\TicketData;
 use Tests\_data\UserData;
@@ -24,7 +22,6 @@ class AdminServiceTest extends IntegrationTestCase
     private TicketRepository $ticketRepository;
     private UserRepository $userRepository;
     private AdminService $adminService;
-    private UserService $userService;
     private Auth $auth;
 
     protected function setUp(): void
@@ -33,7 +30,6 @@ class AdminServiceTest extends IntegrationTestCase
 
         $this->ticketRepository = new TicketRepository($this->pdo);
         $this->userRepository = new UserRepository($this->pdo);
-        $this->userService = new UserService($this->userRepository, new UserValidator(), new UserSanitizer());
         $this->auth = new Auth($this->session);
         $this->adminService = new AdminService($this->userRepository, $this->ticketRepository, new Auth($this->session));
     }
@@ -45,7 +41,7 @@ class AdminServiceTest extends IntegrationTestCase
     public function testBansUserUsingAdminAccountSuccessfully(): void
     {
         $this->logInAdmin();
-        $user = UserRepository::make(UserData::memberOne());
+        $user = User::make(UserData::memberOne());
         $this->userRepository->save($user);
 
         $this->assertSame(UserType::Member->value, $user->getType());
@@ -69,7 +65,7 @@ class AdminServiceTest extends IntegrationTestCase
     public function testThrowsExceptionWhenBanningUserThatHasBeenBanned(): void
     {
         $this->logInAdmin();
-        $user = UserRepository::make(UserData::memberOne());
+        $user = User::make(UserData::memberOne());
         $user->setType(UserType::Banned->value);
         $this->userRepository->save($user);
 
@@ -82,7 +78,7 @@ class AdminServiceTest extends IntegrationTestCase
     public function testThrowsExceptionWhenBanningUserThatHasBeenDeleted(): void
     {
         $this->logInAdmin();
-        $user = UserRepository::make(UserData::memberOne());
+        $user = User::make(UserData::memberOne());
         $user->setType(UserType::Deleted->value);
         $this->userRepository->save($user);
 
@@ -99,7 +95,7 @@ class AdminServiceTest extends IntegrationTestCase
     public function testUnbanUserSuccessfully(): void
     {
         $this->logInAdmin();
-        $user = UserRepository::make(UserData::memberOne());
+        $user = User::make(UserData::memberOne());
         $user->setType(UserType::Banned->value);
         $this->userRepository->save($user);
 
@@ -123,7 +119,7 @@ class AdminServiceTest extends IntegrationTestCase
     public function testThrowsExceptionWhenUnbanningNonBannedUser(): void
     {
         $this->logInAdmin();
-        $user = UserRepository::make(UserData::memberOne());
+        $user = User::make(UserData::memberOne());
         $this->userRepository->save($user);
 
         $this->expectException(LogicException::class);
@@ -143,7 +139,7 @@ class AdminServiceTest extends IntegrationTestCase
         $ticketData['status'] = TicketStatus::Publish->value;
 
         /** @var Ticket $ticket */
-        $ticket = TicketRepository::make($ticketData);
+        $ticket = Ticket::make($ticketData);
         $this->ticketRepository->save($ticket);
 
         $this->adminService->updateTicketStatus($ticket->getId(), TicketStatus::Solved->value);
@@ -179,7 +175,7 @@ class AdminServiceTest extends IntegrationTestCase
      */
     protected function logInMember(): void
     {
-        $user = UserRepository::make(UserData::memberOne());
+        $user = User::make(UserData::memberOne());
         $this->userRepository->save($user);
         $this->auth->login($user);
     }
@@ -189,7 +185,7 @@ class AdminServiceTest extends IntegrationTestCase
      */
     protected function logInAdmin(): void
     {
-        $user = UserRepository::make(UserData::adminData());
+        $user = User::make(UserData::adminData());
         $this->userRepository->save($user);
         $this->auth->login($user);
     }
