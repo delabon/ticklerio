@@ -38,7 +38,7 @@ readonly class TicketService
         $data = $this->ticketSanitizer->sanitize($data);
         $this->ticketValidator->validate($data);
 
-        $ticket = TicketRepository::make($data);
+        $ticket = Ticket::make($data);
         $this->ticketRepository->save($ticket);
 
         return $ticket;

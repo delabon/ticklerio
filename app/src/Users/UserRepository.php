@@ -9,6 +9,7 @@ use InvalidArgumentException;
 class UserRepository extends Repository
 {
     protected string $table = 'users';
+    protected string $entityClass = User::class;
 
     /** @var array|string[] */
     protected array $validColumns = [

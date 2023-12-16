@@ -39,12 +39,4 @@ interface RepositoryInterface
      * @return array<object>
      */
     public function all(array $columns = ['*']): array;
-
-    /**
-     * Instantiates an entity using the passed data
-     * @param array<string, mixed> $data
-     * @param object|null $entity
-     * @return object
-     */
-    public static function make(array $data, null|object $entity = null): object;
 }

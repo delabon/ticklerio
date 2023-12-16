@@ -199,7 +199,7 @@ class UserServiceTest extends TestCase
             ->willReturn("1");
 
         $user = $this->userService->createUser($userData);
-        $user = $this->userRepository->make($userUpdatedData, $user);
+        $user = User::make($userUpdatedData, $user);
 
         $this->userService->updateUser($user);
 
@@ -239,7 +239,7 @@ class UserServiceTest extends TestCase
             ->method('prepare')
             ->willReturn($this->pdoStatementMock);
 
-        $user = $this->userRepository->make(UserData::memberOne());
+        $user = User::make(UserData::memberOne());
         $user->setId(999999);
 
         $this->expectException(UserDoesNotExistException::class);
@@ -250,7 +250,7 @@ class UserServiceTest extends TestCase
     public function testThrowsExceptionWhenUpdatingUserWithInvalidData(): void
     {
         $userData = UserData::memberOne();
-        $user = $this->userRepository->make($userData);
+        $user = User::make($userData);
         $user->setId(9999);
         $user->setEmail('test');
 
@@ -428,7 +428,7 @@ class UserServiceTest extends TestCase
 
         $user = $this->userService->createUser($userData);
 
-        $user = $this->userRepository->make($unsanitizedData, $user);
+        $user = User::make($unsanitizedData, $user);
 
         $this->userService->updateUser($user);
 

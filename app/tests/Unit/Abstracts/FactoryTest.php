@@ -163,6 +163,7 @@ class FactoryTest extends TestCase
 class dogRepository extends Repository // phpcs:ignore
 {
     protected string $table = 'dogs';
+    protected string $entityClass = Dog::class;
 
     /** @var array|string[] */
     protected array $validColumns = [

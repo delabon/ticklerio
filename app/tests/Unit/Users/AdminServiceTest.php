@@ -12,6 +12,7 @@ use App\Tickets\Ticket;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketStatus;
 use App\Users\AdminService;
+use App\Users\User;
 use App\Users\UserRepository;
 use App\Users\UserSanitizer;
 use App\Users\UserService;
@@ -115,7 +116,7 @@ class AdminServiceTest extends TestCase
             ->method('prepare')
             ->willReturn($this->pdoStatementMock);
 
-        $user = UserRepository::make(UserData::memberOne());
+        $user = User::make(UserData::memberOne());
         $user->setId(1);
 
         $bannedUser = $this->adminService->banUser($user->getId());
@@ -409,7 +410,7 @@ class AdminServiceTest extends TestCase
             ->willReturn("1");
 
         /** @var Ticket $ticket */
-        $ticket = TicketRepository::make($ticketData);
+        $ticket = Ticket::make($ticketData);
         $this->ticketRepository->save($ticket);
 
         $this->adminService->updateTicketStatus($ticket->getId(), TicketStatus::Solved->value);

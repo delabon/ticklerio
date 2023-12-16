@@ -31,7 +31,7 @@ class UserRepositoryTest extends IntegrationTestCase
         $userData = UserData::memberOne();
         $userData['created_at'] = $now;
         $userData['updated_at'] = $now;
-        $user = $this->userRepository->make($userData);
+        $user = User::make($userData);
 
         $this->userRepository->save($user);
 
@@ -52,8 +52,8 @@ class UserRepositoryTest extends IntegrationTestCase
     {
         $userOneData = UserData::memberOne();
         $userTwoData = UserData::memberTwo();
-        $user = $this->userRepository->make($userOneData);
-        $user2 = $this->userRepository->make($userTwoData);
+        $user = User::make($userOneData);
+        $user2 = User::make($userTwoData);
 
         $this->userRepository->save($user);
         $this->userRepository->save($user2);
@@ -70,11 +70,11 @@ class UserRepositoryTest extends IntegrationTestCase
     public function testUpdatesUserSuccessfully(): void
     {
         $userData = UserData::memberOne();
-        $user = $this->userRepository->make($userData);
+        $user = User::make($userData);
         $this->userRepository->save($user);
 
         $userUpdatedData = UserData::updatedData();
-        $user = $this->userRepository->make($userUpdatedData, $user);
+        $user = User::make($userUpdatedData, $user);
         $this->userRepository->save($user);
 
         $users = $this->userRepository->all();
@@ -101,7 +101,7 @@ class UserRepositoryTest extends IntegrationTestCase
     public function testFindsUserByIdSuccessfully(): void
     {
         $userData = UserData::memberOne();
-        $user = $this->userRepository->make($userData);
+        $user = User::make($userData);
         $this->userRepository->save($user);
 
         $userFound = $this->userRepository->find($user->getId());
@@ -125,7 +125,7 @@ class UserRepositoryTest extends IntegrationTestCase
      */
     public function testFindsUserByKeyAndValueSuccessfully(array $findData): void
     {
-        $user = $this->userRepository->make(UserData::memberOne());
+        $user = User::make(UserData::memberOne());
         $this->userRepository->save($user);
 
         $usersFound = $this->userRepository->findBy($findData['key'], $findData['value']);
@@ -183,9 +183,9 @@ class UserRepositoryTest extends IntegrationTestCase
 
     public function testFindsAllUsers(): void
     {
-        $userOne = $this->userRepository->make(UserData::memberOne());
+        $userOne = User::make(UserData::memberOne());
         $this->userRepository->save($userOne);
-        $userTwo = $this->userRepository->make(UserData::memberTwo());
+        $userTwo = User::make(UserData::memberTwo());
         $this->userRepository->save($userTwo);
 
         $usersFound = $this->userRepository->all();
@@ -208,7 +208,7 @@ class UserRepositoryTest extends IntegrationTestCase
 
     public function testDeletesTicketSuccessfully(): void
     {
-        $user = $this->userRepository->make(UserData::memberOne());
+        $user = User::make(UserData::memberOne());
         $this->userRepository->save($user);
 
         $this->assertCount(1, $this->userRepository->all());

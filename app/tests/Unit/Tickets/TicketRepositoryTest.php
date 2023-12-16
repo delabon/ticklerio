@@ -73,7 +73,7 @@ class TicketRepositoryTest extends TestCase
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $ticket = TicketRepository::make(TicketData::one());
+        $ticket = Ticket::make(TicketData::one());
 
         $this->ticketRepository->save($ticket);
 
@@ -125,8 +125,8 @@ class TicketRepositoryTest extends TestCase
             ->method('lastInsertId')
             ->willReturnOnConsecutiveCalls("1", "2");
 
-        $ticketOne = TicketRepository::make(TicketData::one());
-        $ticketTwo = TicketRepository::make(TicketData::two());
+        $ticketOne = Ticket::make(TicketData::one());
+        $ticketTwo = Ticket::make(TicketData::two());
 
         $this->ticketRepository->save($ticketOne);
         $this->ticketRepository->save($ticketTwo);
@@ -193,7 +193,7 @@ class TicketRepositoryTest extends TestCase
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $ticket = TicketRepository::make(TicketData::one());
+        $ticket = Ticket::make(TicketData::one());
         $this->ticketRepository->save($ticket);
 
         $ticket->setTitle('Updated title');
@@ -232,7 +232,7 @@ class TicketRepositoryTest extends TestCase
             ->method('prepare')
             ->willReturn($this->pdoStatementMock);
 
-        $ticket = TicketRepository::make(TicketData::one());
+        $ticket = Ticket::make(TicketData::one());
         $ticket->setId(999);
 
         $this->expectException(OutOfBoundsException::class);
@@ -281,7 +281,7 @@ class TicketRepositoryTest extends TestCase
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $this->ticketRepository->save(TicketRepository::make(TicketData::one()));
+        $this->ticketRepository->save(Ticket::make(TicketData::one()));
 
         $ticket = $this->ticketRepository->find(1);
 
@@ -348,9 +348,9 @@ class TicketRepositoryTest extends TestCase
             ->method('lastInsertId')
             ->willReturnOnConsecutiveCalls("1", "2");
 
-        $ticketOne = $this->ticketRepository->make(TicketData::one());
+        $ticketOne = Ticket::make(TicketData::one());
         $this->ticketRepository->save($ticketOne);
-        $ticketTwo = $this->ticketRepository->make(TicketData::two());
+        $ticketTwo = Ticket::make(TicketData::two());
         $this->ticketRepository->save($ticketTwo);
 
         $ticketsFound = $this->ticketRepository->all();
@@ -425,7 +425,7 @@ class TicketRepositoryTest extends TestCase
             ->willReturn("1");
 
         $ticketData = TicketData::one();
-        $ticket = $this->ticketRepository->make($ticketData);
+        $ticket = Ticket::make($ticketData);
         $this->ticketRepository->save($ticket);
 
         $found = $this->ticketRepository->findBy($data['key'], $data['value']);
@@ -508,37 +508,6 @@ class TicketRepositoryTest extends TestCase
         $this->expectExceptionMessage("Invalid column name 'and 1=1'.");
 
         $this->ticketRepository->findBy('and 1=1', 1);
-    }
-
-    //
-    // Make
-    //
-
-    public function testMakeReturnsNewInstanceOfTicketSuccessfully(): void
-    {
-        $ticket = TicketRepository::make([
-            'user_id' => 1,
-            'title' => 'Test ticket',
-            'description' => 'Test ticket description',
-            'status' => TicketStatus::Publish->value,
-            'created_at' => time(),
-            'updated_at' => time(),
-        ]);
-
-        $this->assertInstanceOf(Ticket::class, $ticket);
-        $this->assertSame(1, $ticket->getUserId());
-        $this->assertSame(TicketStatus::Publish->value, $ticket->getStatus());
-        $this->assertSame('Test ticket', $ticket->getTitle());
-        $this->assertSame('Test ticket description', $ticket->getDescription());
-        $this->assertGreaterThan(0, $ticket->getCreatedAt());
-        $this->assertGreaterThan(0, $ticket->getUpdatedAt());
-    }
-
-    public function testPassingTicketInstanceToMakeShouldUpdateThatInstanceShouldNotCreateDifferentOne(): void
-    {
-        $ticket = new Ticket();
-
-        $this->assertSame($ticket, TicketRepository::make(TicketData::one(), $ticket));
     }
 
     //

@@ -413,28 +413,6 @@ class RepositoryTest extends TestCase
     }
 
     //
-    // Make
-    //
-
-    public function testMakesEntityFromAnArrayOfData(): void
-    {
-        $personData = self::personData();
-        $personData['id'] = 1;
-        $person = personRepository::make($personData);
-
-        $this->assertInstanceOf(Person::class, $person);
-        $this->assertSame($personData['id'], $person->getId());
-        $this->assertSame($personData['name'], $person->getName());
-    }
-
-    public function testPassingEntityInstanceToMakeShouldUpdateThatInstanceShouldNotCreateDifferentOne(): void
-    {
-        $person = new Person();
-
-        $this->assertSame($person, personRepository::make(self::personData(), $person));
-    }
-
-    //
     // Delete
     //
 
@@ -479,6 +457,7 @@ class RepositoryTest extends TestCase
 class PersonRepository extends Repository // phpcs:ignore
 {
     protected string $table = 'test_repository';
+    protected string $entityClass = Person::class;
     protected array $validColumns = ['id', 'name'];
 
     protected function update(object $entity): void

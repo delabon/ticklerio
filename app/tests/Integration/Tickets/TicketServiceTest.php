@@ -92,7 +92,7 @@ class TicketServiceTest extends IntegrationTestCase
     {
         $this->logInUser();
 
-        $ticket = TicketRepository::make(TicketData::one());
+        $ticket = Ticket::make(TicketData::one());
         $this->ticketRepository->save($ticket);
 
         $updatedData = TicketData::updated();
@@ -121,7 +121,7 @@ class TicketServiceTest extends IntegrationTestCase
         $ticketData['created_at'] = strtotime('1999');
         $ticketData['updated_at'] = strtotime('1999');
         $ticketData['status'] = TicketStatus::Publish->value;
-        $ticket = TicketRepository::make($ticketData);
+        $ticket = Ticket::make($ticketData);
         $this->ticketRepository->save($ticket);
 
         $updatedData = TicketData::updated();
@@ -140,7 +140,7 @@ class TicketServiceTest extends IntegrationTestCase
     {
         $this->logInUser();
         $ticketData = TicketData::one();
-        $ticket = TicketRepository::make($ticketData);
+        $ticket = Ticket::make($ticketData);
         $this->ticketRepository->save($ticket);
 
         $updatedData = TicketData::unsanitized();
@@ -164,7 +164,7 @@ class TicketServiceTest extends IntegrationTestCase
     public function testDeletesTicketSuccessfully(): void
     {
         $this->logInUser();
-        $ticket = TicketRepository::make(TicketData::one());
+        $ticket = Ticket::make(TicketData::one());
         $this->ticketRepository->save($ticket);
 
         $this->ticketService->deleteTicket($ticket->getId());
@@ -186,7 +186,7 @@ class TicketServiceTest extends IntegrationTestCase
     {
         $this->logInUser();
 
-        $ticket = TicketRepository::make(TicketData::one(222));
+        $ticket = Ticket::make(TicketData::one(222));
         $this->ticketRepository->save($ticket);
 
         $this->expectException(LogicException::class);
@@ -199,7 +199,7 @@ class TicketServiceTest extends IntegrationTestCase
     {
         $this->logInAdmin();
 
-        $ticket = TicketRepository::make(TicketData::one(222));
+        $ticket = Ticket::make(TicketData::one(222));
         $this->ticketRepository->save($ticket);
 
         $this->ticketService->deleteTicket($ticket->getId());
@@ -213,7 +213,7 @@ class TicketServiceTest extends IntegrationTestCase
 
         $ticketData = TicketData::one();
         $ticketData['status'] = TicketStatus::Closed->value;
-        $ticket = TicketRepository::make($ticketData);
+        $ticket = Ticket::make($ticketData);
         $this->ticketRepository->save($ticket);
 
         $this->expectException(LogicException::class);
@@ -228,7 +228,7 @@ class TicketServiceTest extends IntegrationTestCase
 
         $ticketData = TicketData::one();
         $ticketData['status'] = TicketStatus::Closed->value;
-        $ticket = TicketRepository::make($ticketData);
+        $ticket = Ticket::make($ticketData);
         $this->ticketRepository->save($ticket);
 
         $this->assertCount(1, $this->ticketRepository->all());

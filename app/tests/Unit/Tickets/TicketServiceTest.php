@@ -291,7 +291,7 @@ class TicketServiceTest extends TestCase
 
         $this->logInUser();
 
-        $ticket = TicketRepository::make(TicketData::one());
+        $ticket = Ticket::make(TicketData::one());
         $this->ticketRepository->save($ticket);
 
         $updatedData = TicketData::updated();
@@ -357,7 +357,7 @@ class TicketServiceTest extends TestCase
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $ticket = TicketRepository::make($ticketData);
+        $ticket = Ticket::make($ticketData);
         $this->ticketRepository->save($ticket);
 
         $updatedData = TicketData::updated();
@@ -449,7 +449,7 @@ class TicketServiceTest extends TestCase
 
         $ticketData = TicketData::one();
         $ticketData['user_id'] = 999;
-        $ticket = TicketRepository::make($ticketData);
+        $ticket = Ticket::make($ticketData);
         $this->ticketRepository->save($ticket);
 
         $updatedData = TicketData::updated();

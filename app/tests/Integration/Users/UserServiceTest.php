@@ -83,7 +83,7 @@ class UserServiceTest extends IntegrationTestCase
         $userUpdatedData = UserData::updatedData();
         $user = $this->userService->createUser($userData);
         $userUpdatedData['id'] = 1;
-        $user = $this->userRepository->make($userUpdatedData, $user);
+        $user = User::make($userUpdatedData, $user);
 
         $this->userService->updateUser($user);
 
@@ -107,7 +107,7 @@ class UserServiceTest extends IntegrationTestCase
 
         $userUpdatedData['id'] = 1;
         $userUpdatedData['email'] = $userData['email'];
-        $user = $this->userRepository->make($userUpdatedData, $user);
+        $user = User::make($userUpdatedData, $user);
 
         $this->userService->updateUser($user);
 
@@ -222,7 +222,7 @@ class UserServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenTryingToSoftDeleteUserThatAlreadySoftDeleted(): void
     {
-        $user = $this->userRepository->make(UserData::memberOne());
+        $user = User::make(UserData::memberOne());
         $user->setType(UserType::Deleted->value);
         $this->userRepository->save($user);
 
@@ -234,7 +234,7 @@ class UserServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenTryingToSoftDeleteUserThatHasBeenBanned(): void
     {
-        $user = $this->userRepository->make(UserData::memberOne());
+        $user = User::make(UserData::memberOne());
         $user->setType(UserType::Banned->value);
         $this->userRepository->save($user);
 

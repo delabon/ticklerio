@@ -10,6 +10,7 @@ use OutOfBoundsException;
 class TicketRepository extends Repository
 {
     protected string $table = 'tickets';
+    protected string $entityClass = Ticket::class;
 
     /** @var array|string[] */
     protected array $validColumns = [
