@@ -6,51 +6,39 @@ use App\Tickets\TicketStatus;
 
 class TicketData
 {
-    public static function one(int $userId = 1, ?int $now = null): array
+    public static function one(int $userId = 1): array
     {
-        if (is_null($now)) {
-            $now = time();
-        }
-
         return [
             'user_id' => $userId,
             'title' => 'Test ticket',
             'description' => 'Test ticket description',
             'status' => TicketStatus::Publish->value,
-            'created_at' => $now,
-            'updated_at' => $now,
+            'created_at' => strtotime('-1 day'),
+            'updated_at' => strtotime('-1 day'),
         ];
     }
 
-    public static function two(int $userId = 1, ?int $now = null): array
+    public static function two(int $userId = 1): array
     {
-        if (!$now) {
-            $now = time();
-        }
-
         return [
             'user_id' => $userId,
             'title' => 'Test ticket 2',
             'description' => 'Test ticket description 2',
             'status' => TicketStatus::Closed->value,
-            'created_at' => $now,
-            'updated_at' => $now,
+            'created_at' => strtotime('-1 day'),
+            'updated_at' => strtotime('-1 day'),
         ];
     }
 
-    public static function updated(int $userId = 1, ?int $updateAts = null): array
+    public static function updated(int $userId = 1): array
     {
-        if (!$updateAts) {
-            $updateAts = time();
-        }
-
         return [
             'user_id' => $userId,
             'title' => 'Updated ticket title',
             'description' => 'Updated ticket description 2',
             'status' => TicketStatus::Solved->value,
-            'created_at' => $updateAts,
-            'updated_at' => $updateAts,
+            'created_at' => strtotime('-1 day'),
+            'updated_at' => strtotime('-1 day'),
         ];
     }
 

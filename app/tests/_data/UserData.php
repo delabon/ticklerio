@@ -21,8 +21,6 @@ class UserData
 
     public static function memberTwo(): array
     {
-        $now = time();
-
         return [
             'email' => 'user2@test.com',
             'first_name' => 'Michael',
@@ -49,16 +47,14 @@ class UserData
 
     public static function updatedData(): array
     {
-        $now = time();
-
         return [
             'email' => 'another@email.com',
             'first_name' => 'Emma',
             'last_name' => 'Ellen',
             'password' => '987654321',
             'type' => UserType::Admin->value,
-            'created_at' => $now,
-            'updated_at' => $now,
+            'created_at' => strtotime('-1 day'),
+            'updated_at' => strtotime('-1 day'),
         ];
     }
 

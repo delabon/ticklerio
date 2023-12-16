@@ -119,7 +119,7 @@ class UserRepositoryTest extends TestCase
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturnCallback(function () {
-                $userData = UserData::updatedData();
+                $userData = UserData::memberOne();
                 $userData['id'] = 1;
 
                 return $userData;
@@ -129,11 +129,11 @@ class UserRepositoryTest extends TestCase
             ->method('prepare')
             ->willReturn($this->pdoStatementMock);
 
-        $userUpdatedData = UserData::updatedData();
         $userData = UserData::memberOne();
         $user = User::make($userData);
         $user->setId(1);
-        $user = User::make(UserData::updatedData(), $user);
+        $userUpdatedData = UserData::updatedData();
+        $user = User::make($userUpdatedData, $user);
 
         $this->userRepository->save($user);
 
@@ -143,6 +143,7 @@ class UserRepositoryTest extends TestCase
         $this->assertSame($userUpdatedData['email'], $user->getEmail());
         $this->assertSame($userUpdatedData['type'], $user->getType());
         $this->assertSame($userUpdatedData['created_at'], $user->getCreatedAt());
+        $this->assertNotSame($userUpdatedData['updated_at'], $user->getUpdatedAt());
     }
 
     public function testThrowsExceptionWhenTryingToUpdateNonExistentUser(): void
