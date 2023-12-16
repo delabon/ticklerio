@@ -10,10 +10,7 @@ use App\Tickets\TicketRepository;
 use App\Tickets\TicketStatus;
 use App\Users\AdminService;
 use App\Users\UserRepository;
-use App\Users\UserSanitizer;
-use App\Users\UserService;
 use App\Users\UserType;
-use App\Users\UserValidator;
 use LogicException;
 use Tests\_data\TicketData;
 use Tests\_data\UserData;
@@ -24,7 +21,6 @@ class AdminServiceTest extends IntegrationTestCase
     private TicketRepository $ticketRepository;
     private UserRepository $userRepository;
     private AdminService $adminService;
-    private UserService $userService;
     private Auth $auth;
 
     protected function setUp(): void
@@ -33,7 +29,6 @@ class AdminServiceTest extends IntegrationTestCase
 
         $this->ticketRepository = new TicketRepository($this->pdo);
         $this->userRepository = new UserRepository($this->pdo);
-        $this->userService = new UserService($this->userRepository, new UserValidator(), new UserSanitizer());
         $this->auth = new Auth($this->session);
         $this->adminService = new AdminService($this->userRepository, $this->ticketRepository, new Auth($this->session));
     }
