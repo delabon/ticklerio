@@ -8,16 +8,14 @@ class UserData
 {
     public static function memberOne(): array
     {
-        $now = time();
-
         return [
             'email' => 'test@test.com',
             'first_name' => 'John',
             'last_name' => 'Doe',
             'password' => '12345678',
             'type' => UserType::Member->value,
-            'created_at' => $now,
-            'updated_at' => $now,
+            'created_at' => strtotime('-1 day'),
+            'updated_at' => strtotime('-1 day'),
         ];
     }
 
@@ -31,23 +29,21 @@ class UserData
             'last_name' => 'Muller',
             'password' => '12345678',
             'type' => UserType::Member->value,
-            'created_at' => $now,
-            'updated_at' => $now,
+            'created_at' => strtotime('-1 day'),
+            'updated_at' => strtotime('-1 day'),
         ];
     }
 
     public static function adminData(): array
     {
-        $now = time();
-
         return [
             'email' => 'admin@test.com',
             'first_name' => 'Admin',
             'last_name' => 'Flex',
             'password' => '12345678',
             'type' => UserType::Admin->value,
-            'created_at' => $now,
-            'updated_at' => $now,
+            'created_at' => strtotime('-1 day'),
+            'updated_at' => strtotime('-1 day'),
         ];
     }
 
