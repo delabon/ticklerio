@@ -47,7 +47,7 @@ class MigrationTest extends TestCase
         $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $this->assertSame('1_create_test_table.php', basename($result[0]['file_path']));
-        $this->assertSame('2_create_test_table_two.php', basename($result[1]['file_path']));
+        $this->assertSame('20_create_test_table_twenty.php', basename($result[1]['file_path']));
     }
 
     public function testThrowsExceptionWhenTheMigrationScriptHasIncorrectFileNameStructure(): void
