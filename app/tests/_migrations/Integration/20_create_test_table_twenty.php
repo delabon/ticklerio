@@ -4,13 +4,13 @@
 
 use App\Core\Migration\AbstractMigration;
 
-final class CreateDummyTwoTable extends AbstractMigration
+final class CreateTestTableTwenty extends AbstractMigration
 {
     public function up(): void
     {
         $this->pdo->exec("
-            CREATE TABLE dummy2 (
-                dummy_col VARCHAR(255)
+            CREATE TABLE test20 (
+                test_col VARCHAR(255)
             )
         ");
     }
@@ -18,7 +18,7 @@ final class CreateDummyTwoTable extends AbstractMigration
     public function down(): void
     {
         $this->pdo->exec("
-            DROP TABLE dummy2
+            DROP TABLE test20
         ");
     }
 }
