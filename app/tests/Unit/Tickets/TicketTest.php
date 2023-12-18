@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 
 class TicketTest extends TestCase
 {
-    public function testSetsTicketDataSuccessfully(): void
+    public function testSetsTicketDataCorrectly(): void
     {
         $time = time();
         $ticket = new Ticket();

@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
 
 class UserTest extends TestCase
 {
-    public function testSetUserDataSuccessfully(): void
+    public function testSetUserDataCorrectly(): void
     {
         $now = time();
         $user = $this->createUser($now);
