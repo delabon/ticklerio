@@ -31,32 +31,9 @@ cd config/ssls/
 mkcert -install ticklerio.test
 ```
 
-#### Up containers (host)
+#### Build & Up containers (host)
 
 ```bash
 cd ../../
 docker-compose up --build -d
-```
-
-#### Connect to container bash (host)
-
-```bash
-docker exec -it container_id bash
-```
-
-#### Setup git
-
-```bash
-git config --global user.email "example@example.com"
-git config --global user.name "John Doe"
-```
-
-#### npm install / watch / install package (host)
-
-```bash
-docker-compose run node-service npm install
-docker-compose run node-service npm run watch
-
-# If you want to install a package
-docker-compose run node-service npm i bootstrap --save-dev
 ```
