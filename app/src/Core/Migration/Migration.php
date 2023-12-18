@@ -160,6 +160,10 @@ class Migration
         ");
     }
 
+    /**
+     * @param array<int, string> $filePaths
+     * @return void
+     */
     private function validateFileNames(array $filePaths): void
     {
         foreach ($filePaths as $path) {
