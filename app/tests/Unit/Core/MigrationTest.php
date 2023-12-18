@@ -9,28 +9,39 @@ use PHPUnit\Framework\TestCase;
 
 class MigrationTest extends TestCase
 {
+    private object $pdoStatementMock;
+    private object $pdoMock;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->pdoStatementMock = $this->createMock(PDOStatement::class);
+        $this->pdoMock = $this->createMock(PDO::class);
+    }
+
     public function testMigratesSuccessfully(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(2))
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
+
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_OBJ)
             ->willReturn((object)[
                 'is_migrated' => 0
             ]);
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(2))
+        $this->pdoMock->expects($this->exactly(2))
             ->method('exec');
-        $pdoMock->expects($this->exactly(2))
+
+        $this->pdoMock->expects($this->exactly(2))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
+            ->willReturn($this->pdoStatementMock);
 
         $migration = new Migration(
-            $pdoMock,
+            $this->pdoMock,
             __DIR__ . '/../../_migrations/Unit/'
         );
         $migration->migrate();
@@ -40,20 +51,19 @@ class MigrationTest extends TestCase
     {
         $this->expectException(\RuntimeException::class);
 
-        $pdoMock = $this->createStub(PDO::class);
         new Migration(
-            $pdoMock,
+            $this->pdoMock,
             __DIR__ . '/tmptmptmptmp/'
         );
     }
 
     public function testMigratesTheSameScriptTwiceWillOnlyExecuteTheMigrationScriptOnce(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(3))
+        $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->exactly(2))
+
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('fetch')
             ->with(PDO::FETCH_OBJ)
             ->willReturnOnConsecutiveCalls(
@@ -65,15 +75,15 @@ class MigrationTest extends TestCase
                 ]
             );
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(3))
+        $this->pdoMock->expects($this->exactly(3))
             ->method('exec');
-        $pdoMock->expects($this->exactly(3))
+
+        $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
+            ->willReturn($this->pdoStatementMock);
 
         $migration = new Migration(
-            $pdoMock,
+            $this->pdoMock,
             __DIR__ . '/../../_migrations/Unit/'
         );
         $migration->migrate();
@@ -82,11 +92,11 @@ class MigrationTest extends TestCase
 
     public function testRollbacksAllMigrationsSuccessfully(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(4))
+        $this->pdoStatementMock->expects($this->exactly(4))
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->exactly(2))
+
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('fetch')
             ->with(PDO::FETCH_OBJ)
             ->willReturnOnConsecutiveCalls(
@@ -98,15 +108,15 @@ class MigrationTest extends TestCase
                 ]
             );
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(4))
+        $this->pdoMock->expects($this->exactly(4))
             ->method('exec');
-        $pdoMock->expects($this->exactly(4))
+
+        $this->pdoMock->expects($this->exactly(4))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
+            ->willReturn($this->pdoStatementMock);
 
         $migration = new Migration(
-            $pdoMock,
+            $this->pdoMock,
             __DIR__ . '/../../_migrations/Unit/'
         );
         $migration->migrate();
