@@ -3,34 +3,93 @@
 namespace Tests\Unit\Core;
 
 use App\Core\Migration\Migration;
-use PDO;
-use PDOStatement;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
+use PDOStatement;
+use PDO;
 
 class MigrationTest extends TestCase
 {
+    private object $pdoStatementMock;
+    private object $pdoMock;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->pdoStatementMock = $this->createMock(PDOStatement::class);
+        $this->pdoMock = $this->createMock(PDO::class);
+    }
+
+    //
+    // Migrate
+    //
+
     public function testMigratesSuccessfully(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(2))
+        $this->pdoStatementMock->expects($this->exactly(4))
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
+
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('fetch')
             ->with(PDO::FETCH_OBJ)
             ->willReturn((object)[
                 'is_migrated' => 0
             ]);
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(2))
-            ->method('exec');
-        $pdoMock->expects($this->exactly(2))
+        $this->pdoMock->expects($this->exactly(3))
+            ->method('exec')
+            ->willReturn(1);
+
+        $this->pdoMock->expects($this->exactly(4))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
+            ->willReturn($this->pdoStatementMock);
 
         $migration = new Migration(
-            $pdoMock,
+            $this->pdoMock,
+            __DIR__ . '/../../_migrations/Unit/'
+        );
+        $migration->migrate();
+    }
+
+    public function testMigratesScriptsInAscendingOrderSuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(4))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('fetch')
+            ->with(PDO::FETCH_OBJ)
+            ->willReturn((object)[
+                'is_migrated' => 0
+            ]);
+
+        $execCount = 1;
+        $this->pdoMock->expects($this->exactly(3))
+            ->method('exec')
+            ->willReturnCallback(function ($query) use (&$execCount) {
+                if ($execCount === 1) {
+                    $table = Migration::TABLE;
+                    $this->assertMatchesRegularExpression("/CREATE TABLE IF NOT EXISTS.+$table.+/is", $query);
+                } elseif ($execCount === 2) {
+                    $this->assertMatchesRegularExpression("/ CREATE TABLE dummy \(/i", $query);
+                } elseif ($execCount === 3) {
+                    $this->assertMatchesRegularExpression("/ CREATE TABLE dummy20 \(/i", $query);
+                }
+
+                $execCount += 1;
+
+                return 1;
+            });
+
+        $this->pdoMock->expects($this->exactly(4))
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $migration = new Migration(
+            $this->pdoMock,
             __DIR__ . '/../../_migrations/Unit/'
         );
         $migration->migrate();
@@ -38,22 +97,47 @@ class MigrationTest extends TestCase
 
     public function testThrowsExceptionWhenTheMigrationsFolderPathIsIncorrect(): void
     {
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(RuntimeException::class);
 
-        $pdoMock = $this->createStub(PDO::class);
         new Migration(
-            $pdoMock,
+            $this->pdoMock,
             __DIR__ . '/tmptmptmptmp/'
         );
     }
 
+    public function testThrowsExceptionWhenTheMigrationScriptHasIncorrectFileNameStructure(): void
+    {
+        $migration = new Migration(
+            $this->pdoMock,
+            __DIR__ . '/../../_migrations/InvalidStructures/One/'
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("The migration file name 'invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+
+        $migration->migrate();
+    }
+
+    public function testThrowsExceptionWhenTheMigrationScriptHasIncorrectFileNameStructureTwo(): void
+    {
+        $migration = new Migration(
+            $this->pdoMock,
+            __DIR__ . '/../../_migrations/InvalidStructures/Two/'
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("The migration file name '01_invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+
+        $migration->migrate();
+    }
+
     public function testMigratesTheSameScriptTwiceWillOnlyExecuteTheMigrationScriptOnce(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(3))
+        $this->pdoStatementMock->expects($this->exactly(6))
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->exactly(2))
+
+        $this->pdoStatementMock->expects($this->exactly(4))
             ->method('fetch')
             ->with(PDO::FETCH_OBJ)
             ->willReturnOnConsecutiveCalls(
@@ -61,56 +145,134 @@ class MigrationTest extends TestCase
                     'is_migrated' => 0
                 ],
                 (object)[
+                    'is_migrated' => 0
+                ],
+                (object)[
+                    'is_migrated' => 1
+                ],
+                (object)[
                     'is_migrated' => 1
                 ]
             );
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(3))
-            ->method('exec');
-        $pdoMock->expects($this->exactly(3))
+        $this->pdoMock->expects($this->exactly(4))
+            ->method('exec')
+            ->willReturn(1);
+
+        $this->pdoMock->expects($this->exactly(6))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
+            ->willReturn($this->pdoStatementMock);
 
         $migration = new Migration(
-            $pdoMock,
+            $this->pdoMock,
             __DIR__ . '/../../_migrations/Unit/'
         );
         $migration->migrate();
         $migration->migrate();
     }
 
+    //
+    // Rollback
+    //
+
     public function testRollbacksAllMigrationsSuccessfully(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->exactly(4))
+        $this->pdoStatementMock->expects($this->exactly(4))
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->exactly(2))
+
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('fetch')
             ->with(PDO::FETCH_OBJ)
             ->willReturnOnConsecutiveCalls(
                 (object)[
-                    'is_migrated' => 0
+                    'is_migrated' => 1
                 ],
                 (object)[
                     'is_migrated' => 1
-                ]
+                ],
             );
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->exactly(4))
+        $this->pdoMock->expects($this->exactly(3))
             ->method('exec');
-        $pdoMock->expects($this->exactly(4))
+
+        $this->pdoMock->expects($this->exactly(4))
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
+            ->willReturn($this->pdoStatementMock);
 
         $migration = new Migration(
-            $pdoMock,
+            $this->pdoMock,
             __DIR__ . '/../../_migrations/Unit/'
         );
-        $migration->migrate();
 
+        $migration->rollback();
+    }
+
+    public function testThrowsExceptionWhenTryingToRollbackButScriptHasIncorrectFileNameStructure(): void
+    {
+        $migration = new Migration(
+            $this->pdoMock,
+            __DIR__ . '/../../_migrations/InvalidStructures/One/'
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("The migration file name 'invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+
+        $migration->rollback();
+    }
+
+    public function testThrowsExceptionWhenTryingToRollbackScriptHasIncorrectFileNameStructureTwo(): void
+    {
+        $migration = new Migration(
+            $this->pdoMock,
+            __DIR__ . '/../../_migrations/InvalidStructures/Two/'
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("The migration file name '01_invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+
+        $migration->rollback();
+    }
+
+    public function testRollbacksScriptsInDescendingOrderSuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(4))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('fetch')
+            ->with(PDO::FETCH_OBJ)
+            ->willReturn((object)[
+                'is_migrated' => 1
+            ]);
+
+        $execCount = 1;
+        $this->pdoMock->expects($this->exactly(3))
+            ->method('exec')
+            ->willReturnCallback(function ($query) use (&$execCount) {
+                if ($execCount === 1) {
+                    $table = Migration::TABLE;
+                    $this->assertMatchesRegularExpression("/CREATE TABLE IF NOT EXISTS.+$table.+/is", $query);
+                } elseif ($execCount === 2) {
+                    $this->assertMatchesRegularExpression("/.+DROP TABLE dummy20.+/is", $query);
+                } elseif ($execCount === 3) {
+                    $this->assertMatchesRegularExpression("/.+DROP TABLE dummy.+/is", $query);
+                }
+
+                $execCount += 1;
+
+                return 1;
+            });
+
+        $this->pdoMock->expects($this->exactly(4))
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $migration = new Migration(
+            $this->pdoMock,
+            __DIR__ . '/../../_migrations/Unit/'
+        );
         $migration->rollback();
     }
 }
