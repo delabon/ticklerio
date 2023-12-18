@@ -2,8 +2,8 @@
 
 namespace App\Core\Migration;
 
-use PDO;
 use RuntimeException;
+use PDO;
 
 class Migration
 {
@@ -27,6 +27,7 @@ class Migration
     {
         $this->createMigrationTableIfNotExists();
         $filePaths = $this->getFilePaths($this->migrationsPath);
+        $this->validateFileNames($filePaths);
         $classes = $this->convertFilePathsToClassNames($filePaths);
 
         foreach ($classes as $fileName => $className) {
@@ -48,9 +49,10 @@ class Migration
     {
         $this->createMigrationTableIfNotExists();
         $filePaths = $this->getFilePaths($this->migrationsPath);
+        $this->validateFileNames($filePaths);
         $classes = $this->convertFilePathsToClassNames($filePaths);
 
-        foreach ($classes as $fileName => $className) {
+        foreach (array_reverse($classes) as $fileName => $className) {
             $filePath = $this->migrationsPath . $fileName;
 
             if (!$this->isMigrated($filePath)) {
@@ -88,6 +90,7 @@ class Migration
 
         foreach ($filePaths as $path) {
             $name = str_replace('.php', '', strtolower(basename($path)));
+            $name = preg_replace("/^[0-9]+?_/", '', $name);
             $words = explode('_', $name);
             $words = array_map(fn ($word) => ucfirst($word), $words);
             $classes[$path] = implode('', $words);
@@ -150,10 +153,22 @@ class Migration
     {
         $this->pdo->exec("
             CREATE TABLE IF NOT EXISTS " . self::TABLE . " (
-                id BIGINT PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 file_path VARCHAR(255),
                 migration_date BIGINT
             )
         ");
+    }
+
+    private function validateFileNames(array $filePaths): void
+    {
+        foreach ($filePaths as $path) {
+            if (!preg_match('/^[1-9][0-9]*?_[a-z0-9_]+\.php$/', $path)) {
+                throw new RuntimeException(sprintf(
+                    "The migration file name '%s' is invalid. It should be in the format of '[1-9]_file_name.php'.",
+                    $path
+                ));
+            }
+        }
     }
 }
