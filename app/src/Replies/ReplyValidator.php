@@ -7,6 +7,10 @@ use InvalidArgumentException;
 
 class ReplyValidator implements ValidatorInterface
 {
+    /**
+     * @param array<string, mixed> $data
+     * @return void
+     */
     public function validate(array $data): void
     {
         $this->validateNotEmpty($data);
@@ -17,6 +21,10 @@ class ReplyValidator implements ValidatorInterface
         $this->validateUpdatedAt($data);
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @return void
+     */
     private function validateNotEmpty(array $data): void
     {
         if (empty($data)) {
@@ -24,6 +32,10 @@ class ReplyValidator implements ValidatorInterface
         }
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @return void
+     */
     private function validateUserId(array $data): void
     {
         if (!isset($data['user_id'])) {
@@ -39,6 +51,10 @@ class ReplyValidator implements ValidatorInterface
         }
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @return void
+     */
     private function validateTicketId(array $data): void
     {
         if (!isset($data['ticket_id'])) {
@@ -54,6 +70,10 @@ class ReplyValidator implements ValidatorInterface
         }
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @return void
+     */
     private function validateMessage(array $data): void
     {
         if (!isset($data['message'])) {
@@ -73,16 +93,30 @@ class ReplyValidator implements ValidatorInterface
         }
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @return void
+     */
     private function validateCreatedAt(array $data): void
     {
         $this->validateDate($data, 'created_at', 'created at');
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @return void
+     */
     private function validateUpdatedAt(array $data): void
     {
         $this->validateDate($data, 'updated_at', 'updated at');
     }
 
+    /**
+     * @param array<string, mixed> $data
+     * @param string $key
+     * @param string $text
+     * @return void
+     */
     private function validateDate(array $data, string $key, string $text): void
     {
         if (!isset($data[$key])) {
