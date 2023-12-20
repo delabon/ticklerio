@@ -9,18 +9,38 @@ use Tests\IntegrationTestCase;
 
 class ReplyRepositoryTest extends IntegrationTestCase
 {
+    private ReplyRepository $replyRepository;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->replyRepository = new ReplyRepository($this->pdo);
+    }
+
     //
     // Create
     //
 
     public function testInsertsReplySuccessfully(): void
     {
-        $replyRepository = new ReplyRepository($this->pdo);
         $reply = Reply::Make(ReplyData::one());
 
-        $replyRepository->save($reply);
+        $this->replyRepository->save($reply);
 
         $this->assertSame(1, $reply->getId());
-        $this->assertEquals($reply, $replyRepository->find($reply->getId()));
+        $this->assertEquals($reply, $this->replyRepository->find($reply->getId()));
+    }
+
+    public function testInsertsMultipleRepliesSuccessfully(): void
+    {
+        $replyOne = Reply::make(ReplyData::one());
+        $replyTwo = Reply::make(ReplyData::two());
+
+        $this->replyRepository->save($replyOne);
+        $this->replyRepository->save($replyTwo);
+
+        $this->assertSame(1, $replyOne->getId());
+        $this->assertSame(2, $replyTwo->getId());
     }
 }

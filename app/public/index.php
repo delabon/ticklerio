@@ -17,7 +17,10 @@ use App\Core\Http\HttpStatusCode;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Middlewares\CheckUserMiddleware;
+use App\Replies\ReplyRepository;
+use App\Replies\ReplySanitizer;
 use App\Replies\ReplyService;
+use App\Replies\ReplyValidator;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketSanitizer;
 use App\Tickets\TicketService;
@@ -166,7 +169,8 @@ if ($uri === '/') {
         $container->get(Request::class),
         new ReplyService(
             new ReplyRepository($container->get(PDO::class)),
-            new UserRepository($container->get(PDO::class)),
+            new ReplyValidator(),
+            new ReplySanitizer(),
             new TicketRepository($container->get(PDO::class)),
             $container->get(Auth::class)
         ),

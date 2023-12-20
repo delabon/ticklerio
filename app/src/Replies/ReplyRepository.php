@@ -10,7 +10,7 @@ class ReplyRepository extends Repository
     protected string $table = 'replies';
 
     /** @var class-string */
-    protected string $entity = Reply::class;
+    protected string $entityClass = Reply::class;
 
     /** @var array|string[] */
     protected array $validColumns = [

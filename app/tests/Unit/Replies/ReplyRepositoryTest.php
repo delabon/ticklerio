@@ -2,16 +2,16 @@
 
 namespace Tests\Unit\Replies;
 
-use App\Abstracts\Entity;
-use App\Abstracts\Repository;
 use App\Interfaces\RepositoryInterface;
-use App\Replies\Reply;
 use App\Replies\ReplyRepository;
-use InvalidArgumentException;
-use PDO;
-use PDOStatement;
 use PHPUnit\Framework\TestCase;
+use App\Abstracts\Repository;
+use InvalidArgumentException;
 use Tests\_data\ReplyData;
+use App\Abstracts\Entity;
+use App\Replies\Reply;
+use PDOStatement;
+use PDO;
 
 class ReplyRepositoryTest extends TestCase
 {

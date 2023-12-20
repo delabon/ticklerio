@@ -25,4 +25,15 @@ class ReplyData
             'updated_at' => strtotime('-2 year'),
         ];
     }
+
+    public static function unsanitizedData(): array
+    {
+        return [
+            'user_id' => '1',
+            'ticket_id' => '1',
+            'message' => 'This is reply message <script>alert("XSS")</script>',
+            'created_at' => (string) strtotime('-2 year'),
+            'updated_at' => (string) strtotime('-2 year'),
+        ];
+    }
 }

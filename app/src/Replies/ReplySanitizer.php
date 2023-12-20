@@ -8,7 +8,7 @@ class ReplySanitizer implements SanitizerInterface
 {
     /**
      * @param array<string, mixed> $data
-     * @return array|mixed[]
+     * @return array<string, mixed>
      */
     public function sanitize(array $data): array
     {
@@ -23,7 +23,7 @@ class ReplySanitizer implements SanitizerInterface
 
     /**
      * @param array<string, mixed> $data
-     * @return array
+     * @return array<string, mixed>
      */
     private function sanitizeUserId(array $data): array
     {
@@ -32,7 +32,7 @@ class ReplySanitizer implements SanitizerInterface
 
     /**
      * @param array<string, mixed> $data
-     * @return array
+     * @return array<string, mixed>
      */
     private function sanitizeTicketId(array $data): array
     {
@@ -41,7 +41,7 @@ class ReplySanitizer implements SanitizerInterface
 
     /**
      * @param array<string, mixed> $data
-     * @return array
+     * @return array<string, mixed>
      */
     private function sanitizeMessage(array $data): array
     {
@@ -57,7 +57,7 @@ class ReplySanitizer implements SanitizerInterface
 
     /**
      * @param array<string, mixed> $data
-     * @return array
+     * @return array<string, mixed>
      */
     private function sanitizeCreatedAt(array $data): array
     {
@@ -66,7 +66,7 @@ class ReplySanitizer implements SanitizerInterface
 
     /**
      * @param array<string, mixed> $data
-     * @return array
+     * @return array<string, mixed>
      */
     private function sanitizeUpdatedAt(array $data): array
     {
@@ -76,7 +76,7 @@ class ReplySanitizer implements SanitizerInterface
     /**
      * @param array<string, mixed> $data
      * @param string $key
-     * @return array
+     * @return array<string, mixed>
      */
     private function sanitizeInt(array $data, string $key): array
     {

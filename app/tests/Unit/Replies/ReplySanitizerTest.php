@@ -8,6 +8,8 @@ use Tests\_data\ReplyData;
 
 class ReplySanitizerTest extends TestCase
 {
+    private ReplySanitizer $replySanitizer;
+
     protected function setUp(): void
     {
         parent::setUp();

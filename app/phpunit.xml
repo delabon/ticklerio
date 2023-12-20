@@ -8,11 +8,12 @@
       stopOnError="true"
       stopOnWarning="true"
       stopOnNotice="true"
+      displayDetailsOnIncompleteTests="true"
+      displayDetailsOnSkippedTests="true"
       displayDetailsOnTestsThatTriggerWarnings="true"
       displayDetailsOnTestsThatTriggerErrors="true"
       displayDetailsOnTestsThatTriggerDeprecations="true"
       displayDetailsOnTestsThatTriggerNotices="true"
-      testdox="true"
 >
   <testsuites>
     <testsuite name="Feature">

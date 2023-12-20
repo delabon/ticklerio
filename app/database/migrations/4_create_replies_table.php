@@ -23,7 +23,7 @@ final class CreateRepliesTable extends AbstractMigration // phpcs:ignore
     public function down(): void
     {
         $this->pdo->exec("
-            DROP TABLE tickets
+            DROP TABLE replies
         ");
     }
 }
