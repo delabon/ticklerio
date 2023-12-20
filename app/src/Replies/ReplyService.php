@@ -5,6 +5,7 @@ namespace App\Replies;
 use App\Core\Auth;
 use App\Exceptions\TicketDoesNotExistException;
 use App\Tickets\TicketRepository;
+use App\Tickets\TicketStatus;
 use LogicException;
 
 class ReplyService
@@ -39,6 +40,10 @@ class ReplyService
 
         if (!$ticket) {
             throw new TicketDoesNotExistException("The ticket with the id '{$data['ticket_id']}' does not exist.");
+        }
+
+        if ($ticket->getStatus() === TicketStatus::Closed->value) {
+            throw new LogicException('Cannot create reply for a closed ticket.');
         }
 
         $reply = Reply::make($data);

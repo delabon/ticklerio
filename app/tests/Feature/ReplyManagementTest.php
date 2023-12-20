@@ -8,6 +8,7 @@ use App\Replies\Reply;
 use App\Replies\ReplyRepository;
 use App\Tickets\TicketFactory;
 use App\Tickets\TicketRepository;
+use App\Tickets\TicketStatus;
 use App\Users\UserFactory;
 use App\Users\UserRepository;
 use App\Users\UserType;
@@ -32,6 +33,10 @@ class ReplyManagementTest extends FeatureTestCase
         $this->auth = new Auth($this->session);
     }
 
+    //
+    // Create
+    //
+
     public function testCreatesReplySuccessfully(): void
     {
         $user = $this->userFactory->create([
@@ -39,7 +44,8 @@ class ReplyManagementTest extends FeatureTestCase
         ])[0];
         $this->auth->login($user);
         $ticket = $this->ticketFactory->create([
-            'user_id' => $user->getId()
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Publish->value,
         ])[0];
 
         $response = $this->post(
@@ -94,13 +100,13 @@ class ReplyManagementTest extends FeatureTestCase
     }
 
     /**
-     * @dataProvider createReplyDataProvider
+     * @dataProvider createReplyInvalidDataProvider
      * @param $data
      * @param $expectedResponseMessage
      * @return void
      * @throws Exception
      */
-    public function testReturnsBadRequestResponseWhenTryingToCreateReply($data, $expectedResponseMessage): void
+    public function testReturnsBadRequestResponseWhenTryingToCreateReplyUsingInvalidData($data, $expectedResponseMessage): void
     {
         $user = $this->userFactory->create([
             'type' => UserType::Member->value
@@ -118,7 +124,7 @@ class ReplyManagementTest extends FeatureTestCase
         $this->assertSame($expectedResponseMessage, $response->getBody()->getContents());
     }
 
-    public static function createReplyDataProvider(): array
+    public static function createReplyInvalidDataProvider(): array
     {
         return [
             'missing ticket_id' => [
@@ -245,7 +251,8 @@ class ReplyManagementTest extends FeatureTestCase
         ])[0];
         $this->auth->login($user);
         $ticket = $this->ticketFactory->create([
-            'user_id' => $user->getId()
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Publish->value,
         ])[0];
 
         $response = $this->post(
@@ -265,5 +272,30 @@ class ReplyManagementTest extends FeatureTestCase
         $this->assertSame($ticket->getId(), $replies[0]->getTicketId());
         $this->assertSame($user->getId(), $replies[0]->getUserId());
         $this->assertSame('This is a reply alert("xss")', $replies[0]->getMessage());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToCreateReplyForClosedTicket(): void
+    {
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value
+        ])[0];
+        $this->auth->login($user);
+        $ticket = $this->ticketFactory->create([
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Closed->value
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/reply/create',
+            [
+                'ticket_id' => $ticket->getId(),
+                'message' => 'This is a reply.',
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame('Cannot create reply for a closed ticket.', $response->getBody()->getContents());
     }
 }

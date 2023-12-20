@@ -11,6 +11,8 @@ use App\Replies\ReplyService;
 use App\Replies\ReplyValidator;
 use App\Tickets\Ticket;
 use App\Tickets\TicketRepository;
+use App\Tickets\TicketStatus;
+use LogicException;
 use Tests\_data\ReplyData;
 use Tests\_data\TicketData;
 use Tests\IntegrationTestCase;
@@ -48,15 +50,16 @@ class ReplyServiceTest extends IntegrationTestCase
     public function testCreatesReplySuccessfully(): void
     {
         $this->logInUser();
-        $this->createTicket();
-
+        $ticket = $this->createTicket();
         $replyData = ReplyData::one();
+        $replyData['ticket_id'] = $ticket->getId();
+
         $reply = $this->replyService->createReply($replyData);
 
         $this->assertSame(Reply::class, $reply::class);
         $this->assertSame(1, $reply->getId());
         $this->assertSame(1, $reply->getUserId());
-        $this->assertSame($replyData['ticket_id'], $reply->getTicketId());
+        $this->assertSame($ticket->getId(), $reply->getTicketId());
         $this->assertSame($replyData['message'], $reply->getMessage());
         $this->assertGreaterThan($replyData['created_at'], $reply->getCreatedAt());
         $this->assertGreaterThan($replyData['updated_at'], $reply->getUpdatedAt());
@@ -74,16 +77,33 @@ class ReplyServiceTest extends IntegrationTestCase
         $this->replyService->createReply($replyData);
     }
 
+    public function testThrowsExceptionWhenTryingToCreateReplyForClosedTicket(): void
+    {
+        $this->logInUser();
+        $ticket = $this->createTicket(TicketStatus::Closed);
+        $replyData = ReplyData::one();
+        $replyData['ticket_id'] = $ticket->getId();
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("Cannot create reply for a closed ticket.");
+
+        $this->replyService->createReply($replyData);
+    }
+
     //
     // Helpers
     //
 
     /**
-     * @return void
+     * @param TicketStatus $status
+     * @return Ticket
      */
-    protected function createTicket(): void
+    protected function createTicket(TicketStatus $status = TicketStatus::Publish): Ticket
     {
         $ticket = Ticket::make(TicketData::one());
+        $ticket->setStatus($status->value);
         $this->ticketRepository->save($ticket);
+
+        return $ticket;
     }
 }

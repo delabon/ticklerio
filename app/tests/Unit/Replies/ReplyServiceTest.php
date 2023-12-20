@@ -13,6 +13,7 @@ use App\Replies\ReplySanitizer;
 use App\Replies\ReplyService;
 use App\Replies\ReplyValidator;
 use App\Tickets\TicketRepository;
+use App\Tickets\TicketStatus;
 use App\Users\UserRepository;
 use InvalidArgumentException;
 use LogicException;
@@ -264,6 +265,42 @@ class ReplyServiceTest extends TestCase
 
         $this->expectException(TicketDoesNotExistException::class);
         $this->expectExceptionMessage("The ticket with the id '{$replyData['ticket_id']}' does not exist.");
+
+        $this->replyService->createReply($replyData);
+    }
+
+    public function testThrowsExceptionWhenTryingToCreateReplyForClosedTicket(): void
+    {
+        $this->logInUser();
+        $replyData = ReplyData::one();
+        $replyData['ticket_id'] = 1;
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->with([
+                1
+            ])
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->willReturn([
+                'id' => 1,
+                'user_id' => 1,
+                'title' => 'This is a ticket',
+                'description' => 'This is a description',
+                'status' => TicketStatus::Closed->value,
+                'created_at' => time(),
+                'updated_at' => time(),
+            ]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/.+SELECT.+FROM.+tickets.+WHERE.+id = ?.+/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("Cannot create reply for a closed ticket.");
 
         $this->replyService->createReply($replyData);
     }
