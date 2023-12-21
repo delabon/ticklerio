@@ -75,35 +75,20 @@ class FactoryTest extends TestCase
 
     public function testCreatePersistsIntoDatabase(): void
     {
-        $this->pdoStatementMock->expects($this->exactly(3))
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('execute')
             ->willReturn(true);
 
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetchAll')
-            ->willReturn([
-                    [
-                        'id' => 1,
-                        'name' => 'Lila',
-                    ],
-                    [
-                        'id' => 2,
-                        'name' => 'Rex',
-                    ],
-
-                ]);
-
-        $this->pdoMock->expects($this->exactly(3))
+        $this->pdoMock->expects($this->exactly(2))
             ->method('prepare')
+            ->with($this->matchesRegularExpression('/.+INSERT INTO.+dogs.+VALUES.+/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->pdoMock->expects($this->exactly(2))
             ->method('lastInsertId')
             ->willReturn("1", "2");
 
-        $this->dogFactory->count(2)->create();
-
-        $dogs = $this->dogRepository->all();
+        $dogs = $this->dogFactory->count(2)->create();
 
         $this->assertCount(2, $dogs);
         $this->assertSame(Dog::class, $dogs[0]::class);
@@ -123,37 +108,26 @@ class FactoryTest extends TestCase
 
     public function testCreateOverwritesAttributes(): void
     {
-        $this->pdoStatementMock->expects($this->exactly(3))
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('execute')
+            ->with([
+                'Lila',
+            ])
             ->willReturn(true);
 
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetchAll')
-            ->willReturn([
-                [
-                    'id' => 1,
-                    'name' => 'Lila',
-                ],
-                [
-                    'id' => 2,
-                    'name' => 'Lila',
-                ],
-
-            ]);
-
-        $this->pdoMock->expects($this->exactly(3))
+        $this->pdoMock->expects($this->exactly(2))
             ->method('prepare')
+            ->with($this->matchesRegularExpression('/.+INSERT INTO.+dogs.+VALUES.+/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->pdoMock->expects($this->exactly(2))
             ->method('lastInsertId')
             ->willReturn("1", "2");
 
-        $this->dogFactory->count(2)->create([
+        $dogs = $this->dogFactory->count(2)->create([
             'name' => 'Lila',
         ]);
 
-        $dogs = $this->dogRepository->all();
         $this->assertCount(2, $dogs);
         $this->assertSame('Lila', $dogs[0]->getName());
         $this->assertSame('Lila', $dogs[1]->getName());
@@ -180,8 +154,9 @@ class dogRepository extends Repository // phpcs:ignore
         $stmt = $this->pdo->prepare("
             INSERT INTO
                 {$this->table}
-            SET
-                name = ?
+                (name)
+                VALUES
+                    (?)
         ");
 
         $stmt->execute([
