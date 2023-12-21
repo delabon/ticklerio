@@ -92,44 +92,21 @@ class TicketFactoryTest extends TestCase
 
     public function testCreatesTicketsPersistsThemInDatabase(): void
     {
-        $this->pdoStatementMock->expects($this->exactly(3))
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('execute')
             ->willReturn(true);
 
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetchAll')
-            ->willReturn([
-                    [
-                        'id' => 1,
-                        'title' => 'Ticket 1',
-                        'description' => 'Ticket 1 description',
-                        'user_id' => 1,
-                        'status' => TicketStatus::Publish->value,
-                        'created_at' => time(),
-                        'updated_at' => time(),
-                    ],
-                    [
-                        'id' => 2,
-                        'title' => 'Ticket 2',
-                        'description' => 'Ticket 2 description',
-                        'user_id' => 2,
-                        'status' => TicketStatus::Publish->value,
-                        'created_at' => time(),
-                        'updated_at' => time(),
-                    ],
-                ]);
-
-        $this->pdoMock->expects($this->exactly(3))
+        $this->pdoMock->expects($this->exactly(2))
             ->method('prepare')
+            ->with($this->matchesRegularExpression('/INSERT INTO.+tickets.+VALUES.+/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->pdoMock->expects($this->exactly(2))
             ->method('lastInsertId')
             ->willReturnOnConsecutiveCalls("1", "2");
 
-        $this->ticketFactory->count(2)->create();
+        $tickets = $this->ticketFactory->count(2)->create();
 
-        $tickets = $this->ticketRepository->all();
         $this->assertCount(2, $tickets);
         $this->assertInstanceOf(Ticket::class, $tickets[0]);
         $this->assertInstanceOf(Ticket::class, $tickets[1]);
@@ -148,59 +125,33 @@ class TicketFactoryTest extends TestCase
             'updated_at' => 5,
         ]);
 
-        $this->assertCount(2, $result);
-        $this->assertSame('Ticket title overwritten', $result[0]->getTitle());
-        $this->assertSame('Ticket description overwritten', $result[0]->getDescription());
-        $this->assertSame(5, $result[0]->getUserId());
-        $this->assertSame(TicketStatus::Closed->value, $result[0]->getStatus());
-        $this->assertSame(5, $result[0]->getCreatedAt());
-        $this->assertSame(5, $result[0]->getUpdatedAt());
-        $this->assertSame('Ticket title overwritten', $result[1]->getTitle());
-        $this->assertSame('Ticket description overwritten', $result[1]->getDescription());
-        $this->assertSame(5, $result[1]->getUserId());
-        $this->assertSame(TicketStatus::Closed->value, $result[1]->getStatus());
-        $this->assertSame(5, $result[1]->getCreatedAt());
-        $this->assertSame(5, $result[1]->getUpdatedAt());
+        $this->overwriteAsserts($result);
     }
 
     public function testCreateOverwritesAttributes(): void
     {
-        $this->pdoStatementMock->expects($this->exactly(3))
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('execute')
+            ->with([
+                5,
+                'Ticket title overwritten',
+                'Ticket description overwritten',
+                TicketStatus::Closed->value,
+                5,
+                5,
+            ])
             ->willReturn(true);
 
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetchAll')
-            ->willReturn([
-                [
-                    'id' => 1,
-                    'title' => 'Ticket title overwritten',
-                    'description' => 'Ticket description overwritten',
-                    'user_id' => 5,
-                    'status' => TicketStatus::Closed->value,
-                    'created_at' => 5,
-                    'updated_at' => 5,
-                ],
-                [
-                    'id' => 2,
-                    'title' => 'Ticket title overwritten',
-                    'description' => 'Ticket description overwritten',
-                    'user_id' => 5,
-                    'status' => TicketStatus::Closed->value,
-                    'created_at' => 5,
-                    'updated_at' => 5,
-                ],
-            ]);
-
-        $this->pdoMock->expects($this->exactly(3))
+        $this->pdoMock->expects($this->exactly(2))
             ->method('prepare')
+            ->with($this->matchesRegularExpression('/INSERT INTO.+tickets.+VALUES.+/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->pdoMock->expects($this->exactly(2))
             ->method('lastInsertId')
-            ->willReturn("1", "2");
+            ->willReturnOnConsecutiveCalls("1", "2");
 
-        $this->ticketFactory->count(2)->create([
+        $result = $this->ticketFactory->count(2)->create([
             'title' => 'Ticket title overwritten',
             'description' => 'Ticket description overwritten',
             'user_id' => 5,
@@ -209,7 +160,15 @@ class TicketFactoryTest extends TestCase
             'updated_at' => 5,
         ]);
 
-        $result = $this->ticketRepository->all();
+        $this->overwriteAsserts($result);
+    }
+
+    /**
+     * @param array $result
+     * @return void
+     */
+    protected function overwriteAsserts(array $result): void
+    {
         $this->assertCount(2, $result);
         $this->assertSame('Ticket title overwritten', $result[0]->getTitle());
         $this->assertSame('Ticket description overwritten', $result[0]->getDescription());
