@@ -51,9 +51,10 @@ class ReplyServiceTest extends IntegrationTestCase
 
     public function testCreatesReplySuccessfully(): void
     {
-        $this->logInUser();
+        $user = $this->logInUser();
         $ticket = $this->createTicket();
         $replyData = ReplyData::one();
+        $replyData['user_id'] = $user->getId();
         $replyData['ticket_id'] = $ticket->getId();
 
         $reply = $this->replyService->createReply($replyData);
@@ -67,10 +68,30 @@ class ReplyServiceTest extends IntegrationTestCase
         $this->assertGreaterThan($replyData['updated_at'], $reply->getUpdatedAt());
     }
 
+    public function testSuccessfullyCreatesReplyAfterSanitizingTheData(): void
+    {
+        $user = $this->logInUser();
+        $ticket = $this->createTicket();
+        $replyData = ReplyData::unsanitizedData();
+        $replyData['user_id'] = $user->getId();
+        $replyData['ticket_id'] = $ticket->getId();
+
+        $reply = $this->replyService->createReply($replyData);
+
+        $this->assertSame(Reply::class, $reply::class);
+        $this->assertSame(1, $reply->getId());
+        $this->assertSame(1, $reply->getUserId());
+        $this->assertSame($ticket->getId(), $reply->getTicketId());
+        $this->assertSame('This is reply message alert("XSS")', $reply->getMessage());
+        $this->assertGreaterThan(strtotime('-2 year'), $reply->getCreatedAt());
+        $this->assertGreaterThan(strtotime('-2 year'), $reply->getUpdatedAt());
+    }
+
     public function testThrowsExceptionWhenTryingToCreateReplyForTicketThatDoesNotExist(): void
     {
-        $this->logInUser();
+        $user = $this->logInUser();
         $replyData = ReplyData::one();
+        $replyData['user_id'] = $user->getId();
         $replyData['ticket_id'] = 999;
 
         $this->expectException(TicketDoesNotExistException::class);
@@ -81,9 +102,10 @@ class ReplyServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenTryingToCreateReplyForClosedTicket(): void
     {
-        $this->logInUser();
+        $user = $this->logInUser();
         $ticket = $this->createTicket(TicketStatus::Closed);
         $replyData = ReplyData::one();
+        $replyData['user_id'] = $user->getId();
         $replyData['ticket_id'] = $ticket->getId();
 
         $this->expectException(LogicException::class);

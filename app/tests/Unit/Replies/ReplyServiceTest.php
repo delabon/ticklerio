@@ -106,7 +106,7 @@ class ReplyServiceTest extends TestCase
                 if (stripos($query, 'SELECT') !== false) {
                     $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+tickets.+WHERE.+id = ?.+/is', $query);
                 } else {
-                    $this->assertMatchesRegularExpression('/.+INSERT INTO.+replies.+VALUES.+/is', $query);
+                    $this->assertMatchesRegularExpression('/.+INSERT INTO.+replies.+VALUES.+\(.*\?.+\).+/is', $query);
                 }
 
                 return $this->pdoStatementMock;
