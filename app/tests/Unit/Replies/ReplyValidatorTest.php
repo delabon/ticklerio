@@ -61,28 +61,6 @@ class ReplyValidatorTest extends TestCase
                 [],
                 'Reply data cannot be empty.'
             ],
-            'invalid id' => [
-                [
-                    'id' => 'invalid-id',
-                    'user_id' => 1,
-                    'ticket_id' => 1,
-                    'message' => 'This is a reply message.',
-                    'created_at' => time(),
-                    'updated_at' => time()
-                ],
-                'The id must be a number.'
-            ],
-            'id is not a positive number' => [
-                [
-                    'id' => 0,
-                    'user_id' => 1,
-                    'ticket_id' => 1,
-                    'message' => 'This is a reply message.',
-                    'created_at' => time(),
-                    'updated_at' => time()
-                ],
-                'The id must be a positive number.'
-            ],
             'missing user id' => [
                 [
                     'ticket_id' => 1,

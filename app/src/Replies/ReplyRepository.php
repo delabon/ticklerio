@@ -3,6 +3,7 @@
 namespace App\Replies;
 
 use App\Abstracts\Repository;
+use App\Exceptions\ReplyDoesNotExistException;
 use InvalidArgumentException;
 
 class ReplyRepository extends Repository
@@ -24,14 +25,36 @@ class ReplyRepository extends Repository
 
     protected function update(object $entity): void
     {
-        // TODO: Implement update() method.
+        $this->validateEntity($entity);
+
+        $result = $this->find($entity->getId());
+
+        if (!$result) {
+            throw new ReplyDoesNotExistException("The reply with the id {$entity->getId()} does not exist in the database.");
+        }
+
+        $entity->setUpdatedAt(time());
+
+        $stmt = $this->pdo->prepare("
+            UPDATE
+                {$this->table}
+            SET
+                message = ?,
+                updated_at = ?
+            WHERE
+                id = ?
+        ");
+
+        $stmt->execute([
+            $entity->getMessage(),
+            $entity->getUpdatedAt(),
+            $entity->getId(),
+        ]);
     }
 
     protected function insert(object $entity): void
     {
-        if (!$entity instanceof Reply) {
-            throw new InvalidArgumentException('The entity must be an instance of Reply.');
-        }
+        $this->validateEntity($entity);
 
         $this->pdo->prepare("
             INSERT INTO 
@@ -53,5 +76,16 @@ class ReplyRepository extends Repository
     public function delete(int $id): void
     {
         // TODO: Implement delete() method.
+    }
+
+    /**
+     * @param object $entity
+     * @return void
+     */
+    protected function validateEntity(object $entity): void
+    {
+        if (!$entity instanceof Reply) {
+            throw new InvalidArgumentException('The entity must be an instance of Reply.');
+        }
     }
 }

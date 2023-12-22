@@ -6,6 +6,7 @@ use App\Core\Auth;
 use App\Core\Session\ArraySessionHandler;
 use App\Core\Session\Session;
 use App\Core\Session\SessionHandlerType;
+use App\Exceptions\ReplyDoesNotExistException;
 use App\Exceptions\TicketDoesNotExistException;
 use App\Replies\Reply;
 use App\Replies\ReplyRepository;
@@ -21,6 +22,7 @@ use PDO;
 use PDOStatement;
 use PHPUnit\Framework\TestCase;
 use Tests\_data\ReplyData;
+use Tests\_data\TicketData;
 use Tests\Traits\AuthenticatesUsers;
 
 class ReplyServiceTest extends TestCase
@@ -98,17 +100,14 @@ class ReplyServiceTest extends TestCase
                 'updated_at' => time(),
             ]);
 
-        $prepareCount = 1;
         $this->pdoMock->expects($this->exactly(2))
             ->method('prepare')
-            ->willReturnCallback(function ($query) use (&$prepareCount) {
-                if ($prepareCount === 1) {
+            ->willReturnCallback(function ($query) {
+                if (stripos($query, 'SELECT') !== false) {
                     $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+tickets.+WHERE.+id = ?.+/is', $query);
                 } else {
                     $this->assertMatchesRegularExpression('/.+INSERT INTO.+replies.+VALUES.+/is', $query);
                 }
-
-                $prepareCount++;
 
                 return $this->pdoStatementMock;
             });
@@ -172,21 +171,21 @@ class ReplyServiceTest extends TestCase
                     'ticket_id' => '',
                     'message' => 'This is a reply',
                 ],
-                'The ticket id must be a positive integer.',
+                'The ticket id must be a positive number.',
             ],
             'type of ticket_id is invalid' => [
                 [
                     'ticket_id' => 'false',
                     'message' => 'This is a reply',
                 ],
-                'The ticket id must be a positive integer.',
+                'The ticket id must be a positive number.',
             ],
             'ticket_id is not a positive number' => [
                 [
                     'ticket_id' => 0,
                     'message' => 'This is a reply',
                 ],
-                'The ticket id must be a positive integer.',
+                'The ticket id must be a positive number.',
             ],
             'missing message' => [
                 [
@@ -303,5 +302,284 @@ class ReplyServiceTest extends TestCase
         $this->expectExceptionMessage("Cannot create reply for a closed ticket.");
 
         $this->replyService->createReply($replyData);
+    }
+
+    //
+    // Update
+    //
+
+    public function testUpdatesReplySuccessfully(): void
+    {
+        $this->logInUser();
+        $replyData = ReplyData::one();
+        $replyData['id'] = 1;
+
+        $this->pdoStatementMock->expects($this->exactly(4))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(3))
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnOnConsecutiveCalls(
+                $replyData,
+                (function () {
+                    $ticketData = TicketData::one();
+                    $ticketData['id'] = 1;
+
+                    return $ticketData;
+                })(),
+                $replyData,
+                $replyData
+            );
+
+        $prepareCount = 1;
+        $this->pdoMock->expects($this->exactly(4))
+            ->method('prepare')
+            ->willReturnCallback(function ($query) use (&$prepareCount) {
+                if ($prepareCount === 1) {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+replies.+WHERE.+id = ?.+/is', $query);
+                } elseif ($prepareCount === 2) {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+tickets.+WHERE.+id = ?.+/is', $query);
+                } elseif ($prepareCount === 3) {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+replies.+WHERE.+id = ?.+/is', $query);
+                } else {
+                    $this->assertMatchesRegularExpression('/.+UPDATE.+replies.+SET.+/is', $query);
+                }
+
+                $prepareCount++;
+
+                return $this->pdoStatementMock;
+            });
+
+        $replyData['message'] = 'This is an updated message.';
+
+        $reply = $this->replyService->updateReply($replyData);
+
+        $this->assertSame(1, $reply->getId());
+        $this->assertSame($replyData['user_id'], $reply->getUserId());
+        $this->assertSame($replyData['ticket_id'], $reply->getTicketId());
+        $this->assertSame('This is an updated message.', $reply->getMessage());
+        $this->assertSame($replyData['created_at'], $reply->getCreatedAt());
+        $this->assertGreaterThan($replyData['updated_at'], $reply->getUpdatedAt());
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateReplyWhenNotLoggedIn(): void
+    {
+        $replyData = ReplyData::one();
+        $replyData['id'] = 1;
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('You must be logged in to update a reply.');
+
+        $this->replyService->updateReply($replyData);
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateReplyUsingNonPositiveId(): void
+    {
+        $this->logInUser();
+        $replyData = ReplyData::one();
+        $replyData['id'] = 0;
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The reply id must be a positive number.');
+
+        $this->replyService->updateReply($replyData);
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateReplyThatDoesNotExist(): void
+    {
+        $this->logInUser();
+        $replyData = ReplyData::one();
+        $replyData['id'] = 998;
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->with([
+                998
+            ])
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn(false);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/.+SELECT.+FROM.+replies.+WHERE.+id = ?.+/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $this->expectException(ReplyDoesNotExistException::class);
+        $this->expectExceptionMessage("The reply with the id '998' does not exist.");
+
+        $this->replyService->updateReply($replyData);
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateReplyThatDoesNotBelongToLoggedInUser(): void
+    {
+        $this->logInUser();
+        $replyData = ReplyData::one();
+        $replyData['id'] = 1;
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->with([
+                1
+            ])
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () use ($replyData) {
+                $replyData['user_id'] = 999;
+
+                return $replyData;
+            });
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/.+SELECT.+FROM.+replies.+WHERE.+id = ?.+/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("You cannot update a reply that does not belong to you.");
+
+        $this->replyService->updateReply($replyData);
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateReplyThatBelongsToTicketThatDoesNotExist(): void
+    {
+        $this->logInUser();
+        $replyData = ReplyData::one();
+        $replyData['id'] = 1;
+        $replyData['ticket_id'] = 999;
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnOnConsecutiveCalls($replyData, false);
+
+        $prepareCount = 1;
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturnCallback(function ($query) use (&$prepareCount) {
+                if ($prepareCount === 1) {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+replies.+WHERE.+id = ?.+/is', $query);
+                } else {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+tickets.+WHERE.+id = ?.+/is', $query);
+                }
+
+                $prepareCount++;
+
+                return $this->pdoStatementMock;
+            });
+
+        $this->expectException(TicketDoesNotExistException::class);
+        $this->expectExceptionMessage("The ticket with the id '999' does not exist.");
+
+        $this->replyService->updateReply($replyData);
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateReplyThatBelongsToClosedTicket(): void
+    {
+        $this->logInUser();
+        $replyData = ReplyData::one();
+        $replyData['id'] = 1;
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnOnConsecutiveCalls(
+                $replyData,
+                (function () {
+                    $ticketData = TicketData::one();
+                    $ticketData['id'] = 1;
+                    $ticketData['status'] = TicketStatus::Closed->value;
+
+                    return $ticketData;
+                })()
+            );
+
+        $prepareCount = 1;
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturnCallback(function ($query) use (&$prepareCount) {
+                if ($prepareCount === 1) {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+replies.+WHERE.+id = ?.+/is', $query);
+                } else {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+tickets.+WHERE.+id = ?.+/is', $query);
+                }
+
+                $prepareCount++;
+
+                return $this->pdoStatementMock;
+            });
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("Cannot update reply that belongs to a closed ticket.");
+
+        $this->replyService->updateReply($replyData);
+    }
+
+    /**
+     * @dataProvider \Tests\_data\ReplyDataProvider::updateReplyInvalidDataProvider
+     * @param $data
+     * @param $expectedExceptionMessage
+     * @return void
+     */
+    public function testThrowsExceptionWhenTryingToUpdateUsingInvalidData($data, $expectedExceptionMessage): void
+    {
+        $this->logInUser();
+        $data['id'] = 1;
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn($data);
+
+        $prepareCount = 1;
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturnCallback(function ($query) use (&$prepareCount) {
+                if ($prepareCount === 1) {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+replies.+WHERE.+id = ?.+/is', $query);
+                } else {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+tickets.+WHERE.+id = ?.+/is', $query);
+                }
+
+                $prepareCount++;
+
+                return $this->pdoStatementMock;
+            });
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage($expectedExceptionMessage);
+
+        $this->replyService->updateReply($data);
+    }
+
+    /**
+     * @dataProvider \Tests\_data\ReplyDataProvider::updateReplyInvalidSanitizedDataProvider
+     * @param $data
+     * @param $expectedExceptionMessage
+     * @return void
+     */
+    public function testThrowsExceptionWhenTryingToUpdateUsingInvalidSanitizedData($data, $expectedExceptionMessage): void
+    {
+        $this->testThrowsExceptionWhenTryingToUpdateUsingInvalidData($data, $expectedExceptionMessage);
     }
 }

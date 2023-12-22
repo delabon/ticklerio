@@ -5,10 +5,12 @@ namespace Tests\Feature;
 use App\Core\Auth;
 use App\Core\Http\HttpStatusCode;
 use App\Replies\Reply;
+use App\Replies\ReplyFactory;
 use App\Replies\ReplyRepository;
 use App\Tickets\TicketFactory;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketStatus;
+use App\Users\User;
 use App\Users\UserFactory;
 use App\Users\UserRepository;
 use App\Users\UserType;
@@ -20,6 +22,7 @@ class ReplyManagementTest extends FeatureTestCase
 {
     private ReplyRepository $replyRepository;
     private TicketFactory $ticketFactory;
+    private ReplyFactory $replyFactory;
     private UserFactory $userFactory;
     private Auth $auth;
 
@@ -29,6 +32,7 @@ class ReplyManagementTest extends FeatureTestCase
 
         $this->userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
         $this->ticketFactory = new TicketFactory(new TicketRepository($this->pdo), Factory::create());
+        $this->replyFactory = new ReplyFactory(new ReplyRepository($this->pdo), Factory::create());
         $this->replyRepository = new ReplyRepository($this->pdo);
         $this->auth = new Auth($this->session);
     }
@@ -39,10 +43,7 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testCreatesReplySuccessfully(): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value
-        ])[0];
-        $this->auth->login($user);
+        $user = $this->logInUser();
         $ticket = $this->ticketFactory->create([
             'user_id' => $user->getId(),
             'status' => TicketStatus::Publish->value,
@@ -108,10 +109,7 @@ class ReplyManagementTest extends FeatureTestCase
      */
     public function testReturnsBadRequestResponseWhenTryingToCreateReplyUsingInvalidData($data, $expectedResponseMessage): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value
-        ])[0];
-        $this->auth->login($user);
+        $user = $this->logInUser();
         $data['csrf_token'] = $this->csrf->generate();
 
         $response = $this->post(
@@ -138,21 +136,21 @@ class ReplyManagementTest extends FeatureTestCase
                     'ticket_id' => '',
                     'message' => 'This is a reply',
                 ],
-                'The ticket id must be a positive integer.',
+                'The ticket id must be a positive number.',
             ],
             'type of ticket_id is invalid' => [
                 [
                     'ticket_id' => 'false',
                     'message' => 'This is a reply',
                 ],
-                'The ticket id must be a positive integer.',
+                'The ticket id must be a positive number.',
             ],
             'ticket_id is not a positive number' => [
                 [
                     'ticket_id' => 0,
                     'message' => 'This is a reply',
                 ],
-                'The ticket id must be a positive integer.',
+                'The ticket id must be a positive number.',
             ],
             'missing message' => [
                 [
@@ -200,10 +198,7 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testReturnsNotFoundResponseWhenTryingToCreateReplyForTicketThatDoesNotExist(): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value
-        ])[0];
-        $this->auth->login($user);
+        $user = $this->logInUser();
 
         $response = $this->post(
             '/ajax/reply/create',
@@ -228,10 +223,7 @@ class ReplyManagementTest extends FeatureTestCase
      */
     public function testReturnsBadRequestResponseWhenTryingToCreateReplyAfterSanitization($data, $expectedResponseMessage): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value
-        ])[0];
-        $this->auth->login($user);
+        $user = $this->logInUser();
         $data['csrf_token'] = $this->csrf->generate();
 
         $response = $this->post(
@@ -246,10 +238,7 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testSuccessfullyCreatesReplyAfterSanitizingData(): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value
-        ])[0];
-        $this->auth->login($user);
+        $user = $this->logInUser();
         $ticket = $this->ticketFactory->create([
             'user_id' => $user->getId(),
             'status' => TicketStatus::Publish->value,
@@ -276,10 +265,7 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToCreateReplyForClosedTicket(): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value
-        ])[0];
-        $this->auth->login($user);
+        $user = $this->logInUser();
         $ticket = $this->ticketFactory->create([
             'user_id' => $user->getId(),
             'status' => TicketStatus::Closed->value
@@ -297,5 +283,314 @@ class ReplyManagementTest extends FeatureTestCase
 
         $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
         $this->assertSame('Cannot create reply for a closed ticket.', $response->getBody()->getContents());
+    }
+
+    //
+    // Update
+    //
+
+    public function testUpdatesReplySuccessfully(): void
+    {
+        $user = $this->logInUser();
+        $ticket = $this->ticketFactory->create([
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Publish->value,
+        ])[0];
+        $reply = $this->replyFactory->create([
+            'user_id' => $user->getId(),
+            'ticket_id' => $ticket->getId(),
+            'created_at' => strtotime('-1 year'),
+            'updated_at' => strtotime('-1 year'),
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/reply/update',
+            [
+                'id' => $reply->getId(),
+                'message' => 'This is an updated reply',
+                'csrf_token' => $this->csrf->generate(),
+            ]
+        );
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertSame('The reply has been updated.', $response->getBody()->getContents());
+        $replies = $this->replyRepository->all();
+        $this->assertCount(1, $replies);
+        $this->assertSame(Reply::class, $replies[0]::class);
+        $this->assertSame($reply->getId(), $replies[0]->getId());
+        $this->assertSame($ticket->getId(), $replies[0]->getTicketId());
+        $this->assertSame($user->getId(), $replies[0]->getUserId());
+        $this->assertSame('This is an updated reply', $replies[0]->getMessage());
+        $this->assertSame(strtotime('-1 year'), $replies[0]->getCreatedAt());
+        $this->assertGreaterThan(strtotime('-1 year'), $replies[0]->getUpdatedAt());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToUpdateReplyUsingInvalidCsrfToken(): void
+    {
+        $response = $this->post(
+            '/ajax/reply/update',
+            [
+                'id' => 1,
+                'message' => 'This is an updated reply',
+                'csrf_token' => 'invalid-csrf-token'
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame('Invalid CSRF token.', $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToUpdateReplyWhenNotLoggedIn(): void
+    {
+        $response = $this->post(
+            '/ajax/reply/update',
+            [
+                'id' => 1,
+                'message' => 'This is an updated reply',
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame('You must be logged in to update a reply.', $response->getBody()->getContents());
+    }
+
+    public function testReturnsBadRequestResponseWhenTryingToUpdateReplyUsingInvalidId(): void
+    {
+        $this->logInUser();
+
+        $response = $this->post(
+            '/ajax/reply/update',
+            [
+                'id' => 0,
+                'message' => 'This is an updated reply',
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::BadRequest->value, $response->getStatusCode());
+        $this->assertSame('The reply id must be a positive number.', $response->getBody()->getContents());
+    }
+
+    public function testReturnsNotFoundResponseWhenTryingToUpdateReplyThatDoesNotExist(): void
+    {
+        $this->logInUser();
+
+        $response = $this->post(
+            '/ajax/reply/update',
+            [
+                'id' => 55,
+                'message' => 'This is an updated reply',
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::NotFound->value, $response->getStatusCode());
+        $this->assertSame("The reply with the id '55' does not exist.", $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToUpdateReplyThatDoesNotBelongToTheLoggedInUser(): void
+    {
+        $this->logInUser();
+        $reply = $this->replyFactory->create([
+            'user_id' => 999,
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/reply/update',
+            [
+                'id' => $reply->getId(),
+                'message' => 'This is an updated reply',
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame("You cannot update a reply that does not belong to you.", $response->getBody()->getContents());
+    }
+
+    public function testReturnsNotFoundResponseWhenTryingToUpdateReplyThatBelongsToTicketThatDoesNotExist(): void
+    {
+        $user = $this->logInUser();
+        $reply = $this->replyFactory->create([
+            'user_id' => $user->getId(),
+            'ticket_id' => 444,
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/reply/update',
+            [
+                'id' => $reply->getId(),
+                'message' => 'This is an updated reply',
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::NotFound->value, $response->getStatusCode());
+        $this->assertSame("The ticket with the id '{$reply->getTicketId()}' does not exist.", $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToUpdateReplyThatBelongsToClosedTicket(): void
+    {
+        $user = $this->logInUser();
+        $ticket = $this->ticketFactory->create([
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Closed->value,
+        ])[0];
+        $reply = $this->replyFactory->create([
+            'user_id' => $user->getId(),
+            'ticket_id' => $ticket->getId(),
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/reply/update',
+            [
+                'id' => $reply->getId(),
+                'message' => 'This is an updated reply',
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame("Cannot update reply that belongs to a closed ticket.", $response->getBody()->getContents());
+    }
+
+    /**
+     * @dataProvider updateReplyInvalidDataProvider
+     * @param $message
+     * @param $expectedResponseMessage
+     * @return void
+     * @throws Exception
+     */
+    public function testReturnsBadRequestResponseWhenTryingToUpdateReplyUsingInvalidData($message, $expectedResponseMessage): void
+    {
+        $user = $this->logInUser();
+        $ticket = $this->ticketFactory->create([
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Publish->value,
+        ])[0];
+        $reply = $this->replyFactory->create([
+            'user_id' => $user->getId(),
+            'ticket_id' => $ticket->getId(),
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/reply/update',
+            [
+                'id' => $reply->getId(),
+                'message' => $message,
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::BadRequest->value, $response->getStatusCode());
+        $this->assertSame($expectedResponseMessage, $response->getBody()->getContents());
+    }
+
+    public static function updateReplyInvalidDataProvider(): array
+    {
+        return [
+            'message is of invalid type' => [
+                false,
+                'The message cannot be empty.',
+            ],
+            'message is too short' => [
+                'a',
+                'The message must be between 2 and 1000 characters.',
+            ],
+            'message is too long' => [
+                str_repeat('a', 1001),
+                'The message must be between 2 and 1000 characters.',
+            ],
+        ];
+    }
+
+    /**
+     * @dataProvider updateReplyUnsanitizedDataProvider
+     * @param $data
+     * @param $expectedResponseMessage
+     * @return void
+     * @throws Exception
+     */
+    public function testReturnsBadRequestResponseWhenTryingToUpdateReplyAfterSanitization($message, $expectedResponseMessage): void
+    {
+        $this->testReturnsBadRequestResponseWhenTryingToUpdateReplyUsingInvalidData($message, $expectedResponseMessage);
+    }
+
+    public static function updateReplyUnsanitizedDataProvider(): array
+    {
+        return [
+            'message is invalid' => [
+                false,
+                'The message cannot be empty.',
+            ],
+            'message is too short' => [
+                '<h1>a</h1>',
+                'The message must be between 2 and 1000 characters.',
+            ],
+            'message is too long' => [
+                str_repeat('a', 1000) . '<h1>a</h1>',
+                'The message must be between 2 and 1000 characters.',
+            ],
+        ];
+    }
+
+    public function testSuccessfullyUpdatesReplyAfterSanitizingData(): void
+    {
+        $user = $this->logInUser();
+        $ticket = $this->ticketFactory->create([
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Publish->value,
+        ])[0];
+        $reply = $this->replyFactory->create([
+            'user_id' => $user->getId(),
+            'ticket_id' => $ticket->getId(),
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/reply/update',
+            [
+                'id' => $reply->getId(),
+                'message' => 'The best message ever <script>alert("xss")</script>',
+                'csrf_token' => $this->csrf->generate(),
+            ]
+        );
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertSame('The reply has been updated.', $response->getBody()->getContents());
+        $replies = $this->replyRepository->all();
+        $this->assertCount(1, $replies);
+        $this->assertSame(Reply::class, $replies[0]::class);
+        $this->assertSame($reply->getId(), $replies[0]->getId());
+        $this->assertSame($ticket->getId(), $replies[0]->getTicketId());
+        $this->assertSame($user->getId(), $replies[0]->getUserId());
+        $this->assertSame('The best message ever alert("xss")', $replies[0]->getMessage());
+        $this->assertSame($reply->getCreatedAt(), $replies[0]->getCreatedAt());
+        $this->assertGreaterThan($reply->getUpdatedAt(), $replies[0]->getUpdatedAt());
+    }
+
+    //
+    // Helpers
+    //
+
+    /**
+     * @return User
+     */
+    protected function logInUser(): User
+    {
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value
+        ])[0];
+        $this->auth->login($user);
+
+        return $user;
     }
 }

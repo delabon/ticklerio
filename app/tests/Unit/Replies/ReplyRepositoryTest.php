@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Replies;
 
+use App\Exceptions\ReplyDoesNotExistException;
 use App\Interfaces\RepositoryInterface;
 use App\Replies\ReplyRepository;
 use PHPUnit\Framework\TestCase;
@@ -96,6 +97,91 @@ class ReplyRepositoryTest extends TestCase
         $this->expectExceptionMessage('The entity must be an instance of Reply.');
 
         $this->replyRepository->save(new InvalidReply());
+    }
+
+    //
+    // Update
+    //
+
+    public function testUpdatesReplySuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () {
+                $data = ReplyData::one();
+                $data['id'] = 1;
+
+                return $data;
+            });
+
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturnCallback(function ($query) {
+                if (stripos($query, 'SELECT') !== false) {
+                    $this->assertMatchesRegularExpression('/SELECT.+FROM.+replies.+WHERE.+id = ?.+/is', $query);
+                } else {
+                    $this->assertMatchesRegularExpression('/UPDATE.+replies.+SET.+WHERE.+id = ?.+/is', $query);
+                }
+
+                return $this->pdoStatementMock;
+            });
+
+        $replyData = ReplyData::one();
+        $reply = Reply::make($replyData);
+        $reply->setId(1);
+        $reply->setMessage('This is an updated message.');
+
+        $this->replyRepository->save($reply);
+
+        $this->assertSame(1, $reply->getId());
+        $this->assertSame($replyData['user_id'], $reply->getUserId());
+        $this->assertSame($replyData['ticket_id'], $reply->getTicketId());
+        $this->assertSame('This is an updated message.', $reply->getMessage());
+        $this->assertSame($replyData['created_at'], $reply->getCreatedAt());
+        $this->assertGreaterThan($replyData['updated_at'], $reply->getUpdatedAt());
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateWithInvalidEntity(): void
+    {
+        $invalidReply = new InvalidReply();
+        $invalidReply->setId(1);
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The entity must be an instance of Reply.');
+
+        $this->replyRepository->save($invalidReply);
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateReplyThatDoesNotExist(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn(false);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+FROM.+replies.+WHERE.+id = ?.+/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $replyData = ReplyData::one();
+        $reply = Reply::make($replyData);
+        $reply->setId(7777);
+        $reply->setMessage('This is an updated message.');
+
+        $this->expectException(ReplyDoesNotExistException::class);
+        $this->expectExceptionMessage("The reply with the id {$reply->getId()} does not exist in the database.");
+
+        $this->replyRepository->save($reply);
     }
 }
 

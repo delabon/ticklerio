@@ -14,7 +14,6 @@ class ReplyValidator implements ValidatorInterface
     public function validate(array $data): void
     {
         $this->validateNotEmpty($data);
-        $this->validateIdIfPresent($data);
         $this->validateUserId($data);
         $this->validateTicketId($data);
         $this->validateMessage($data);
@@ -31,19 +30,6 @@ class ReplyValidator implements ValidatorInterface
         if (empty($data)) {
             throw new InvalidArgumentException('Reply data cannot be empty.');
         }
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     * @return void
-     */
-    private function validateIdIfPresent(array $data): void
-    {
-        if (!isset($data['id'])) {
-            return;
-        }
-
-        $this->validatePositiveNumber($data, 'id', 'id');
     }
 
     /**
