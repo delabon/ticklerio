@@ -26,6 +26,15 @@ class ReplyValidatorTest extends TestCase
 
     public function testValidatesReplySuccessfully(): void
     {
+        $replyData = ReplyData::one();
+        $replyData['id'] = 1;
+        $this->replyValidator->validate($replyData);
+
+        $this->expectNotToPerformAssertions();
+    }
+
+    public function testValidatesReplyWithoutAnIdSuccessfully(): void
+    {
         $this->replyValidator->validate(ReplyData::one());
 
         $this->expectNotToPerformAssertions();
@@ -51,6 +60,28 @@ class ReplyValidatorTest extends TestCase
             'empty' => [
                 [],
                 'Reply data cannot be empty.'
+            ],
+            'invalid id' => [
+                [
+                    'id' => 'invalid-id',
+                    'user_id' => 1,
+                    'ticket_id' => 1,
+                    'message' => 'This is a reply message.',
+                    'created_at' => time(),
+                    'updated_at' => time()
+                ],
+                'The id must be a number.'
+            ],
+            'id is not a positive number' => [
+                [
+                    'id' => 0,
+                    'user_id' => 1,
+                    'ticket_id' => 1,
+                    'message' => 'This is a reply message.',
+                    'created_at' => time(),
+                    'updated_at' => time()
+                ],
+                'The id must be a positive number.'
             ],
             'missing user id' => [
                 [
@@ -98,7 +129,7 @@ class ReplyValidatorTest extends TestCase
                     'created_at' => time(),
                     'updated_at' => time()
                 ],
-                'The ticket id must be an integer.'
+                'The ticket id must be a number.'
             ],
             'ticket id is not a positive number' => [
                 [
@@ -108,7 +139,7 @@ class ReplyValidatorTest extends TestCase
                     'created_at' => time(),
                     'updated_at' => time()
                 ],
-                'The ticket id must be a positive integer.'
+                'The ticket id must be a positive number.'
             ],
             'missing message' => [
                 [
