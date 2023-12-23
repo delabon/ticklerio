@@ -122,7 +122,7 @@ class ReplyService
 
         $ticket = $this->ticketRepository->find($reply->getTicketId());
 
-        if ($ticket->getStatus() === TicketStatus::Closed->value) {
+        if ($ticket->getStatus() === TicketStatus::Closed->value && $this->auth->getUserType() !== UserType::Admin->value) {
             throw new LogicException('Cannot delete reply that belongs to a closed ticket.');
         }
 

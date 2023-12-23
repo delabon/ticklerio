@@ -810,6 +810,57 @@ class ReplyServiceTest extends TestCase
         $this->replyService->deleteReply(1);
     }
 
+    public function testSuccessfullyDeletesReplyThatBelongsToClosedTicketWhenLoggedInAsAdmin(): void
+    {
+        $this->logInAdmin();
+
+        $this->pdoStatementMock->expects($this->exactly(3))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnOnConsecutiveCalls(
+                [
+                    'id' => 1,
+                    'user_id' => 1,
+                    'ticket_id' => 1,
+                    'message' => 'This is a reply',
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ],
+                [
+                    'id' => 1,
+                    'user_id' => 1,
+                    'title' => 'This is a ticket',
+                    'description' => 'This is a description',
+                    'status' => TicketStatus::Closed->value,
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ]
+            );
+
+        $prepareCount = 1;
+        $this->pdoMock->expects($this->exactly(3))
+            ->method('prepare')
+            ->willReturnCallback(function ($query) use (&$prepareCount) {
+                if ($prepareCount === 1) {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+replies.+WHERE.+id = ?.+/is', $query);
+                } elseif ($prepareCount === 2) {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+tickets.+WHERE.+id = ?.+/is', $query);
+                } else {
+                    $this->assertMatchesRegularExpression('/.+DELETE.+FROM.+replies.+WHERE.+id = ?.+/is', $query);
+                }
+
+                $prepareCount++;
+
+                return $this->pdoStatementMock;
+            });
+
+        $this->replyService->deleteReply(1);
+    }
+
     public function testThrowsExceptionWhenTryingToDeleteReplyWhenNotLoggedIn(): void
     {
         $this->expectException(LogicException::class);

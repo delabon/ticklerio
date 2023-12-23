@@ -708,6 +708,34 @@ class ReplyManagementTest extends FeatureTestCase
         $this->assertCount(0, $this->replyRepository->all());
     }
 
+    public function testSuccessfullyDeletesReplyThatBelongsToClosedTicketWhenLoggedInAsAdmin(): void
+    {
+        $this->logInAdmin();
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value
+        ])[0];
+        $ticket = $this->ticketFactory->create([
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Closed->value,
+        ])[0];
+        $reply = $this->replyFactory->create([
+            'user_id' => $user->getId(),
+            'ticket_id' => $ticket->getId(),
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/reply/delete',
+            [
+                'id' => $reply->getId(),
+                'csrf_token' => $this->csrf->generate(),
+            ]
+        );
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertSame('The reply has been deleted.', $response->getBody()->getContents());
+        $this->assertCount(0, $this->replyRepository->all());
+    }
+
     public function testReturnsForbiddenResponseWhenTryingToDeleteReplyUsingInvalidCsrfToken(): void
     {
         $response = $this->post(

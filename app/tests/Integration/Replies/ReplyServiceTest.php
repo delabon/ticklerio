@@ -336,10 +336,24 @@ class ReplyServiceTest extends IntegrationTestCase
         $this->assertCount(0, $this->replyRepository->all());
     }
 
-    public function testSuccessfullyDeletesReplyUsingAdminAccount(): void
+    public function testSuccessfullyDeletesReplyWhenLoggedAsAdmin(): void
     {
         $this->logInAdmin();
         $ticket = $this->createTicket();
+        $reply = Reply::make(ReplyData::one(1, $ticket->getId()));
+        $this->replyRepository->save($reply);
+
+        $this->assertCount(1, $this->replyRepository->all());
+
+        $this->replyService->deleteReply($reply->getId());
+
+        $this->assertCount(0, $this->replyRepository->all());
+    }
+
+    public function testSuccessfullyDeletesReplyThatBelongsToClosedTicketWhenLoggedAsAdmin(): void
+    {
+        $this->logInAdmin();
+        $ticket = $this->createTicket(TicketStatus::Closed);
         $reply = Reply::make(ReplyData::one(1, $ticket->getId()));
         $this->replyRepository->save($reply);
 
