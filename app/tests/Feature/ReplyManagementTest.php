@@ -577,6 +577,43 @@ class ReplyManagementTest extends FeatureTestCase
         $this->assertGreaterThan($reply->getUpdatedAt(), $replies[0]->getUpdatedAt());
     }
 
+    public function testSuccessfullyUpdatesReplyWhenLoggedInAsAdmin(): void
+    {
+        $this->logInAdmin();
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value
+        ])[0];
+        $ticket = $this->ticketFactory->create([
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Publish->value,
+        ])[0];
+        $reply = $this->replyFactory->create([
+            'user_id' => $user->getId(),
+            'ticket_id' => $ticket->getId(),
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/reply/update',
+            [
+                'id' => $reply->getId(),
+                'message' => 'The best message ever has been updated by an admin.',
+                'csrf_token' => $this->csrf->generate(),
+            ]
+        );
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertSame('The reply has been updated.', $response->getBody()->getContents());
+        $replies = $this->replyRepository->all();
+        $this->assertCount(1, $replies);
+        $this->assertSame(Reply::class, $replies[0]::class);
+        $this->assertSame($reply->getId(), $replies[0]->getId());
+        $this->assertSame($ticket->getId(), $replies[0]->getTicketId());
+        $this->assertSame($user->getId(), $replies[0]->getUserId());
+        $this->assertSame('The best message ever has been updated by an admin.', $replies[0]->getMessage());
+        $this->assertSame($reply->getCreatedAt(), $replies[0]->getCreatedAt());
+        $this->assertGreaterThan($reply->getUpdatedAt(), $replies[0]->getUpdatedAt());
+    }
+
     //
     // Delete
     //

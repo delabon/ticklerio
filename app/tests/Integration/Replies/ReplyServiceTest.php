@@ -13,10 +13,12 @@ use App\Replies\ReplyValidator;
 use App\Tickets\Ticket;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketStatus;
+use App\Users\User;
 use InvalidArgumentException;
 use LogicException;
 use Tests\_data\ReplyData;
 use Tests\_data\TicketData;
+use Tests\_data\UserData;
 use Tests\IntegrationTestCase;
 use Tests\Traits\AuthenticatesUsers;
 
@@ -122,9 +124,7 @@ class ReplyServiceTest extends IntegrationTestCase
     {
         $this->logInUser();
         $ticket = $this->createTicket();
-        $replyData = ReplyData::one();
-        $replyData['ticket_id'] = $ticket->getId();
-        $replyData['user_id'] = $this->auth->getUserId();
+        $replyData = ReplyData::one($this->auth->getUserId(), $ticket->getId());
         $reply = Reply::make($replyData);
         $this->replyRepository->save($reply);
 
@@ -134,9 +134,32 @@ class ReplyServiceTest extends IntegrationTestCase
         $updatedReply = $this->replyService->updateReply($replyData);
 
         $this->assertSame($reply->getId(), $updatedReply->getId());
-        $this->assertSame(1, $updatedReply->getUserId());
+        $this->assertSame($this->auth->getUserId(), $updatedReply->getUserId());
         $this->assertSame($ticket->getId(), $updatedReply->getTicketId());
         $this->assertSame('This is an updated message.', $updatedReply->getMessage());
+        $this->assertSame($reply->getCreatedAt(), $updatedReply->getCreatedAt());
+        $this->assertGreaterThan($reply->getUpdatedAt(), $updatedReply->getUpdatedAt());
+    }
+
+    public function testSuccessfullyUpdatesReplyWhenLoggedInAsAdmin(): void
+    {
+        $this->logInAdmin();
+        $user = User::make(UserData::memberOne());
+        $user->setId(15554);
+        $ticket = $this->createTicket();
+        $replyData = ReplyData::one($user->getId(), $ticket->getId());
+        $reply = Reply::make($replyData);
+        $this->replyRepository->save($reply);
+
+        $replyData['id'] = $reply->getId();
+        $replyData['message'] = 'This is an updated message. It has been updated by an admin.';
+
+        $updatedReply = $this->replyService->updateReply($replyData);
+
+        $this->assertSame($reply->getId(), $updatedReply->getId());
+        $this->assertSame($user->getId(), $updatedReply->getUserId());
+        $this->assertSame($ticket->getId(), $updatedReply->getTicketId());
+        $this->assertSame('This is an updated message. It has been updated by an admin.', $updatedReply->getMessage());
         $this->assertSame($reply->getCreatedAt(), $updatedReply->getCreatedAt());
         $this->assertGreaterThan($reply->getUpdatedAt(), $updatedReply->getUpdatedAt());
     }

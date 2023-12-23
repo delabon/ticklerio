@@ -15,6 +15,7 @@ use App\Replies\ReplyService;
 use App\Replies\ReplyValidator;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketStatus;
+use App\Users\User;
 use App\Users\UserRepository;
 use InvalidArgumentException;
 use LogicException;
@@ -23,6 +24,7 @@ use PDOStatement;
 use PHPUnit\Framework\TestCase;
 use Tests\_data\ReplyData;
 use Tests\_data\TicketData;
+use Tests\_data\UserData;
 use Tests\Traits\AuthenticatesUsers;
 
 class ReplyServiceTest extends TestCase
@@ -312,6 +314,65 @@ class ReplyServiceTest extends TestCase
     {
         $this->logInUser();
         $replyData = ReplyData::one();
+        $replyData['id'] = 1;
+
+        $this->pdoStatementMock->expects($this->exactly(4))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(3))
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnOnConsecutiveCalls(
+                $replyData,
+                (function () {
+                    $ticketData = TicketData::one();
+                    $ticketData['id'] = 1;
+
+                    return $ticketData;
+                })(),
+                $replyData,
+                $replyData
+            );
+
+        $prepareCount = 1;
+        $this->pdoMock->expects($this->exactly(4))
+            ->method('prepare')
+            ->willReturnCallback(function ($query) use (&$prepareCount) {
+                if ($prepareCount === 1) {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+replies.+WHERE.+id = ?.+/is', $query);
+                } elseif ($prepareCount === 2) {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+tickets.+WHERE.+id = ?.+/is', $query);
+                } elseif ($prepareCount === 3) {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+replies.+WHERE.+id = ?.+/is', $query);
+                } else {
+                    $this->assertMatchesRegularExpression('/.+UPDATE.+replies.+SET.+/is', $query);
+                }
+
+                $prepareCount++;
+
+                return $this->pdoStatementMock;
+            });
+
+        $replyData['message'] = 'This is an updated message.';
+
+        $reply = $this->replyService->updateReply($replyData);
+
+        $this->assertSame(1, $reply->getId());
+        $this->assertSame($replyData['user_id'], $reply->getUserId());
+        $this->assertSame($replyData['ticket_id'], $reply->getTicketId());
+        $this->assertSame('This is an updated message.', $reply->getMessage());
+        $this->assertSame($replyData['created_at'], $reply->getCreatedAt());
+        $this->assertGreaterThan($replyData['updated_at'], $reply->getUpdatedAt());
+    }
+
+    public function testSuccessfullyUpdatesReplyWhenLoggedInAsAdmin(): void
+    {
+        $this->logInAdmin();
+
+        $user = User::make(UserData::memberOne());
+        $user->setId(55);
+        $replyData = ReplyData::one($user->getId());
         $replyData['id'] = 1;
 
         $this->pdoStatementMock->expects($this->exactly(4))

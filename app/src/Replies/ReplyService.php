@@ -77,7 +77,7 @@ class ReplyService
             throw new ReplyDoesNotExistException("The reply with the id '{$data['id']}' does not exist.");
         }
 
-        if ($reply->getUserId() !== $this->auth->getUserId()) {
+        if ($reply->getUserId() !== $this->auth->getUserId() && $this->auth->getUserType() !== UserType::Admin->value) {
             throw new LogicException('You cannot update a reply that does not belong to you.');
         }
 
