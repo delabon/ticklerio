@@ -56,4 +56,25 @@ readonly class ReplyController
 
         return new Response('The reply has been updated.');
     }
+
+    public function delete(Request $request, ReplyService $replyService, Csrf $csrf): Response
+    {
+        if (!$csrf->validate($request->postParams['csrf_token'] ?? '')) {
+            return new Response('Invalid CSRF token.', HttpStatusCode::Forbidden);
+        }
+
+        try {
+            $replyService->deleteReply($request->postParams['id'] ?? 0);
+        } catch (InvalidArgumentException $e) {
+            return new Response($e->getMessage(), HttpStatusCode::BadRequest);
+        } catch (ReplyDoesNotExistException $e) {
+            return new Response($e->getMessage(), HttpStatusCode::NotFound);
+        } catch (LogicException $e) {
+            return new Response($e->getMessage(), HttpStatusCode::Forbidden);
+        } catch (Exception $e) {
+            return new Response($e->getMessage(), HttpStatusCode::InternalServerError);
+        }
+
+        return new Response('The reply has been deleted.');
+    }
 }

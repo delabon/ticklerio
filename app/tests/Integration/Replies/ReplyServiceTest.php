@@ -273,6 +273,73 @@ class ReplyServiceTest extends IntegrationTestCase
     }
 
     //
+    // Delete
+    //
+
+    public function testDeletesReplySuccessfully(): void
+    {
+        $user = $this->logInUser();
+        $ticket = $this->createTicket();
+        $reply = Reply::make(ReplyData::one($user->getId(), $ticket->getId()));
+        $this->replyRepository->save($reply);
+
+        $this->assertCount(1, $this->replyRepository->all());
+
+        $this->replyService->deleteReply($reply->getId());
+
+        $this->assertCount(0, $this->replyRepository->all());
+    }
+
+    public function testSuccessfullyDeletesReplyUsingAdminAccount(): void
+    {
+        $this->logInAdmin();
+        $ticket = $this->createTicket();
+        $reply = Reply::make(ReplyData::one(1, $ticket->getId()));
+        $this->replyRepository->save($reply);
+
+        $this->assertCount(1, $this->replyRepository->all());
+
+        $this->replyService->deleteReply($reply->getId());
+
+        $this->assertCount(0, $this->replyRepository->all());
+    }
+
+    public function testThrowsExceptionWhenTryingToDeleteReplyThatDoesNotExist(): void
+    {
+        $this->logInUser();
+
+        $this->expectException(ReplyDoesNotExistException::class);
+        $this->expectExceptionMessage("The reply with the id '99' does not exist.");
+
+        $this->replyService->deleteReply(99);
+    }
+
+    public function testThrowsExceptionWhenTryingToDeleteReplyThatDoesNotBelongToTheLoggedInUserAndNotAdmin(): void
+    {
+        $this->logInUser();
+        $reply = Reply::make(ReplyData::one(55));
+        $this->replyRepository->save($reply);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("You cannot delete a reply that does not belong to you.");
+
+        $this->replyService->deleteReply($reply->getId());
+    }
+
+    public function testThrowsExceptionWhenTryingToDeleteReplyThatBelongsToClosedTicket(): void
+    {
+        $user = $this->logInUser();
+        $ticket = $this->createTicket(TicketStatus::Closed);
+        $reply = Reply::make(ReplyData::one($user->getId(), $ticket->getId()));
+        $this->replyRepository->save($reply);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("Cannot delete reply that belongs to a closed ticket.");
+
+        $this->replyService->deleteReply($reply->getId());
+    }
+
+    //
     // Helpers
     //
 

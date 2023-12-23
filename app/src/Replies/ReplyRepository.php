@@ -75,7 +75,12 @@ class ReplyRepository extends Repository
 
     public function delete(int $id): void
     {
-        // TODO: Implement delete() method.
+        $this->pdo->prepare("
+            DELETE FROM
+                {$this->table}
+            WHERE
+                id = ?
+        ")->execute([$id]);
     }
 
     /**

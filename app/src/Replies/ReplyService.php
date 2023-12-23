@@ -6,6 +6,7 @@ use App\Exceptions\ReplyDoesNotExistException;
 use App\Exceptions\TicketDoesNotExistException;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketStatus;
+use App\Users\UserType;
 use InvalidArgumentException;
 use LogicException;
 use App\Core\Auth;
@@ -97,5 +98,34 @@ class ReplyService
         $this->replyRepository->save($reply);
 
         return $reply;
+    }
+
+    public function deleteReply(int $id): void
+    {
+        if (!$this->auth->getUserId()) {
+            throw new LogicException('You must be logged in to delete a reply.');
+        }
+
+        if ($id < 1) {
+            throw new InvalidArgumentException('The reply id must be a positive number.');
+        }
+
+        $reply = $this->replyRepository->find($id);
+
+        if (!$reply) {
+            throw new ReplyDoesNotExistException("The reply with the id '{$id}' does not exist.");
+        }
+
+        if ($reply->getUserId() !== $this->auth->getUserId() && $this->auth->getUserType() !== UserType::Admin->value) {
+            throw new LogicException('You cannot delete a reply that does not belong to you.');
+        }
+
+        $ticket = $this->ticketRepository->find($reply->getTicketId());
+
+        if ($ticket->getStatus() === TicketStatus::Closed->value) {
+            throw new LogicException('Cannot delete reply that belongs to a closed ticket.');
+        }
+
+        $this->replyRepository->delete($id);
     }
 }

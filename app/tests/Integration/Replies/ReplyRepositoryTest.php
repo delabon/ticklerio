@@ -79,4 +79,20 @@ class ReplyRepositoryTest extends IntegrationTestCase
 
         $this->replyRepository->save($reply);
     }
+    
+    //
+    // Delete
+    //
+
+    public function testDeletesReplySuccessfully(): void
+    {
+        $reply = Reply::make(ReplyData::one());
+        $this->replyRepository->save($reply);
+
+        $this->assertCount(1, $this->replyRepository->all());
+
+        $this->replyRepository->delete($reply->getId());
+
+        $this->assertCount(0, $this->replyRepository->all());
+    }
 }

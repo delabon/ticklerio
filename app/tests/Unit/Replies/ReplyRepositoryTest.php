@@ -183,6 +183,24 @@ class ReplyRepositoryTest extends TestCase
 
         $this->replyRepository->save($reply);
     }
+
+    //
+    // Delete
+    //
+
+    public function testDeletesReplySuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/.+DELETE.+FROM.+replies.+WHERE.+id = ?.+/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $this->replyRepository->delete(55);
+    }
 }
 
 class InvalidReply extends Entity // phpcs:ignore

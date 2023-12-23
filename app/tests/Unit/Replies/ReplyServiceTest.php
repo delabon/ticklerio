@@ -582,4 +582,241 @@ class ReplyServiceTest extends TestCase
     {
         $this->testThrowsExceptionWhenTryingToUpdateUsingInvalidData($data, $expectedExceptionMessage);
     }
+
+    //
+    // Delete
+    //
+
+    public function testDeletesReplySuccessfully(): void
+    {
+        $this->logInUser();
+
+        $this->pdoStatementMock->expects($this->exactly(3))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnOnConsecutiveCalls(
+                [
+                    'id' => 1,
+                    'user_id' => 1,
+                    'ticket_id' => 1,
+                    'message' => 'This is a reply',
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ],
+                [
+                    'id' => 1,
+                    'user_id' => 1,
+                    'title' => 'This is a ticket',
+                    'description' => 'This is a description',
+                    'status' => TicketStatus::Publish->value,
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ]
+            );
+
+        $prepareCount = 1;
+        $this->pdoMock->expects($this->exactly(3))
+            ->method('prepare')
+            ->willReturnCallback(function ($query) use (&$prepareCount) {
+                if ($prepareCount === 1) {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+replies.+WHERE.+id = ?.+/is', $query);
+                } elseif ($prepareCount === 2) {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+tickets.+WHERE.+id = ?.+/is', $query);
+                } else {
+                    $this->assertMatchesRegularExpression('/.+DELETE.+FROM.+replies.+WHERE.+id = ?.+/is', $query);
+                }
+
+                $prepareCount++;
+
+                return $this->pdoStatementMock;
+            });
+
+        $this->replyService->deleteReply(1);
+    }
+
+    public function testSuccessfullyDeletesReplyUsingAdminAccount(): void
+    {
+        $this->logInAdmin();
+
+        $this->pdoStatementMock->expects($this->exactly(3))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnOnConsecutiveCalls(
+                [
+                    'id' => 1,
+                    'user_id' => 1,
+                    'ticket_id' => 1,
+                    'message' => 'This is a reply',
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ],
+                [
+                    'id' => 1,
+                    'user_id' => 1,
+                    'title' => 'This is a ticket',
+                    'description' => 'This is a description',
+                    'status' => TicketStatus::Publish->value,
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ]
+            );
+
+        $prepareCount = 1;
+        $this->pdoMock->expects($this->exactly(3))
+            ->method('prepare')
+            ->willReturnCallback(function ($query) use (&$prepareCount) {
+                if ($prepareCount === 1) {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+replies.+WHERE.+id = ?.+/is', $query);
+                } elseif ($prepareCount === 2) {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+tickets.+WHERE.+id = ?.+/is', $query);
+                } else {
+                    $this->assertMatchesRegularExpression('/.+DELETE.+FROM.+replies.+WHERE.+id = ?.+/is', $query);
+                }
+
+                $prepareCount++;
+
+                return $this->pdoStatementMock;
+            });
+
+        $this->replyService->deleteReply(1);
+    }
+
+    public function testThrowsExceptionWhenTryingToDeleteReplyWhenNotLoggedIn(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('You must be logged in to delete a reply.');
+
+        $this->replyService->deleteReply(1);
+    }
+
+    public function testThrowsExceptionWhenTryingToDeleteReplyUsingInvalidId(): void
+    {
+        $this->logInUser();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The reply id must be a positive number.');
+
+        $this->replyService->deleteReply(0);
+    }
+
+    public function testThrowsExceptionWhenTryingToDeleteReplyThatDoesNotExist(): void
+    {
+        $this->logInUser();
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->with([
+                99
+            ])
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn(false);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/.+SELECT.+FROM.+replies.+WHERE.+id = ?.+/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $this->expectException(ReplyDoesNotExistException::class);
+        $this->expectExceptionMessage("The reply with the id '99' does not exist.");
+
+        $this->replyService->deleteReply(99);
+    }
+
+    public function testThrowsExceptionWhenTryingToDeleteReplyThatDoesNotBelongToTheLoggedInUserAndNotAdmin(): void
+    {
+        $this->logInUser();
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->with([
+                99
+            ])
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                'id' => 99,
+                'user_id' => 999,
+                'ticket_id' => 1,
+                'message' => 'This is a reply',
+                'created_at' => time(),
+                'updated_at' => time(),
+            ]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/.+SELECT.+FROM.+replies.+WHERE.+id = ?.+/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("You cannot delete a reply that does not belong to you.");
+
+        $this->replyService->deleteReply(99);
+    }
+
+    public function testThrowsExceptionWhenTryingToDeleteReplyThatBelongsToClosedTicket(): void
+    {
+        $this->logInUser();
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnOnConsecutiveCalls(
+                [
+                    'id' => 99,
+                    'user_id' => 1,
+                    'ticket_id' => 1,
+                    'message' => 'This is a reply',
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ],
+                [
+                    'id' => 1,
+                    'user_id' => 1,
+                    'title' => 'This is a ticket',
+                    'description' => 'This is a description',
+                    'status' => TicketStatus::Closed->value,
+                    'created_at' => time(),
+                    'updated_at' => time(),
+                ]
+            );
+
+        $prepareCount = 1;
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturnCallback(function ($query) use (&$prepareCount) {
+                if ($prepareCount === 1) {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+replies.+WHERE.+id = ?.+/is', $query);
+                } else {
+                    $this->assertMatchesRegularExpression('/.+SELECT.+FROM.+tickets.+WHERE.+id = ?.+/is', $query);
+                }
+
+                $prepareCount++;
+
+                return $this->pdoStatementMock;
+            });
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("Cannot delete reply that belongs to a closed ticket.");
+
+        $this->replyService->deleteReply(99);
+    }
 }

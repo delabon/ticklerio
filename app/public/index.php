@@ -189,6 +189,19 @@ if ($uri === '/') {
         ),
         $container->get(Csrf::class)
     );
+} elseif (preg_match("/^\/ajax\/reply\/delete\/?$/", $uri)) {
+    // Deletes a reply via ajax
+    $response = (new ReplyController())->delete(
+        $container->get(Request::class),
+        new ReplyService(
+            new ReplyRepository($container->get(PDO::class)),
+            new ReplyValidator(),
+            new ReplySanitizer(),
+            new TicketRepository($container->get(PDO::class)),
+            $container->get(Auth::class)
+        ),
+        $container->get(Csrf::class)
+    );
 }
 
 //

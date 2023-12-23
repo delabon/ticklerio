@@ -578,16 +578,188 @@ class ReplyManagementTest extends FeatureTestCase
     }
 
     //
+    // Delete
+    //
+
+    public function testDeletesReplySuccessfully(): void
+    {
+        $user = $this->logInUser();
+        $ticket = $this->ticketFactory->create([
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Publish->value,
+        ])[0];
+        $reply = $this->replyFactory->create([
+            'user_id' => $user->getId(),
+            'ticket_id' => $ticket->getId(),
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/reply/delete',
+            [
+                'id' => $reply->getId(),
+                'csrf_token' => $this->csrf->generate(),
+            ]
+        );
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertSame('The reply has been deleted.', $response->getBody()->getContents());
+        $this->assertCount(0, $this->replyRepository->all());
+    }
+
+    public function testSuccessfullyDeletesReplyWhenLoggedInAsAdmin(): void
+    {
+        $this->logInAdmin();
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value
+        ])[0];
+        $ticket = $this->ticketFactory->create([
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Publish->value,
+        ])[0];
+        $reply = $this->replyFactory->create([
+            'user_id' => $user->getId(),
+            'ticket_id' => $ticket->getId(),
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/reply/delete',
+            [
+                'id' => $reply->getId(),
+                'csrf_token' => $this->csrf->generate(),
+            ]
+        );
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertSame('The reply has been deleted.', $response->getBody()->getContents());
+        $this->assertCount(0, $this->replyRepository->all());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToDeleteReplyUsingInvalidCsrfToken(): void
+    {
+        $response = $this->post(
+            '/ajax/reply/delete',
+            [
+                'id' => 1,
+                'csrf_token' => 'invalid-csrf-token'
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame('Invalid CSRF token.', $response->getBody()->getContents());
+    }
+
+    public function testReturnForbiddenResponseWhenTryingToDeleteReplyWhenNotLoggedIn(): void
+    {
+        $response = $this->post(
+            '/ajax/reply/delete',
+            [
+                'id' => 1,
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame('You must be logged in to delete a reply.', $response->getBody()->getContents());
+    }
+
+    public function testReturnBadRequestResponseWhenTryingToDeleteReplyUsingInvalidId(): void
+    {
+        $this->logInUser();
+
+        $response = $this->post(
+            '/ajax/reply/delete',
+            [
+                'id' => 0,
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::BadRequest->value, $response->getStatusCode());
+        $this->assertSame('The reply id must be a positive number.', $response->getBody()->getContents());
+    }
+
+    public function testReturnNotFoundResponseWhenTryingToDeleteReplyThatDoesNotExist(): void
+    {
+        $this->logInUser();
+
+        $response = $this->post(
+            '/ajax/reply/delete',
+            [
+                'id' => 555,
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::NotFound->value, $response->getStatusCode());
+        $this->assertSame("The reply with the id '555' does not exist.", $response->getBody()->getContents());
+    }
+
+    public function testReturnNotFoundResponseWhenTryingToDeleteReplyThatDoesNotBelongToLoggedInUser(): void
+    {
+        $this->logInUser();
+        $reply = $this->replyFactory->create([
+            'user_id' => 999,
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/reply/delete',
+            [
+                'id' => $reply->getId(),
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame("You cannot delete a reply that does not belong to you.", $response->getBody()->getContents());
+    }
+
+    public function testReturnNotFoundResponseWhenTryingToDeleteReplyThatBelongsToClosedTicket(): void
+    {
+        $user = $this->logInUser();
+        $ticket = $this->ticketFactory->create([
+            'status' => TicketStatus::Closed->value,
+        ])[0];
+        $reply = $this->replyFactory->create([
+            'user_id' => $user->getId(),
+            'ticket_id' => $ticket->getId(),
+        ])[0];
+
+        $response = $this->post(
+            '/ajax/reply/delete',
+            [
+                'id' => $reply->getId(),
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame("Cannot delete reply that belongs to a closed ticket.", $response->getBody()->getContents());
+    }
+
+    //
     // Helpers
     //
 
-    /**
-     * @return User
-     */
     protected function logInUser(): User
     {
         $user = $this->userFactory->create([
             'type' => UserType::Member->value
+        ])[0];
+        $this->auth->login($user);
+
+        return $user;
+    }
+
+    protected function logInAdmin(): User
+    {
+        $user = $this->userFactory->create([
+            'type' => UserType::Admin->value
         ])[0];
         $this->auth->login($user);
 
