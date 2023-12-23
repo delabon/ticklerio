@@ -87,7 +87,7 @@ class ReplyService
             throw new TicketDoesNotExistException("The ticket with the id '{$reply->getTicketId()}' does not exist.");
         }
 
-        if ($ticket->getStatus() === TicketStatus::Closed->value) {
+        if ($ticket->getStatus() === TicketStatus::Closed->value && $this->auth->getUserType() !== UserType::Admin->value) {
             throw new LogicException('Cannot update reply that belongs to a closed ticket.');
         }
 

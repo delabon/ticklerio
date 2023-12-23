@@ -164,6 +164,29 @@ class ReplyServiceTest extends IntegrationTestCase
         $this->assertGreaterThan($reply->getUpdatedAt(), $updatedReply->getUpdatedAt());
     }
 
+    public function testSuccessfullyUpdatesReplyThatBelongsToClosedTicketWhenLoggedInAsAdmin(): void
+    {
+        $this->logInAdmin();
+        $user = User::make(UserData::memberOne());
+        $user->setId(15554);
+        $ticket = $this->createTicket(TicketStatus::Closed);
+        $replyData = ReplyData::one($user->getId(), $ticket->getId());
+        $reply = Reply::make($replyData);
+        $this->replyRepository->save($reply);
+
+        $replyData['id'] = $reply->getId();
+        $replyData['message'] = 'This reply belongs to a closed ticket. It has been updated by an admin.';
+
+        $updatedReply = $this->replyService->updateReply($replyData);
+
+        $this->assertSame($reply->getId(), $updatedReply->getId());
+        $this->assertSame($user->getId(), $updatedReply->getUserId());
+        $this->assertSame($ticket->getId(), $updatedReply->getTicketId());
+        $this->assertSame('This reply belongs to a closed ticket. It has been updated by an admin.', $updatedReply->getMessage());
+        $this->assertSame($reply->getCreatedAt(), $updatedReply->getCreatedAt());
+        $this->assertGreaterThan($reply->getUpdatedAt(), $updatedReply->getUpdatedAt());
+    }
+
     public function testSuccessfullyUpdatesReplyAfterSanitizingTheData(): void
     {
         $this->logInUser();
