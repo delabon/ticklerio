@@ -8,9 +8,9 @@ use App\Exceptions\TicketDoesNotExistException;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketSanitizer;
 use App\Tickets\TicketValidator;
+use App\Users\User;
 use InvalidArgumentException;
 use LogicException;
-use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
 use App\Tickets\TicketService;
 use App\Tickets\TicketStatus;
@@ -20,6 +20,7 @@ use App\Tickets\Ticket;
 use App\Core\Auth;
 use PDO;
 use PDOStatement;
+use Tests\_data\UserData;
 use Tests\Traits\AuthenticatesUsers;
 
 class TicketServiceTest extends TestCase
@@ -307,6 +308,127 @@ class TicketServiceTest extends TestCase
         $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
     }
 
+    public function testAdminCanUpdateAnyTicketSuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(5))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(3))
+            ->method('fetch')
+            ->willReturnOnConsecutiveCalls(
+                (function () {
+                    $data = TicketData::one();
+                    $data['id'] = 1;
+
+                    return $data;
+                })(),
+                (function () {
+                    $data = TicketData::one();
+                    $data['id'] = 1;
+
+                    return $data;
+                })(),
+                (function () {
+                    $data = TicketData::updated();
+                    $data['id'] = 1;
+                    $data['status'] = TicketStatus::Publish->value;
+
+                    return $data;
+                })()
+            );
+
+        $this->pdoMock->expects($this->exactly(5))
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->pdoMock->expects($this->once())
+            ->method('lastInsertId')
+            ->willReturn("1");
+
+        $user = User::make(UserData::memberOne());
+        $user->setId(1);
+        $admin = User::make(UserData::adminData());
+        $admin->setId(2);
+        $this->auth->login($admin);
+        $ticket = Ticket::make(TicketData::one($user->getId()));
+        $this->ticketRepository->save($ticket);
+
+        $updatedData = TicketData::updated();
+        $updatedData['id'] = 1;
+        $this->ticketService->updateTicket($updatedData);
+
+        $updatedTicket = $this->ticketRepository->find(1);
+        $this->assertInstanceOf(Ticket::class, $updatedTicket);
+        $this->assertSame(1, $updatedTicket->getId());
+        $this->assertSame(1, $updatedTicket->getUserId());
+        $this->assertSame('Updated ticket title', $updatedTicket->getTitle());
+        $this->assertSame('Updated ticket description 2', $updatedTicket->getDescription());
+        $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
+    }
+
+    public function testAdminCanUpdateNonPublishTicketSuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(5))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(3))
+            ->method('fetch')
+            ->willReturnOnConsecutiveCalls(
+                (function () {
+                    $data = TicketData::one();
+                    $data['id'] = 1;
+                    $data['status'] = TicketStatus::Closed->value;
+
+                    return $data;
+                })(),
+                (function () {
+                    $data = TicketData::one();
+                    $data['id'] = 1;
+                    $data['status'] = TicketStatus::Closed->value;
+
+                    return $data;
+                })(),
+                (function () {
+                    $data = TicketData::updated();
+                    $data['id'] = 1;
+                    $data['status'] = TicketStatus::Publish->value;
+
+                    return $data;
+                })()
+            );
+
+        $this->pdoMock->expects($this->exactly(5))
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $this->pdoMock->expects($this->once())
+            ->method('lastInsertId')
+            ->willReturn("1");
+
+        $user = User::make(UserData::memberOne());
+        $user->setId(1);
+        $admin = User::make(UserData::adminData());
+        $admin->setId(2);
+        $this->auth->login($admin);
+        $ticket = Ticket::make(TicketData::one($user->getId()));
+        $ticket->setStatus(TicketStatus::Closed->value);
+        $this->ticketRepository->save($ticket);
+
+        $updatedData = TicketData::updated();
+        $updatedData['id'] = 1;
+        $this->ticketService->updateTicket($updatedData);
+
+        $updatedTicket = $this->ticketRepository->find(1);
+        $this->assertInstanceOf(Ticket::class, $updatedTicket);
+        $this->assertSame(1, $updatedTicket->getId());
+        $this->assertSame(1, $updatedTicket->getUserId());
+        $this->assertSame('Updated ticket title', $updatedTicket->getTitle());
+        $this->assertSame('Updated ticket description 2', $updatedTicket->getDescription());
+        $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
+    }
+
     /**
      * This test makes sure that the data is overwritten before updating.
      * the updateTicket method should not update the created_at, user_id, status fields. It should update the updated_at field with the current time.
@@ -414,7 +536,7 @@ class TicketServiceTest extends TestCase
         $data = TicketData::updated();
         $data['id'] = 999;
 
-        $this->expectException(OutOfBoundsException::class);
+        $this->expectException(TicketDoesNotExistException::class);
         $this->expectExceptionMessage('The ticket does not exist.');
 
         $this->ticketService->updateTicket($data);
