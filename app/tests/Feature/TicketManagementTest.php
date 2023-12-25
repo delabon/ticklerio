@@ -201,6 +201,78 @@ class TicketManagementTest extends FeatureTestCase
         $this->assertGreaterThan(0, $tickets[0]->getUpdatedAt());
     }
 
+    public function testAdminCanUpdateAnyTicket(): void
+    {
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value,
+        ])[0];
+        $ticket = $this->ticketFactory->create([
+            'status' => TicketStatus::Publish->value,
+            'user_id' => $user->getId(),
+        ])[0];
+        $admin = $this->userFactory->create([
+            'type' => UserType::Admin->value,
+        ])[0];
+        $this->auth->login($admin);
+
+        $response = $this->post(
+            '/ajax/ticket/update',
+            [
+                'id' => $ticket->getId(),
+                'title' => 'Updated test ticket',
+                'description' => 'Updated test ticket description',
+                'csrf_token' => $this->csrf->generate(),
+            ]
+        );
+
+        $tickets = $this->ticketRepository->all();
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertCount(1, $tickets);
+        $this->assertSame(1, $tickets[0]->getId());
+        $this->assertSame($user->getId(), $tickets[0]->getUserId());
+        $this->assertSame(TicketStatus::Publish->value, $tickets[0]->getStatus());
+        $this->assertSame('Updated test ticket', $tickets[0]->getTitle());
+        $this->assertSame('Updated test ticket description', $tickets[0]->getDescription());
+        $this->assertGreaterThan(0, $tickets[0]->getCreatedAt());
+        $this->assertGreaterThan(0, $tickets[0]->getUpdatedAt());
+    }
+
+    public function testAdminCanUpdateNonPublishTicket(): void
+    {
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value,
+        ])[0];
+        $ticket = $this->ticketFactory->create([
+            'status' => TicketStatus::Closed->value,
+            'user_id' => $user->getId(),
+        ])[0];
+        $admin = $this->userFactory->create([
+            'type' => UserType::Admin->value,
+        ])[0];
+        $this->auth->login($admin);
+
+        $response = $this->post(
+            '/ajax/ticket/update',
+            [
+                'id' => $ticket->getId(),
+                'title' => 'Updated test ticket',
+                'description' => 'Updated test ticket description',
+                'csrf_token' => $this->csrf->generate(),
+            ]
+        );
+
+        $tickets = $this->ticketRepository->all();
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertCount(1, $tickets);
+        $this->assertSame(1, $tickets[0]->getId());
+        $this->assertSame($user->getId(), $tickets[0]->getUserId());
+        $this->assertSame(TicketStatus::Closed->value, $tickets[0]->getStatus());
+        $this->assertSame('Updated test ticket', $tickets[0]->getTitle());
+        $this->assertSame('Updated test ticket description', $tickets[0]->getDescription());
+        $this->assertGreaterThan(0, $tickets[0]->getCreatedAt());
+        $this->assertGreaterThan(0, $tickets[0]->getUpdatedAt());
+    }
+
     public function testReturnsForbiddenResponseWhenTryingToUpdateTicketWithInvalidCsrfToken(): void
     {
         $response = $this->post(

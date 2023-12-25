@@ -63,20 +63,20 @@ readonly class TicketService
         $ticket = $this->ticketRepository->find($data['id']);
 
         if (!$ticket) {
-            throw new OutOfBoundsException('The ticket does not exist.');
+            throw new TicketDoesNotExistException('The ticket does not exist.');
         }
 
-        if ($ticket->getUserId() !== $this->auth->getUserId()) {
+        if ($ticket->getUserId() !== $this->auth->getUserId() && $this->auth->getUserType() !== UserType::Admin->value) {
             throw new LogicException('You cannot update a ticket that you did not create.');
         }
 
-        if ($ticket->getStatus() !== TicketStatus::Publish->value) {
+        if ($ticket->getStatus() !== TicketStatus::Publish->value && $this->auth->getUserType() !== UserType::Admin->value) {
             throw new LogicException('You cannot update a ticket that is not published.');
         }
 
         // Overwrite these
         $data['user_id'] = $this->auth->getUserId();
-        $data['status'] = TicketStatus::Publish->value;
+        $data['status'] = $ticket->getStatus();
         $data['created_at'] = $ticket->getCreatedAt();
         $data['updated_at'] = time();
 
@@ -85,7 +85,6 @@ readonly class TicketService
 
         $ticket->setTitle($data['title']);
         $ticket->setDescription($data['description']);
-        $ticket->setStatus(TicketStatus::Publish->value);
         $this->ticketRepository->save($ticket);
     }
 

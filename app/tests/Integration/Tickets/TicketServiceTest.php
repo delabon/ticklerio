@@ -10,8 +10,10 @@ use App\Tickets\Ticket;
 use App\Tickets\TicketService;
 use App\Tickets\TicketStatus;
 use App\Tickets\TicketValidator;
+use App\Users\User;
 use LogicException;
 use Tests\_data\TicketData;
+use Tests\_data\UserData;
 use Tests\IntegrationTestCase;
 use Tests\Traits\AuthenticatesUsers;
 
@@ -106,6 +108,53 @@ class TicketServiceTest extends IntegrationTestCase
         $this->assertSame('Updated ticket title', $updatedTicket->getTitle());
         $this->assertSame('Updated ticket description 2', $updatedTicket->getDescription());
         $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
+    }
+
+    public function testAdminCanUpdateAnyTicketSuccessfully(): void
+    {
+        $user = User::make(UserData::memberOne());
+        $user->setId(1);
+        $admin = User::make(UserData::adminData());
+        $admin->setId(2);
+        $this->auth->login($admin);
+        $ticket = Ticket::make(TicketData::one($user->getId()));
+        $this->ticketRepository->save($ticket);
+
+        $updatedData = TicketData::updated();
+        $updatedData['id'] = 1;
+        $this->ticketService->updateTicket($updatedData);
+
+        $updatedTicket = $this->ticketRepository->find(1);
+        $this->assertInstanceOf(Ticket::class, $updatedTicket);
+        $this->assertSame(1, $updatedTicket->getId());
+        $this->assertSame(1, $updatedTicket->getUserId());
+        $this->assertSame('Updated ticket title', $updatedTicket->getTitle());
+        $this->assertSame('Updated ticket description 2', $updatedTicket->getDescription());
+        $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
+    }
+
+    public function testAdminCanUpdateNonPublishTicketSuccessfully(): void
+    {
+        $user = User::make(UserData::memberOne());
+        $user->setId(1);
+        $admin = User::make(UserData::adminData());
+        $admin->setId(2);
+        $this->auth->login($admin);
+        $ticket = Ticket::make(TicketData::one($user->getId()));
+        $ticket->setStatus(TicketStatus::Closed->value);
+        $this->ticketRepository->save($ticket);
+
+        $updatedData = TicketData::updated();
+        $updatedData['id'] = 1;
+        $this->ticketService->updateTicket($updatedData);
+
+        $updatedTicket = $this->ticketRepository->find(1);
+        $this->assertInstanceOf(Ticket::class, $updatedTicket);
+        $this->assertSame(1, $updatedTicket->getId());
+        $this->assertSame(1, $updatedTicket->getUserId());
+        $this->assertSame('Updated ticket title', $updatedTicket->getTitle());
+        $this->assertSame('Updated ticket description 2', $updatedTicket->getDescription());
+        $this->assertSame(TicketStatus::Closed->value, $updatedTicket->getStatus());
     }
 
     /**
