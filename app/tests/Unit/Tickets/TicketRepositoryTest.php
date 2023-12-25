@@ -11,7 +11,6 @@ use InvalidArgumentException;
 use App\Tickets\TicketStatus;
 use Tests\_data\TicketData;
 use App\Abstracts\Entity;
-use OutOfBoundsException;
 use App\Tickets\Ticket;
 use PDOStatement;
 use PDO;

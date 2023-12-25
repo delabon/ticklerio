@@ -9,6 +9,7 @@ use App\Controllers\BanUnbanController;
 use App\Controllers\DeleteUserController;
 use App\Controllers\HomeController;
 use App\Controllers\RegisterController;
+use App\Controllers\ReplyController;
 use App\Controllers\TicketController;
 use App\Core\Auth;
 use App\Core\Csrf;
@@ -16,6 +17,10 @@ use App\Core\Http\HttpStatusCode;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Middlewares\CheckUserMiddleware;
+use App\Replies\ReplyRepository;
+use App\Replies\ReplySanitizer;
+use App\Replies\ReplyService;
+use App\Replies\ReplyValidator;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketSanitizer;
 use App\Tickets\TicketService;
@@ -153,6 +158,45 @@ if ($uri === '/') {
         $container->get(Request::class),
         new AdminService(
             new UserRepository($container->get(PDO::class)),
+            new TicketRepository($container->get(PDO::class)),
+            $container->get(Auth::class)
+        ),
+        $container->get(Csrf::class)
+    );
+} elseif (preg_match("/^\/ajax\/reply\/create\/?$/", $uri)) {
+    // Creates a new reply via ajax
+    $response = (new ReplyController())->create(
+        $container->get(Request::class),
+        new ReplyService(
+            new ReplyRepository($container->get(PDO::class)),
+            new ReplyValidator(),
+            new ReplySanitizer(),
+            new TicketRepository($container->get(PDO::class)),
+            $container->get(Auth::class)
+        ),
+        $container->get(Csrf::class)
+    );
+} elseif (preg_match("/^\/ajax\/reply\/update\/?$/", $uri)) {
+    // Updates a reply via ajax
+    $response = (new ReplyController())->update(
+        $container->get(Request::class),
+        new ReplyService(
+            new ReplyRepository($container->get(PDO::class)),
+            new ReplyValidator(),
+            new ReplySanitizer(),
+            new TicketRepository($container->get(PDO::class)),
+            $container->get(Auth::class)
+        ),
+        $container->get(Csrf::class)
+    );
+} elseif (preg_match("/^\/ajax\/reply\/delete\/?$/", $uri)) {
+    // Deletes a reply via ajax
+    $response = (new ReplyController())->delete(
+        $container->get(Request::class),
+        new ReplyService(
+            new ReplyRepository($container->get(PDO::class)),
+            new ReplyValidator(),
+            new ReplySanitizer(),
             new TicketRepository($container->get(PDO::class)),
             $container->get(Auth::class)
         ),
