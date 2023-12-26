@@ -11,6 +11,10 @@ use App\Tickets\TicketService;
 use App\Tickets\TicketStatus;
 use App\Tickets\TicketValidator;
 use App\Users\User;
+use App\Users\UserFactory;
+use App\Users\UserRepository;
+use App\Users\UserType;
+use Faker\Factory;
 use LogicException;
 use Tests\_data\TicketData;
 use Tests\_data\UserData;
@@ -38,9 +42,9 @@ class TicketServiceTest extends IntegrationTestCase
     // Create
     //
 
-    public function testAddsTicketSuccessfully(): void
+    public function testCreatesTicketSuccessfully(): void
     {
-        $this->logInUser();
+        $this->createAndLoginUser();
 
         $this->ticketService->createTicket([
             'title' => 'Test ticket',
@@ -48,7 +52,6 @@ class TicketServiceTest extends IntegrationTestCase
         ]);
 
         $ticket = $this->ticketRepository->find(1);
-
         $this->assertInstanceOf(Ticket::class, $ticket);
         $this->assertSame(1, $ticket->getId());
         $this->assertSame(1, $ticket->getUserId());
@@ -59,9 +62,9 @@ class TicketServiceTest extends IntegrationTestCase
 
     public function testTicketStatusMustBePublishWhenCreatingTicket(): void
     {
-        $this->logInUser();
-
+        $user = $this->createAndLoginUser();
         $ticketData = TicketData::one();
+        $ticketData['user_id'] = $user->getId();
         $ticketData['status'] = TicketStatus::Closed->value;
         $this->ticketService->createTicket($ticketData);
 
@@ -73,9 +76,10 @@ class TicketServiceTest extends IntegrationTestCase
 
     public function testSanitizesDataBeforeInserting(): void
     {
-        $this->logInUser();
-
-        $this->ticketService->createTicket(TicketData::unsanitized());
+        $user = $this->createAndLoginUser();
+        $ticketData = TicketData::unsanitized();
+        $ticketData['user_id'] = (string) $user->getId();
+        $this->ticketService->createTicket($ticketData);
 
         $ticket = $this->ticketRepository->find(1);
         $this->assertInstanceOf(Ticket::class, $ticket);
@@ -92,9 +96,9 @@ class TicketServiceTest extends IntegrationTestCase
 
     public function testUpdatesTicketSuccessfully(): void
     {
-        $this->logInUser();
-
+        $user = $this->createAndLoginUser();
         $ticket = Ticket::make(TicketData::one());
+        $ticket->setUserId($user->getId());
         $this->ticketRepository->save($ticket);
 
         $updatedData = TicketData::updated();
@@ -112,13 +116,13 @@ class TicketServiceTest extends IntegrationTestCase
 
     public function testAdminCanUpdateAnyTicketSuccessfully(): void
     {
-        $user = User::make(UserData::memberOne());
-        $user->setId(1);
+        $user = $this->createUser();
+        $ticket = Ticket::make(TicketData::one($user->getId()));
+        $this->ticketRepository->save($ticket);
+
         $admin = User::make(UserData::adminData());
         $admin->setId(2);
         $this->auth->login($admin);
-        $ticket = Ticket::make(TicketData::one($user->getId()));
-        $this->ticketRepository->save($ticket);
 
         $updatedData = TicketData::updated();
         $updatedData['id'] = 1;
@@ -135,14 +139,14 @@ class TicketServiceTest extends IntegrationTestCase
 
     public function testAdminCanUpdateNonPublishTicketSuccessfully(): void
     {
-        $user = User::make(UserData::memberOne());
-        $user->setId(1);
-        $admin = User::make(UserData::adminData());
-        $admin->setId(2);
-        $this->auth->login($admin);
+        $user = $this->createUser();
         $ticket = Ticket::make(TicketData::one($user->getId()));
         $ticket->setStatus(TicketStatus::Closed->value);
         $this->ticketRepository->save($ticket);
+
+        $admin = User::make(UserData::adminData());
+        $admin->setId(2);
+        $this->auth->login($admin);
 
         $updatedData = TicketData::updated();
         $updatedData['id'] = 1;
@@ -164,12 +168,12 @@ class TicketServiceTest extends IntegrationTestCase
      */
     public function testOverwritesDataBeforeUpdating(): void
     {
-        $this->logInUser();
-
+        $user = $this->createAndLoginUser();
         $ticketData = TicketData::one();
         $ticketData['created_at'] = strtotime('1999');
         $ticketData['updated_at'] = strtotime('1999');
         $ticketData['status'] = TicketStatus::Publish->value;
+        $ticketData['user_id'] = $user->getId();
         $ticket = Ticket::make($ticketData);
         $this->ticketRepository->save($ticket);
 
@@ -187,9 +191,10 @@ class TicketServiceTest extends IntegrationTestCase
     }
     public function testSanitizesDataBeforeUpdating(): void
     {
-        $this->logInUser();
+        $user = $this->createAndLoginUser();
         $ticketData = TicketData::one();
         $ticket = Ticket::make($ticketData);
+        $ticket->setUserId($user->getId());
         $this->ticketRepository->save($ticket);
 
         $updatedData = TicketData::unsanitized();
@@ -212,8 +217,9 @@ class TicketServiceTest extends IntegrationTestCase
 
     public function testDeletesTicketSuccessfully(): void
     {
-        $this->logInUser();
+        $user = $this->createAndLoginUser();
         $ticket = Ticket::make(TicketData::one());
+        $ticket->setUserId($user->getId());
         $this->ticketRepository->save($ticket);
 
         $this->ticketService->deleteTicket($ticket->getId());
@@ -223,7 +229,7 @@ class TicketServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenTryingToDeleteTicketThatDoesNotExist(): void
     {
-        $this->logInUser();
+        $this->createAndLoginUser();
 
         $this->expectException(TicketDoesNotExistException::class);
         $this->expectExceptionMessage('The ticket does not exist.');
@@ -233,10 +239,11 @@ class TicketServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenTryingToDeleteTicketWhenLoggedInAsNotTheAuthorAndNotAnAdmin(): void
     {
-        $this->logInUser();
-
-        $ticket = Ticket::make(TicketData::one(222));
+        $author = $this->createUser();
+        $ticket = Ticket::make(TicketData::one($author->getId()));
         $this->ticketRepository->save($ticket);
+
+        $this->createAndLoginUser();
 
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('You cannot delete a ticket that you did not create.');
@@ -246,10 +253,11 @@ class TicketServiceTest extends IntegrationTestCase
 
     public function testDeletesTicketWhenLoggedInAsAdminWhoIsNotTheAuthorOfTheTicket(): void
     {
-        $this->logInAdmin();
-
-        $ticket = Ticket::make(TicketData::one(222));
+        $author = $this->createUser();
+        $ticket = Ticket::make(TicketData::one($author->getId()));
         $this->ticketRepository->save($ticket);
+
+        $this->logInAdmin();
 
         $this->ticketService->deleteTicket($ticket->getId());
 
@@ -258,9 +266,8 @@ class TicketServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenTryingToDeleteTicketWhenLoggedInAsTheAuthorButTheTicketIsNotPublished(): void
     {
-        $this->logInUser();
-
-        $ticketData = TicketData::one();
+        $user = $this->createAndLoginUser();
+        $ticketData = TicketData::one($user->getId());
         $ticketData['status'] = TicketStatus::Closed->value;
         $ticket = Ticket::make($ticketData);
         $this->ticketRepository->save($ticket);
@@ -273,17 +280,37 @@ class TicketServiceTest extends IntegrationTestCase
 
     public function testDeletesTicketWhenLoggedInAsAdminWhoIsNotTheAuthorOfTheTicketAndTheTicketStatusIsNotPublish(): void
     {
-        $this->logInAdmin();
-
-        $ticketData = TicketData::one();
+        $author = $this->createUser();
+        $ticketData = TicketData::one($author->getId());
         $ticketData['status'] = TicketStatus::Closed->value;
         $ticket = Ticket::make($ticketData);
         $this->ticketRepository->save($ticket);
 
         $this->assertCount(1, $this->ticketRepository->all());
 
+        $this->logInAdmin();
+
         $this->ticketService->deleteTicket(1);
 
         $this->assertNull($this->ticketRepository->find(1));
+    }
+
+    //
+    // Helpers
+    //
+
+    private function createUser(): User
+    {
+        return (new UserFactory(new UserRepository($this->pdo), Factory::create()))->create([
+            'type' => UserType::Member->value,
+        ])[0];
+    }
+
+    private function createAndLoginUser(): User
+    {
+        $user = $this->createUser();
+        $this->auth->login($user);
+
+        return $user;
     }
 }
