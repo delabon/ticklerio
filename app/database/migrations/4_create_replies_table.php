@@ -15,7 +15,11 @@ final class CreateRepliesTable extends AbstractMigration // phpcs:ignore
                 created_at BIGINT,
                 updated_at BIGINT,
                 FOREIGN KEY (user_id) REFERENCES users(id),
-                FOREIGN KEY (ticket_id) REFERENCES tickets(id)
+                FOREIGN KEY (ticket_id) REFERENCES tickets(id),
+                CONSTRAINT fk_tickets
+                    FOREIGN KEY (ticket_id)
+                    REFERENCES tickets (id)
+                    ON DELETE CASCADE
             )
         ");
     }

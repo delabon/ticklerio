@@ -23,6 +23,9 @@ class IntegrationTestCase extends TestCase
 
         $this->pdo = new PDO('sqlite::memory:');
 
+        // Set up foreign keys for SQLite
+        $this->pdo->exec('PRAGMA foreign_keys = ON');
+
         $this->migration = new Migration(
             $this->pdo,
             __DIR__ . '/../database/migrations/'

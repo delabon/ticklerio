@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Core\Auth;
 use App\Core\Http\HttpStatusCode;
+use App\Replies\ReplyFactory;
+use App\Replies\ReplyRepository;
 use App\Tickets\TicketFactory;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketStatus;
@@ -29,7 +31,7 @@ class TicketManagementTest extends FeatureTestCase
 
         $this->ticketRepository = new TicketRepository($this->pdo);
         $this->userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
-        $this->ticketFactory = new TicketFactory($this->ticketRepository, Factory::create());
+        $this->ticketFactory = new TicketFactory($this->ticketRepository, $this->userFactory, Factory::create());
         $this->auth = new Auth($this->session);
     }
 
@@ -345,11 +347,14 @@ class TicketManagementTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToUpdateTicketUsingNonAuthorAccount(): void
     {
-        $this->createAndLogInMember();
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value,
+        ])[0];
         $ticket = $this->ticketFactory->create([
             'status' => TicketStatus::Publish->value,
-            'user_id' => 222,
+            'user_id' => $user->getId(),
         ])[0];
+        $this->createAndLogInMember();
 
         $response = $this->post(
             '/ajax/ticket/update',
@@ -711,11 +716,14 @@ class TicketManagementTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToDeleteTicketWhenNotTheAuthorAndNotAnAdmin(): void
     {
-        $this->createAndLogInMember();
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value,
+        ])[0];
         $ticket = $this->ticketFactory->create([
             'status' => TicketStatus::Publish->value,
-            'user_id' => 222,
+            'user_id' => $user->getId(),
         ])[0];
+        $this->createAndLogInMember();
 
         $response = $this->post(
             '/ajax/ticket/delete',
@@ -737,9 +745,12 @@ class TicketManagementTest extends FeatureTestCase
         ])[0];
         $this->auth->login($admin);
 
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value,
+        ])[0];
         $ticket = $this->ticketFactory->create([
             'status' => TicketStatus::Publish->value,
-            'user_id' => 222,
+            'user_id' => $user->getId(),
         ])[0];
 
         $response = $this->post(
@@ -784,9 +795,12 @@ class TicketManagementTest extends FeatureTestCase
         ])[0];
         $this->auth->login($admin);
 
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value,
+        ])[0];
         $ticket = $this->ticketFactory->create([
             'status' => TicketStatus::Closed->value,
-            'user_id' => 222,
+            'user_id' => $user->getId(),
         ])[0];
 
         $response = $this->post(
@@ -801,6 +815,37 @@ class TicketManagementTest extends FeatureTestCase
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
         $this->assertSame('The ticket has been deleted.', $response->getBody()->getContents());
         $this->assertCount(0, $this->ticketRepository->all());
+    }
+
+    public function testAfterTicketIsDeletedAllItsRepliesShouldBeDeletedAsWell(): void
+    {
+        $replyRepository = new ReplyRepository($this->pdo);
+        $replyFactory = new ReplyFactory($replyRepository, $this->userFactory, $this->ticketFactory, Factory::create());
+        $user = $this->createAndLogInMember();
+        $ticket = $this->ticketFactory->create([
+            'status' => TicketStatus::Publish->value,
+            'user_id' => $user->getId(),
+        ])[0];
+        $replies = $replyFactory->count(3)->create([
+            'ticket_id' => $ticket->getId(),
+            'user_id' => $user->getId(),
+        ]);
+
+        $this->assertCount(3, $replyRepository->all());
+
+        $response = $this->post(
+            '/ajax/ticket/delete',
+            [
+                'id' => $ticket->getId(),
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertSame('The ticket has been deleted.', $response->getBody()->getContents());
+        $this->assertCount(0, $this->ticketRepository->all());
+        $this->assertCount(0, $replyRepository->all());
     }
 
     //
