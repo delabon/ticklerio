@@ -3,22 +3,34 @@
 namespace Tests\Integration\Replies;
 
 use Faker\Factory as FakerFactory;
+use App\Tickets\TicketRepository;
 use App\Replies\ReplyRepository;
+use App\Tickets\TicketFactory;
 use Tests\IntegrationTestCase;
+use App\Users\UserRepository;
 use App\Replies\ReplyFactory;
+use App\Users\UserFactory;
 use App\Replies\Reply;
+use PDOException;
 
 class ReplyFactoryTest extends IntegrationTestCase
 {
     private ReplyRepository $replyRepository;
     private ReplyFactory $replyFactory;
+    private UserFactory $userFactory;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->replyRepository = new ReplyRepository($this->pdo);
-        $this->replyFactory = new ReplyFactory($this->replyRepository, FakerFactory::create());
+        $this->userFactory = new UserFactory(new UserRepository($this->pdo), FakerFactory::create());
+        $this->replyFactory = new ReplyFactory(
+            $this->replyRepository,
+            $this->userFactory,
+            new TicketFactory(new TicketRepository($this->pdo), $this->userFactory, FakerFactory::create()),
+            FakerFactory::create()
+        );
     }
 
     public function testCreatesRepliesPersistsThemInDatabase(): void
@@ -37,8 +49,6 @@ class ReplyFactoryTest extends IntegrationTestCase
         $time = strtotime('2021-01-01 00:00:00');
         $this->replyFactory->count(2)->create([
             'message' => 'Reply message has been overwritten',
-            'user_id' => 99,
-            'ticket_id' => 6,
             'created_at' => $time,
             'updated_at' => $time,
         ]);
@@ -47,13 +57,32 @@ class ReplyFactoryTest extends IntegrationTestCase
         $this->assertCount(2, $replies);
         $this->assertSame('Reply message has been overwritten', $replies[0]->getMessage());
         $this->assertSame('Reply message has been overwritten', $replies[1]->getMessage());
-        $this->assertSame(99, $replies[0]->getUserId());
-        $this->assertSame(99, $replies[1]->getUserId());
-        $this->assertSame(6, $replies[0]->getTicketId());
-        $this->assertSame(6, $replies[1]->getTicketId());
+        $this->assertSame(1, $replies[0]->getUserId());
+        $this->assertSame(2, $replies[1]->getUserId());
+        $this->assertSame(1, $replies[0]->getTicketId());
+        $this->assertSame(2, $replies[1]->getTicketId());
         $this->assertSame($time, $replies[0]->getCreatedAt());
         $this->assertSame($time, $replies[1]->getCreatedAt());
         $this->assertSame($time, $replies[0]->getUpdatedAt());
         $this->assertSame($time, $replies[1]->getUpdatedAt());
+    }
+
+
+    public function testThrowsExceptionWhenTryingToOverwriteUserIdWithIdThatDoesNotExist(): void
+    {
+        $this->expectException(PDOException::class);
+
+        $this->replyFactory->create([
+            'user_id' => 58877,
+        ]);
+    }
+
+    public function testThrowsExceptionWhenTryingToOverwriteTicketIdWithIdThatDoesNotExist(): void
+    {
+        $this->expectException(PDOException::class);
+
+        $this->replyFactory->create([
+            'ticket_id' => 9696,
+        ]);
     }
 }
