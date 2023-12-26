@@ -5,6 +5,11 @@ namespace Tests\Integration\Tickets;
 use App\Tickets\Ticket;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketStatus;
+use App\Users\User;
+use App\Users\UserFactory;
+use App\Users\UserRepository;
+use App\Users\UserType;
+use Faker\Factory;
 use OutOfBoundsException;
 use Tests\_data\TicketData;
 use Tests\IntegrationTestCase;
@@ -24,17 +29,18 @@ class TicketRepositoryTest extends IntegrationTestCase
     // Create
     //
 
-    public function testAddsTicketSuccessfully(): void
+    public function testInsertsTicketSuccessfully(): void
     {
+        $user = $this->createUser();
         $ticket = Ticket::make(TicketData::one());
-
+        $ticket->setUserId($user->getId());
         $this->ticketRepository->save($ticket);
 
         $tickets = $this->ticketRepository->all();
         $this->assertCount(1, $tickets);
         $this->assertInstanceOf(Ticket::class, $tickets[0]);
         $this->assertSame(1, $tickets[0]->getId());
-        $this->assertSame($ticket->getUserId(), $tickets[0]->getUserId());
+        $this->assertSame($user->getId(), $tickets[0]->getUserId());
         $this->assertSame($ticket->getStatus(), $tickets[0]->getStatus());
         $this->assertSame($ticket->getTitle(), $tickets[0]->getTitle());
         $this->assertSame($ticket->getDescription(), $tickets[0]->getDescription());
@@ -44,8 +50,11 @@ class TicketRepositoryTest extends IntegrationTestCase
 
     public function testAddsMultipleTicketsSuccessfully(): void
     {
+        $user = $this->createUser();
         $ticketOne = Ticket::make(TicketData::one());
+        $ticketOne->setUserId($user->getId());
         $ticketTwo = Ticket::make(TicketData::two());
+        $ticketTwo->setUserId($user->getId());
 
         $this->ticketRepository->save($ticketOne);
         $this->ticketRepository->save($ticketTwo);
@@ -64,7 +73,9 @@ class TicketRepositoryTest extends IntegrationTestCase
 
     public function testUpdatesTicketSuccessfully(): void
     {
+        $user = $this->createUser();
         $ticket = Ticket::make(TicketData::one());
+        $ticket->setUserId($user->getId());
         $this->ticketRepository->save($ticket);
 
         $ticket->setTitle('Updated title');
@@ -81,7 +92,7 @@ class TicketRepositoryTest extends IntegrationTestCase
         $this->assertCount(1, $tickets);
         $this->assertInstanceOf(Ticket::class, $tickets[0]);
         $this->assertSame(1, $tickets[0]->getId());
-        $this->assertSame(1, $tickets[0]->getUserId());
+        $this->assertSame($user->getId(), $tickets[0]->getUserId());
         $this->assertSame(TicketStatus::Closed->value, $tickets[0]->getStatus());
         $this->assertSame('Updated title', $tickets[0]->getTitle());
         $this->assertSame('Updated description', $tickets[0]->getDescription());
@@ -92,6 +103,7 @@ class TicketRepositoryTest extends IntegrationTestCase
     public function testThrowsExceptionWhenTryingToUpdateNonExistentTicket(): void
     {
         $ticket = Ticket::make(TicketData::one());
+        $ticket->setUserId(1);
         $ticket->setId(999);
 
         $this->expectException(OutOfBoundsException::class);
@@ -105,7 +117,10 @@ class TicketRepositoryTest extends IntegrationTestCase
 
     public function testFindsTicketSuccessfully(): void
     {
-        $this->ticketRepository->save(Ticket::make(TicketData::one()));
+        $user = $this->createUser();
+        $ticket = Ticket::make(TicketData::one());
+        $ticket->setUserId($user->getId());
+        $this->ticketRepository->save($ticket);
 
         $ticket = $this->ticketRepository->find(1);
 
@@ -128,9 +143,12 @@ class TicketRepositoryTest extends IntegrationTestCase
 
     public function testFindsAllTickets(): void
     {
+        $user = $this->createUser();
         $ticketOne = Ticket::make(TicketData::one());
+        $ticketOne->setUserId($user->getId());
         $this->ticketRepository->save($ticketOne);
         $ticketTwo = Ticket::make(TicketData::two());
+        $ticketTwo->setUserId($user->getId());
         $this->ticketRepository->save($ticketTwo);
 
         $ticketsFound = $this->ticketRepository->all();
@@ -153,7 +171,9 @@ class TicketRepositoryTest extends IntegrationTestCase
 
     public function testDeletesTicketSuccessfully(): void
     {
+        $user = $this->createUser();
         $ticket = Ticket::make(TicketData::one());
+        $ticket->setUserId($user->getId());
         $this->ticketRepository->save($ticket);
 
         $this->assertCount(1, $this->ticketRepository->all());
@@ -161,5 +181,16 @@ class TicketRepositoryTest extends IntegrationTestCase
         $this->ticketRepository->delete($ticket->getId());
 
         $this->assertNull($this->ticketRepository->find($ticket->getId()));
+    }
+
+    //
+    // Helpers
+    //
+
+    private function createUser(): User
+    {
+        return (new UserFactory(new UserRepository($this->pdo), Factory::create()))->create([
+            'type' => UserType::Member->value,
+        ])[0];
     }
 }
