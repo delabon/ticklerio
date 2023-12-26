@@ -3,9 +3,21 @@
 namespace App\Tickets;
 
 use App\Abstracts\Factory;
+use App\Interfaces\RepositoryInterface;
+use App\Users\UserFactory;
+use Faker\Generator;
 
 class TicketFactory extends Factory
 {
+    private UserFactory $userFactory;
+
+    public function __construct(TicketRepository $repository, UserFactory $userFactory, Generator $faker)
+    {
+        parent::__construct($repository, $faker);
+
+        $this->userFactory = $userFactory;
+    }
+
     /**
      * @param array<string, mixed> $attributes
      * @return array|Ticket[]
@@ -18,7 +30,7 @@ class TicketFactory extends Factory
             $ticket = new Ticket();
             $ticket->setTitle($attributes['title'] ?? $this->faker->sentence);
             $ticket->setDescription($attributes['description'] ?? $this->faker->paragraph);
-            $ticket->setUserId($attributes['user_id'] ?? $this->faker->numberBetween(1, 10));
+            $ticket->setUserId($attributes['user_id'] ?? 0);
             $ticket->setStatus($attributes['status'] ?? $this->faker->randomElement([
                 TicketStatus::Publish->value,
                 TicketStatus::Closed->value,
@@ -41,6 +53,11 @@ class TicketFactory extends Factory
         $tickets = $this->make($attributes);
 
         foreach ($tickets as $ticket) {
+            if (!isset($attributes['user_id'])) {
+                $user = $this->userFactory->create()[0];
+                $ticket->setUserId($user->getId());
+            }
+
             $this->repository->save($ticket);
         }
 

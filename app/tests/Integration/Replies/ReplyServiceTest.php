@@ -11,14 +11,17 @@ use App\Replies\ReplySanitizer;
 use App\Replies\ReplyService;
 use App\Replies\ReplyValidator;
 use App\Tickets\Ticket;
+use App\Tickets\TicketFactory;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketStatus;
 use App\Users\User;
+use App\Users\UserFactory;
+use App\Users\UserRepository;
+use App\Users\UserType;
+use Faker\Factory;
 use InvalidArgumentException;
 use LogicException;
 use Tests\_data\ReplyData;
-use Tests\_data\TicketData;
-use Tests\_data\UserData;
 use Tests\IntegrationTestCase;
 use Tests\Traits\AuthenticatesUsers;
 
@@ -28,6 +31,7 @@ class ReplyServiceTest extends IntegrationTestCase
 
     private TicketRepository $ticketRepository;
     private ReplyRepository $replyRepository;
+    private UserRepository $userRepository;
     private ReplyService $replyService;
     private Auth $auth;
 
@@ -37,6 +41,7 @@ class ReplyServiceTest extends IntegrationTestCase
 
         $this->replyRepository = new ReplyRepository($this->pdo);
         $this->ticketRepository = new TicketRepository($this->pdo);
+        $this->userRepository = new UserRepository($this->pdo);
         $this->auth = new Auth($this->session);
         $this->replyService = new ReplyService(
             replyRepository: $this->replyRepository,
@@ -53,8 +58,8 @@ class ReplyServiceTest extends IntegrationTestCase
 
     public function testCreatesReplySuccessfully(): void
     {
-        $user = $this->logInUser();
-        $ticket = $this->createTicket();
+        $user = $this->createAndLogInUser();
+        $ticket = $this->createTicket($user);
         $replyData = ReplyData::one();
         $replyData['user_id'] = $user->getId();
         $replyData['ticket_id'] = $ticket->getId();
@@ -72,8 +77,8 @@ class ReplyServiceTest extends IntegrationTestCase
 
     public function testSuccessfullyCreatesReplyAfterSanitizingTheData(): void
     {
-        $user = $this->logInUser();
-        $ticket = $this->createTicket();
+        $user = $this->createAndLogInUser();
+        $ticket = $this->createTicket($user);
         $replyData = ReplyData::unsanitizedData();
         $replyData['user_id'] = $user->getId();
         $replyData['ticket_id'] = $ticket->getId();
@@ -104,8 +109,8 @@ class ReplyServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenTryingToCreateReplyForClosedTicket(): void
     {
-        $user = $this->logInUser();
-        $ticket = $this->createTicket(TicketStatus::Closed);
+        $user = $this->createAndLogInUser();
+        $ticket = $this->createTicket($user, TicketStatus::Closed);
         $replyData = ReplyData::one();
         $replyData['user_id'] = $user->getId();
         $replyData['ticket_id'] = $ticket->getId();
@@ -122,8 +127,8 @@ class ReplyServiceTest extends IntegrationTestCase
 
     public function testUpdatesReplySuccessfully(): void
     {
-        $this->logInUser();
-        $ticket = $this->createTicket();
+        $user = $this->createAndLogInUser();
+        $ticket = $this->createTicket($user);
         $replyData = ReplyData::one($this->auth->getUserId(), $ticket->getId());
         $reply = Reply::make($replyData);
         $this->replyRepository->save($reply);
@@ -144,9 +149,8 @@ class ReplyServiceTest extends IntegrationTestCase
     public function testSuccessfullyUpdatesReplyWhenLoggedInAsAdmin(): void
     {
         $this->logInAdmin();
-        $user = User::make(UserData::memberOne());
-        $user->setId(15554);
-        $ticket = $this->createTicket();
+        $user = $this->createUser();
+        $ticket = $this->createTicket($user);
         $replyData = ReplyData::one($user->getId(), $ticket->getId());
         $reply = Reply::make($replyData);
         $this->replyRepository->save($reply);
@@ -167,9 +171,8 @@ class ReplyServiceTest extends IntegrationTestCase
     public function testSuccessfullyUpdatesReplyThatBelongsToClosedTicketWhenLoggedInAsAdmin(): void
     {
         $this->logInAdmin();
-        $user = User::make(UserData::memberOne());
-        $user->setId(15554);
-        $ticket = $this->createTicket(TicketStatus::Closed);
+        $user = $this->createUser();
+        $ticket = $this->createTicket($user, TicketStatus::Closed);
         $replyData = ReplyData::one($user->getId(), $ticket->getId());
         $reply = Reply::make($replyData);
         $this->replyRepository->save($reply);
@@ -189,8 +192,8 @@ class ReplyServiceTest extends IntegrationTestCase
 
     public function testSuccessfullyUpdatesReplyAfterSanitizingTheData(): void
     {
-        $this->logInUser();
-        $ticket = $this->createTicket();
+        $user = $this->createAndLogInUser();
+        $ticket = $this->createTicket($user);
         $replyData = ReplyData::one();
         $replyData['ticket_id'] = $ticket->getId();
         $replyData['user_id'] = $this->auth->getUserId();
@@ -212,8 +215,8 @@ class ReplyServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenTryingToUpdateReplyThatDoesNotExist(): void
     {
-        $this->logInUser();
-        $ticket = $this->createTicket();
+        $user = $this->createAndLogInUser();
+        $ticket = $this->createTicket($user);
         $replyData = ReplyData::one();
         $replyData['ticket_id'] = $ticket->getId();
         $replyData['user_id'] = $this->auth->getUserId();
@@ -229,13 +232,15 @@ class ReplyServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenTryingToUpdateReplyThatDoesNotBelongToLoggedInUser(): void
     {
-        $this->logInUser();
-        $ticket = $this->createTicket();
+        $author = $this->createUser();
+        $ticket = $this->createTicket($author);
         $replyData = ReplyData::one();
         $replyData['ticket_id'] = $ticket->getId();
-        $replyData['user_id'] = 888;
+        $replyData['user_id'] = $author->getId();
         $reply = Reply::make($replyData);
         $this->replyRepository->save($reply);
+
+        $this->createAndLogInUser();
 
         $replyData['id'] = $reply->getId();
         $replyData['message'] = 'This is an updated message.';
@@ -246,28 +251,32 @@ class ReplyServiceTest extends IntegrationTestCase
         $this->replyService->updateReply($replyData);
     }
 
-    public function testThrowsExceptionWhenTryingToUpdateReplyThatBelongsToTicketThatDoesNotExist(): void
-    {
-        $this->logInUser();
-        $replyData = ReplyData::one();
-        $replyData['ticket_id'] = 8855;
-        $replyData['user_id'] = $this->auth->getUserId();
-        $reply = Reply::make($replyData);
-        $this->replyRepository->save($reply);
-
-        $replyData['id'] = $reply->getId();
-        $replyData['message'] = 'This is an updated message.';
-
-        $this->expectException(TicketDoesNotExistException::class);
-        $this->expectExceptionMessage("The ticket with the id '8855' does not exist.");
-
-        $this->replyService->updateReply($replyData);
-    }
+    /**
+     * This test is not needed because the reply is deleted when the ticket is deleted.
+     * @return void
+     */
+    // public function testThrowsExceptionWhenTryingToUpdateReplyThatBelongsToTicketThatDoesNotExist(): void
+    // {
+    //     $this->logInUser();
+    //     $replyData = ReplyData::one();
+    //     $replyData['ticket_id'] = 8855;
+    //     $replyData['user_id'] = $this->auth->getUserId();
+    //     $reply = Reply::make($replyData);
+    //     $this->replyRepository->save($reply);
+    //
+    //     $replyData['id'] = $reply->getId();
+    //     $replyData['message'] = 'This is an updated message.';
+    //
+    //     $this->expectException(TicketDoesNotExistException::class);
+    //     $this->expectExceptionMessage("The ticket with the id '8855' does not exist.");
+    //
+    //     $this->replyService->updateReply($replyData);
+    // }
 
     public function testThrowsExceptionWhenTryingToUpdateReplyThatBelongsToClosedTicket(): void
     {
-        $this->logInUser();
-        $ticket = $this->createTicket(TicketStatus::Closed);
+        $user = $this->createAndLogInUser();
+        $ticket = $this->createTicket($user, TicketStatus::Closed);
         $replyData = ReplyData::one();
         $replyData['ticket_id'] = $ticket->getId();
         $replyData['user_id'] = $this->auth->getUserId();
@@ -291,8 +300,8 @@ class ReplyServiceTest extends IntegrationTestCase
      */
     public function testThrowsExceptionWhenTryingToUpdateUsingInvalidData($data, $expectedExceptionMessage): void
     {
-        $this->logInUser();
-        $ticket = $this->createTicket();
+        $user = $this->createAndLogInUser();
+        $ticket = $this->createTicket($user);
         $replyData = ReplyData::one();
         $replyData['ticket_id'] = $ticket->getId();
         $replyData['user_id'] = $this->auth->getUserId();
@@ -324,8 +333,8 @@ class ReplyServiceTest extends IntegrationTestCase
 
     public function testDeletesReplySuccessfully(): void
     {
-        $user = $this->logInUser();
-        $ticket = $this->createTicket();
+        $user = $this->createAndLogInUser();
+        $ticket = $this->createTicket($user);
         $reply = Reply::make(ReplyData::one($user->getId(), $ticket->getId()));
         $this->replyRepository->save($reply);
 
@@ -339,7 +348,8 @@ class ReplyServiceTest extends IntegrationTestCase
     public function testSuccessfullyDeletesReplyWhenLoggedAsAdmin(): void
     {
         $this->logInAdmin();
-        $ticket = $this->createTicket();
+        $user = $this->createUser();
+        $ticket = $this->createTicket($user);
         $reply = Reply::make(ReplyData::one(1, $ticket->getId()));
         $this->replyRepository->save($reply);
 
@@ -353,7 +363,8 @@ class ReplyServiceTest extends IntegrationTestCase
     public function testSuccessfullyDeletesReplyThatBelongsToClosedTicketWhenLoggedAsAdmin(): void
     {
         $this->logInAdmin();
-        $ticket = $this->createTicket(TicketStatus::Closed);
+        $user = $this->createUser();
+        $ticket = $this->createTicket($user, TicketStatus::Closed);
         $reply = Reply::make(ReplyData::one(1, $ticket->getId()));
         $this->replyRepository->save($reply);
 
@@ -376,9 +387,12 @@ class ReplyServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenTryingToDeleteReplyThatDoesNotBelongToTheLoggedInUserAndNotAdmin(): void
     {
-        $this->logInUser();
-        $reply = Reply::make(ReplyData::one(55));
+        $user = $this->createUser();
+        $ticket = $this->createTicket($user);
+        $reply = Reply::make(ReplyData::one($user->getId(), $ticket->getId()));
         $this->replyRepository->save($reply);
+
+        $this->createAndLogInUser();
 
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage("You cannot delete a reply that does not belong to you.");
@@ -388,8 +402,8 @@ class ReplyServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenTryingToDeleteReplyThatBelongsToClosedTicket(): void
     {
-        $user = $this->logInUser();
-        $ticket = $this->createTicket(TicketStatus::Closed);
+        $user = $this->createAndLogInUser();
+        $ticket = $this->createTicket($user, TicketStatus::Closed);
         $reply = Reply::make(ReplyData::one($user->getId(), $ticket->getId()));
         $this->replyRepository->save($reply);
 
@@ -403,16 +417,33 @@ class ReplyServiceTest extends IntegrationTestCase
     // Helpers
     //
 
-    /**
-     * @param TicketStatus $status
-     * @return Ticket
-     */
-    protected function createTicket(TicketStatus $status = TicketStatus::Publish): Ticket
+    private function createTicket(User $user, TicketStatus $status = TicketStatus::Publish): Ticket
     {
-        $ticket = Ticket::make(TicketData::one());
-        $ticket->setStatus($status->value);
-        $this->ticketRepository->save($ticket);
+        $faker = Factory::create();
+        $ticketFactory = new TicketFactory(
+            $this->ticketRepository,
+            new UserFactory($this->userRepository, $faker),
+            $faker
+        );
 
-        return $ticket;
+        return $ticketFactory->create([
+            'user_id' => $user->getId(),
+            'status' => $status->value,
+        ])[0];
+    }
+
+    private function createAndLogInUser(): User
+    {
+        $user = $this->createUser();
+        $this->auth->login($user);
+
+        return $user;
+    }
+
+    private function createUser(): User
+    {
+        return (new UserFactory($this->userRepository, Factory::create()))->create([
+            'type' => UserType::Member->value,
+        ])[0];
     }
 }

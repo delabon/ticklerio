@@ -87,6 +87,9 @@ $container->singleton(PDO::class, function () use ($dbFile) {
     );
 });
 
+// Set up foreign keys for SQLite
+$container->get(PDO::class)->exec('PRAGMA foreign_keys = ON');
+
 //
 // Session
 //

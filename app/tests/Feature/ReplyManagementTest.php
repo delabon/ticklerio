@@ -31,8 +31,8 @@ class ReplyManagementTest extends FeatureTestCase
         parent::setUp();
 
         $this->userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
-        $this->ticketFactory = new TicketFactory(new TicketRepository($this->pdo), Factory::create());
-        $this->replyFactory = new ReplyFactory(new ReplyRepository($this->pdo), Factory::create());
+        $this->ticketFactory = new TicketFactory(new TicketRepository($this->pdo), $this->userFactory, Factory::create());
+        $this->replyFactory = new ReplyFactory(new ReplyRepository($this->pdo), $this->userFactory, $this->ticketFactory, Factory::create());
         $this->replyRepository = new ReplyRepository($this->pdo);
         $this->auth = new Auth($this->session);
     }
@@ -43,7 +43,7 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testCreatesReplySuccessfully(): void
     {
-        $user = $this->logInUser();
+        $user = $this->createAndLogInUser();
         $ticket = $this->ticketFactory->create([
             'user_id' => $user->getId(),
             'status' => TicketStatus::Publish->value,
@@ -109,7 +109,7 @@ class ReplyManagementTest extends FeatureTestCase
      */
     public function testReturnsBadRequestResponseWhenTryingToCreateReplyUsingInvalidData($data, $expectedResponseMessage): void
     {
-        $user = $this->logInUser();
+        $user = $this->createAndLogInUser();
         $data['csrf_token'] = $this->csrf->generate();
 
         $response = $this->post(
@@ -198,7 +198,7 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testReturnsNotFoundResponseWhenTryingToCreateReplyForTicketThatDoesNotExist(): void
     {
-        $user = $this->logInUser();
+        $user = $this->createAndLogInUser();
 
         $response = $this->post(
             '/ajax/reply/create',
@@ -223,7 +223,7 @@ class ReplyManagementTest extends FeatureTestCase
      */
     public function testReturnsBadRequestResponseWhenTryingToCreateReplyAfterSanitization($data, $expectedResponseMessage): void
     {
-        $user = $this->logInUser();
+        $user = $this->createAndLogInUser();
         $data['csrf_token'] = $this->csrf->generate();
 
         $response = $this->post(
@@ -238,7 +238,7 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testSuccessfullyCreatesReplyAfterSanitizingData(): void
     {
-        $user = $this->logInUser();
+        $user = $this->createAndLogInUser();
         $ticket = $this->ticketFactory->create([
             'user_id' => $user->getId(),
             'status' => TicketStatus::Publish->value,
@@ -265,7 +265,7 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToCreateReplyForClosedTicket(): void
     {
-        $user = $this->logInUser();
+        $user = $this->createAndLogInUser();
         $ticket = $this->ticketFactory->create([
             'user_id' => $user->getId(),
             'status' => TicketStatus::Closed->value
@@ -291,7 +291,7 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testUpdatesReplySuccessfully(): void
     {
-        $user = $this->logInUser();
+        $user = $this->createAndLogInUser();
         $ticket = $this->ticketFactory->create([
             'user_id' => $user->getId(),
             'status' => TicketStatus::Publish->value,
@@ -359,7 +359,7 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testReturnsBadRequestResponseWhenTryingToUpdateReplyUsingInvalidId(): void
     {
-        $this->logInUser();
+        $this->createAndLogInUser();
 
         $response = $this->post(
             '/ajax/reply/update',
@@ -377,7 +377,7 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testReturnsNotFoundResponseWhenTryingToUpdateReplyThatDoesNotExist(): void
     {
-        $this->logInUser();
+        $this->createAndLogInUser();
 
         $response = $this->post(
             '/ajax/reply/update',
@@ -395,10 +395,18 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testReturnsForbiddenResponseWhenTryingToUpdateReplyThatDoesNotBelongToTheLoggedInUser(): void
     {
-        $this->logInUser();
-        $reply = $this->replyFactory->create([
-            'user_id' => 999,
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value
         ])[0];
+        $ticket = $this->ticketFactory->create([
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Publish->value,
+        ])[0];
+        $reply = $this->replyFactory->create([
+            'user_id' => $user->getId(),
+            'ticket_id' => $ticket->getId(),
+        ])[0];
+        $loggedInUser = $this->createAndLogInUser();
 
         $response = $this->post(
             '/ajax/reply/update',
@@ -414,31 +422,36 @@ class ReplyManagementTest extends FeatureTestCase
         $this->assertSame("You cannot update a reply that does not belong to you.", $response->getBody()->getContents());
     }
 
-    public function testReturnsNotFoundResponseWhenTryingToUpdateReplyThatBelongsToTicketThatDoesNotExist(): void
-    {
-        $user = $this->logInUser();
-        $reply = $this->replyFactory->create([
-            'user_id' => $user->getId(),
-            'ticket_id' => 444,
-        ])[0];
-
-        $response = $this->post(
-            '/ajax/reply/update',
-            [
-                'id' => $reply->getId(),
-                'message' => 'This is an updated reply',
-                'csrf_token' => $this->csrf->generate(),
-            ],
-            self::DISABLE_GUZZLE_EXCEPTION
-        );
-
-        $this->assertSame(HttpStatusCode::NotFound->value, $response->getStatusCode());
-        $this->assertSame("The ticket with the id '{$reply->getTicketId()}' does not exist.", $response->getBody()->getContents());
-    }
+    /**
+     * After adding the foreign key constraint to the replies table, this test is no longer needed.
+     * @return void
+     * @throws Exception
+     */
+    // public function testReturnsNotFoundResponseWhenTryingToUpdateReplyThatBelongsToTicketThatDoesNotExist(): void
+    // {
+    //     $user = $this->logInUser();
+    //     $reply = $this->replyFactory->create([
+    //         'user_id' => $user->getId(),
+    //         'ticket_id' => 444,
+    //     ])[0];
+    //
+    //     $response = $this->post(
+    //         '/ajax/reply/update',
+    //         [
+    //             'id' => $reply->getId(),
+    //             'message' => 'This is an updated reply',
+    //             'csrf_token' => $this->csrf->generate(),
+    //         ],
+    //         self::DISABLE_GUZZLE_EXCEPTION
+    //     );
+    //
+    //     $this->assertSame(HttpStatusCode::NotFound->value, $response->getStatusCode());
+    //     $this->assertSame("The ticket with the id '{$reply->getTicketId()}' does not exist.", $response->getBody()->getContents());
+    // }
 
     public function testReturnsForbiddenResponseWhenTryingToUpdateReplyThatBelongsToClosedTicket(): void
     {
-        $user = $this->logInUser();
+        $user = $this->createAndLogInUser();
         $ticket = $this->ticketFactory->create([
             'user_id' => $user->getId(),
             'status' => TicketStatus::Closed->value,
@@ -471,7 +484,7 @@ class ReplyManagementTest extends FeatureTestCase
      */
     public function testReturnsBadRequestResponseWhenTryingToUpdateReplyUsingInvalidData($message, $expectedResponseMessage): void
     {
-        $user = $this->logInUser();
+        $user = $this->createAndLogInUser();
         $ticket = $this->ticketFactory->create([
             'user_id' => $user->getId(),
             'status' => TicketStatus::Publish->value,
@@ -545,7 +558,7 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testSuccessfullyUpdatesReplyAfterSanitizingData(): void
     {
-        $user = $this->logInUser();
+        $user = $this->createAndLogInUser();
         $ticket = $this->ticketFactory->create([
             'user_id' => $user->getId(),
             'status' => TicketStatus::Publish->value,
@@ -579,7 +592,7 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testSuccessfullyUpdatesReplyWhenLoggedInAsAdmin(): void
     {
-        $this->logInAdmin();
+        $this->createAndLogInAdmin();
         $user = $this->userFactory->create([
             'type' => UserType::Member->value
         ])[0];
@@ -616,7 +629,7 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testSuccessfullyUpdatesReplyThatBelongsToClosedTicketWhenLoggedInAsAdmin(): void
     {
-        $this->logInAdmin();
+        $this->createAndLogInAdmin();
         $user = $this->userFactory->create([
             'type' => UserType::Member->value
         ])[0];
@@ -657,7 +670,7 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testDeletesReplySuccessfully(): void
     {
-        $user = $this->logInUser();
+        $user = $this->createAndLogInUser();
         $ticket = $this->ticketFactory->create([
             'user_id' => $user->getId(),
             'status' => TicketStatus::Publish->value,
@@ -682,7 +695,7 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testSuccessfullyDeletesReplyWhenLoggedInAsAdmin(): void
     {
-        $this->logInAdmin();
+        $this->createAndLogInAdmin();
         $user = $this->userFactory->create([
             'type' => UserType::Member->value
         ])[0];
@@ -710,7 +723,7 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testSuccessfullyDeletesReplyThatBelongsToClosedTicketWhenLoggedInAsAdmin(): void
     {
-        $this->logInAdmin();
+        $this->createAndLogInAdmin();
         $user = $this->userFactory->create([
             'type' => UserType::Member->value
         ])[0];
@@ -768,7 +781,7 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testReturnBadRequestResponseWhenTryingToDeleteReplyUsingInvalidId(): void
     {
-        $this->logInUser();
+        $this->createAndLogInUser();
 
         $response = $this->post(
             '/ajax/reply/delete',
@@ -785,7 +798,7 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testReturnNotFoundResponseWhenTryingToDeleteReplyThatDoesNotExist(): void
     {
-        $this->logInUser();
+        $this->createAndLogInUser();
 
         $response = $this->post(
             '/ajax/reply/delete',
@@ -802,10 +815,18 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testReturnNotFoundResponseWhenTryingToDeleteReplyThatDoesNotBelongToLoggedInUser(): void
     {
-        $this->logInUser();
-        $reply = $this->replyFactory->create([
-            'user_id' => 999,
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value
         ])[0];
+        $ticket = $this->ticketFactory->create([
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Publish->value,
+        ])[0];
+        $reply = $this->replyFactory->create([
+            'user_id' => $user->getId(),
+            'ticket_id' => $ticket->getId(),
+        ])[0];
+        $this->createAndLogInUser();
 
         $response = $this->post(
             '/ajax/reply/delete',
@@ -822,8 +843,9 @@ class ReplyManagementTest extends FeatureTestCase
 
     public function testReturnNotFoundResponseWhenTryingToDeleteReplyThatBelongsToClosedTicket(): void
     {
-        $user = $this->logInUser();
+        $user = $this->createAndLogInUser();
         $ticket = $this->ticketFactory->create([
+            'user_id' => $user->getId(),
             'status' => TicketStatus::Closed->value,
         ])[0];
         $reply = $this->replyFactory->create([
@@ -848,7 +870,7 @@ class ReplyManagementTest extends FeatureTestCase
     // Helpers
     //
 
-    protected function logInUser(): User
+    protected function createAndLogInUser(): User
     {
         $user = $this->userFactory->create([
             'type' => UserType::Member->value
@@ -858,7 +880,7 @@ class ReplyManagementTest extends FeatureTestCase
         return $user;
     }
 
-    protected function logInAdmin(): User
+    protected function createAndLogInAdmin(): User
     {
         $user = $this->userFactory->create([
             'type' => UserType::Admin->value

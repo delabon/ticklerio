@@ -118,6 +118,8 @@ class FeatureTestCase extends TestCase
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
             ]
         );
+        // Set up foreign keys for SQLite
+        $this->pdo->exec('PRAGMA foreign_keys = ON');
     }
 
     private function deleteDir($path): bool

@@ -2,16 +2,19 @@
 
 namespace Tests\Unit\Tickets;
 
-use App\Abstracts\Factory;
 use App\Interfaces\FactoryInterface;
-use App\Tickets\Ticket;
-use App\Tickets\TicketFactory;
-use App\Tickets\TicketRepository;
-use App\Tickets\TicketStatus;
 use Faker\Factory as FakerFactory;
-use PDO;
-use PDOStatement;
+use App\Tickets\TicketRepository;
 use PHPUnit\Framework\TestCase;
+use App\Tickets\TicketFactory;
+use App\Tickets\TicketStatus;
+use App\Users\UserRepository;
+use App\Abstracts\Factory;
+use App\Users\UserFactory;
+use App\Tickets\Ticket;
+use PDOException;
+use PDOStatement;
+use PDO;
 
 class TicketFactoryTest extends TestCase
 {
@@ -27,7 +30,11 @@ class TicketFactoryTest extends TestCase
         $this->pdoStatementMock = $this->createMock(PDOStatement::class);
         $this->pdoMock = $this->createMock(PDO::class);
         $this->ticketRepository = new TicketRepository($this->pdoMock);
-        $this->ticketFactory = new TicketFactory($this->ticketRepository, FakerFactory::create());
+        $this->ticketFactory = new TicketFactory(
+            $this->ticketRepository,
+            new UserFactory(new UserRepository($this->pdoMock), FakerFactory::create()),
+            FakerFactory::create()
+        );
     }
 
     public function testCreatesInstanceSuccessfully(): void
@@ -56,8 +63,8 @@ class TicketFactoryTest extends TestCase
         $this->assertGreaterThan(0, strlen($tickets[1]->getDescription()));
         $this->assertIsInt($tickets[0]->getUserId());
         $this->assertIsInt($tickets[1]->getUserId());
-        $this->assertGreaterThan(0, $tickets[0]->getUserId());
-        $this->assertGreaterThan(0, $tickets[1]->getUserId());
+        $this->assertSame(0, $tickets[0]->getUserId());
+        $this->assertSame(0, $tickets[1]->getUserId());
         $this->assertTrue(in_array($tickets[0]->getStatus(), [
             TicketStatus::Publish->value,
             TicketStatus::Closed->value,
@@ -81,7 +88,11 @@ class TicketFactoryTest extends TestCase
     public function testCreateCallsMake(): void
     {
         $ticketFactoryMock = $this->getMockBuilder(TicketFactory::class)
-            ->setConstructorArgs([$this->ticketRepository, FakerFactory::create()])
+            ->setConstructorArgs([
+                $this->ticketRepository,
+                new UserFactory(new UserRepository($this->pdoMock), FakerFactory::create()),
+                FakerFactory::create()
+            ])
             ->onlyMethods(['make'])
             ->getMock();
 
@@ -96,22 +107,31 @@ class TicketFactoryTest extends TestCase
             ->method('execute')
             ->willReturn(true);
 
+        $prepareCount = 1;
         $this->pdoMock->expects($this->exactly(2))
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/INSERT INTO.+tickets.+VALUES.+/is'))
-            ->willReturn($this->pdoStatementMock);
+            ->willReturnCallback(function ($query) use (&$prepareCount) {
+                if ($prepareCount === 1) {
+                    $this->assertMatchesRegularExpression('/.+INSERT INTO.+users.+VALUES.+\?.+/is', $query);
+                } elseif ($prepareCount === 2) {
+                    $this->assertMatchesRegularExpression('/.+INSERT INTO.+tickets.+VALUES.+\?.+/is', $query);
+                }
+
+                $prepareCount++;
+
+                return $this->pdoStatementMock;
+            });
 
         $this->pdoMock->expects($this->exactly(2))
             ->method('lastInsertId')
-            ->willReturnOnConsecutiveCalls("1", "2");
+            ->willReturnOnConsecutiveCalls("1", "1");
 
-        $tickets = $this->ticketFactory->count(2)->create();
+        $tickets = $this->ticketFactory->create();
 
-        $this->assertCount(2, $tickets);
+        $this->assertCount(1, $tickets);
         $this->assertInstanceOf(Ticket::class, $tickets[0]);
-        $this->assertInstanceOf(Ticket::class, $tickets[1]);
         $this->assertSame(1, $tickets[0]->getId());
-        $this->assertSame(2, $tickets[1]->getId());
+        $this->assertSame(1, $tickets[0]->getUserId());
     }
 
     public function testMakeOverwritesAttributes(): void
@@ -161,6 +181,26 @@ class TicketFactoryTest extends TestCase
         ]);
 
         $this->overwriteAsserts($result);
+    }
+
+    public function testThrowsExceptionWhenTryingToOverwriteUserIdWithIdThatDoesNotExist(): void
+    {
+        $this->expectException(PDOException::class);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/INSERT INTO.+tickets.+VALUES.+/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturnCallback(function () {
+                throw new PDOException();
+            });
+
+        $this->ticketFactory->create([
+            'user_id' => 58877,
+        ]);
     }
 
     /**
