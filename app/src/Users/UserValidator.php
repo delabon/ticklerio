@@ -34,7 +34,7 @@ class UserValidator implements ValidatorInterface
         }
 
         if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            throw new InvalidArgumentException("Invalid email address");
+            throw new InvalidArgumentException("Invalid email address.");
         }
     }
 
@@ -116,7 +116,6 @@ class UserValidator implements ValidatorInterface
         if (!is_string($data['password'])) {
             throw new InvalidArgumentException("The password is of invalid type. It should be a string.");
         }
-
 
         $isHashed = PasswordUtils::isPasswordHashed($data['password']);
 
