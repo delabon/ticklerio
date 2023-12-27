@@ -10,6 +10,7 @@ use App\Core\Http\Response;
 use App\Exceptions\UserDoesNotExistException;
 use App\Users\UserService;
 use Exception;
+use InvalidArgumentException;
 use LogicException;
 
 class DeleteUserController
@@ -42,6 +43,25 @@ class DeleteUserController
             return new Response('LogicException ' . $e->getMessage(), HttpStatusCode::Forbidden);
         } catch (Exception $e) {
             return new Response('Exception ' . $e->getMessage() . "An error occurred while trying to delete the user.", HttpStatusCode::InternalServerError);
+        }
+    }
+
+    public function update(Request $request, UserService $userService, Csrf $csrf): Response
+    {
+        if (!$csrf->validate($request->postParams['csrf_token'] ?? '')) {
+            return new Response("Invalid CSRF token.", HttpStatusCode::Forbidden);
+        }
+
+        try {
+            $userService->updateUser($request->postParams);
+
+            return new Response("User has been updated successfully.");
+        } catch (InvalidArgumentException $e) {
+            return new Response($e->getMessage(), HttpStatusCode::BadRequest);
+        } catch (LogicException $e) {
+            return new Response($e->getMessage(), HttpStatusCode::Forbidden);
+        } catch (Exception $e) {
+            return new Response('Exception ' . $e->getMessage() . "An error occurred while trying to update the user.", HttpStatusCode::InternalServerError);
         }
     }
 }
