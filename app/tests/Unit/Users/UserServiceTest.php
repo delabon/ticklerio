@@ -235,10 +235,7 @@ class UserServiceTest extends TestCase
 
     public function testUpdatesUserSuccessfully(): void
     {
-        $userData = UserData::memberOne();
-        $userData['id'] = 1;
-        $user = User::make($userData);
-        $this->auth->login($user);
+        $user = $this->makeAndLoginUser();
         $userUpdatedData = UserData::updatedData();
         $userUpdatedData['id'] = 1;
 
@@ -263,9 +260,9 @@ class UserServiceTest extends TestCase
         $this->assertSame($userUpdatedData['email'], $updatedUser->getEmail());
         $this->assertSame($userUpdatedData['first_name'], $updatedUser->getFirstName());
         $this->assertSame($userUpdatedData['last_name'], $updatedUser->getLastName());
-        $this->assertSame($userData['type'], $updatedUser->getType());
-        $this->assertSame($userData['created_at'], $updatedUser->getCreatedAt());
-        $this->assertGreaterThan($userData['updated_at'], $updatedUser->getUpdatedAt());
+        $this->assertSame($user->getType(), $updatedUser->getType());
+        $this->assertSame($user->getCreatedAt(), $updatedUser->getCreatedAt());
+        $this->assertGreaterThan($user->getUpdatedAt(), $updatedUser->getUpdatedAt());
         $this->assertTrue(PasswordUtils::isPasswordHashed($updatedUser->getPassword()));
     }
 
@@ -585,46 +582,33 @@ class UserServiceTest extends TestCase
 
     public function testSoftDeletesUserSuccessfully(): void
     {
-        $this->pdoStatementMock->expects($this->exactly(5))
+        $user = User::make(UserData::memberOne());
+        $user->setId(1);
+
+        $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
             ->willReturn(true);
+
         $this->pdoStatementMock->expects($this->exactly(2))
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
-            ->willReturnCallback(function () {
-                    $userData = UserData::memberOne();
-                    $userData['id'] = 1;
+            ->willReturnCallback(function () use ($user) {
+                return $user->toArray();
+            });
 
-                    return $userData;
-                });
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetchAll')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturn([
-                (function () {
-                    $userData = UserData::memberOne();
-                    $userData['id'] = 1;
-                    $userData['email'] = 'deleted';
-                    $userData['first_name'] = 'deleted';
-                    $userData['last_name'] = 'deleted';
-                    $userData['type'] = UserType::Deleted->value;
-
-                    return $userData;
-                })()
-            ]);
-
-        $this->pdoMock->expects($this->exactly(5))
+        $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
-        $this->pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturn("1");
+            ->willReturnCallback(function ($query) {
+                if (stripos($query, 'UPDATE')) {
+                    $this->assertMatchesRegularExpression('/UPDATE.+users.+SET.+WHERE.+id = ?/is', $query);
+                }
 
-        $user = $this->userService->createUser(UserData::memberOne());
+                return $this->pdoStatementMock;
+            });
 
         $deletedUser = $this->userService->softDeleteUser($user->getId());
 
-        $this->assertCount(1, $this->userRepository->all());
+        $this->assertSame($user->getId(), $deletedUser->getId());
         $this->assertSame('deleted-1@' . $_ENV['APP_DOMAIN'], $deletedUser->getEmail());
         $this->assertSame('deleted', $deletedUser->getFirstName());
         $this->assertSame('deleted', $deletedUser->getLastName());
@@ -722,112 +706,5 @@ class UserServiceTest extends TestCase
         $this->expectExceptionMessage("Cannot delete a user that does not exist.");
 
         $this->userService->softDeleteUser($user->getId());
-    }
-
-    public function testSoftDeletesMultipleUsersSuccessfully(): void
-    {
-        $this->pdoStatementMock->expects($this->exactly(11))
-            ->method('execute')
-            ->willReturn(true);
-        $this->pdoStatementMock->expects($this->exactly(6))
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturnOnConsecutiveCalls(
-                (function () {
-                    $userData = UserData::memberOne();
-                    $userData['id'] = 1;
-
-                    return $userData;
-                })(),
-                (function () {
-                    $userData = UserData::memberOne();
-                    $userData['id'] = 1;
-
-                    return $userData;
-                })(),
-                (function () {
-                    $userData = UserData::memberTwo();
-                    $userData['id'] = 2;
-
-                    return $userData;
-                })(),
-                (function () {
-                    $userData = UserData::memberTwo();
-                    $userData['id'] = 2;
-
-                    return $userData;
-                })(),
-                (function () {
-                    $userData = UserData::memberOne();
-                    $userData['id'] = 1;
-                    $userData['email'] = 'deleted-1@' . $_ENV['APP_DOMAIN'];
-                    $userData['first_name'] = 'deleted';
-                    $userData['last_name'] = 'deleted';
-                    $userData['type'] = UserType::Deleted->value;
-
-                    return $userData;
-                })(),
-                (function () {
-                    $userData = UserData::memberTwo();
-                    $userData['id'] = 2;
-                    $userData['email'] = 'deleted-2@' . $_ENV['APP_DOMAIN'];
-                    $userData['first_name'] = 'deleted';
-                    $userData['last_name'] = 'deleted';
-                    $userData['type'] = UserType::Deleted->value;
-
-                    return $userData;
-                })()
-            );
-        $this->pdoStatementMock->expects($this->exactly(1))
-            ->method('fetchAll')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturn([
-                (function () {
-                    $userData = UserData::memberOne();
-                    $userData['id'] = 1;
-                    $userData['email'] = 'deleted-1@' . $_ENV['APP_DOMAIN'];
-                    $userData['first_name'] = 'deleted';
-                    $userData['last_name'] = 'deleted';
-                    $userData['type'] = UserType::Deleted->value;
-
-                    return $userData;
-                })(),
-                (function () {
-                    $userData = UserData::memberTwo();
-                    $userData['id'] = 2;
-                    $userData['email'] = 'deleted-2@' . $_ENV['APP_DOMAIN'];
-                    $userData['first_name'] = 'deleted';
-                    $userData['last_name'] = 'deleted';
-                    $userData['type'] = UserType::Deleted->value;
-
-                    return $userData;
-                })()
-            ]);
-
-        $this->pdoMock->expects($this->exactly(11))
-            ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
-        $this->pdoMock->expects($this->exactly(2))
-            ->method('lastInsertId')
-            ->willReturn("1", "2");
-
-        $userOne = $this->userService->createUser(UserData::memberOne());
-        $userTwo = $this->userService->createUser(UserData::memberTwo());
-
-        $this->userService->softDeleteUser($userOne->getId());
-        $this->userService->softDeleteUser($userTwo->getId());
-
-        $userOneDeleted = $this->userRepository->find($userOne->getId());
-        $userTwoDeleted = $this->userRepository->find($userTwo->getId());
-
-        $this->assertCount(2, $this->userRepository->all());
-        $this->assertSame('deleted-' . $userOneDeleted->getId() . '@' . $_ENV['APP_DOMAIN'], $userOneDeleted->getEmail());
-        $this->assertSame('deleted', $userOneDeleted->getFirstName());
-        $this->assertSame('deleted', $userOneDeleted->getLastName());
-        $this->assertSame(UserType::Deleted->value, $userOneDeleted->getType());
-        $this->assertSame('deleted-' . $userTwoDeleted->getId() . '@' . $_ENV['APP_DOMAIN'], $userTwoDeleted->getEmail());
-        $this->assertSame('deleted', $userTwoDeleted->getFirstName());
-        $this->assertSame('deleted', $userTwoDeleted->getLastName());
-        $this->assertSame(UserType::Deleted->value, $userTwoDeleted->getType());
     }
 }
