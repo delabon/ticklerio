@@ -2,6 +2,10 @@
 
 namespace Tests\Unit\Users;
 
+use App\Core\Auth;
+use App\Core\Session\ArraySessionHandler;
+use App\Core\Session\Session;
+use App\Core\Session\SessionHandlerType;
 use App\Exceptions\EmailAlreadyExistsException;
 use App\Exceptions\UserDoesNotExistException;
 use App\Users\User;
@@ -17,23 +21,50 @@ use PDO;
 use PDOStatement;
 use PHPUnit\Framework\TestCase;
 use Tests\_data\UserData;
+use Tests\Traits\AuthenticatesUsers;
 
 class UserServiceTest extends TestCase
 {
+    use AuthenticatesUsers;
+
     private object $pdoStatementMock;
     private object $pdoMock;
     private UserRepository $userRepository;
     private UserService $userService;
+    private ?Session $session;
+    private Auth $auth;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $_ENV['APP_DOMAIN'] = 'test.com';
+        $this->session = new Session(
+            handler: new ArraySessionHandler(),
+            handlerType: SessionHandlerType::Array,
+            name: 'my_session_name',
+            lifeTime: 3600,
+            ssl: false,
+            useCookies: false,
+            httpOnly: false,
+            path: '/',
+            domain: '.test.com',
+            savePath: '/tmp'
+        );
+        $this->session->start();
+        $this->auth = new Auth($this->session);
         $this->pdoStatementMock = $this->createMock(PDOStatement::class);
         $this->pdoMock = $this->createMock(PDO::class);
         $this->userRepository = new UserRepository($this->pdoMock);
-        $this->userService = new UserService($this->userRepository, new UserValidator(), new UserSanitizer());
+        $this->userService = new UserService($this->userRepository, new UserValidator(), new UserSanitizer(), $this->auth);
+    }
+
+    protected function tearDown(): void
+    {
+        $this->session->end();
+        $this->session = null;
+
+        parent::tearDown();
     }
 
     //
@@ -154,155 +185,6 @@ class UserServiceTest extends TestCase
         $this->userService->createUser($userTwoData);
     }
 
-    //
-    // Update user
-    //
-
-    public function testUpdatesUserSuccessfully(): void
-    {
-        $userData = UserData::memberOne();
-        $userUpdatedData = UserData::updatedData();
-
-        $this->pdoStatementMock->expects($this->exactly(5))
-            ->method('execute')
-            ->willReturn(true);
-        $this->pdoStatementMock->expects($this->exactly(2))
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturnOnConsecutiveCalls(
-                (function () use ($userData) {
-                    $userData['id'] = 1;
-
-                    return $userData;
-                })(),
-                (function () use ($userUpdatedData) {
-                    $userUpdatedData['id'] = 1;
-                    $userUpdatedData['password'] = PasswordUtils::hashPasswordIfNotHashed($userUpdatedData['password']);
-
-                    return $userUpdatedData;
-                })()
-            );
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetchAll')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturnCallback(function () use ($userData) {
-                $userData['id'] = 1;
-
-                return [$userData];
-            });
-
-        $this->pdoMock->expects($this->exactly(5))
-            ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
-        $this->pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturn("1");
-
-        $user = $this->userService->createUser($userData);
-        $user = User::make($userUpdatedData, $user);
-
-        $this->userService->updateUser($user);
-
-        $updatedUser = $this->userRepository->find(1);
-
-        $this->assertCount(1, $this->userRepository->all());
-        $this->assertSame(1, $updatedUser->getId());
-        $this->assertSame($userUpdatedData['email'], $updatedUser->getEmail());
-        $this->assertSame($userUpdatedData['first_name'], $updatedUser->getFirstName());
-        $this->assertSame($userUpdatedData['last_name'], $updatedUser->getLastName());
-        $this->assertSame($userUpdatedData['type'], $updatedUser->getType());
-        $this->assertSame($userUpdatedData['created_at'], $updatedUser->getCreatedAt());
-        $this->assertTrue(PasswordUtils::isPasswordHashed($updatedUser->getPassword()));
-    }
-
-    public function testThrowsExceptionWhenUpdatingUserWithAnIdOfZero(): void
-    {
-        $user = new User();
-        $user->setId(0);
-
-        $this->expectException(LogicException::class);
-
-        $this->userService->updateUser($user);
-    }
-
-    public function testThrowsExceptionWhenUpdatingNonExistentUser(): void
-    {
-        $this->pdoStatementMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(true);
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturn(false);
-
-        $this->pdoMock->expects($this->once())
-            ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
-
-        $user = User::make(UserData::memberOne());
-        $user->setId(999999);
-
-        $this->expectException(UserDoesNotExistException::class);
-
-        $this->userService->updateUser($user);
-    }
-
-    public function testThrowsExceptionWhenUpdatingUserWithInvalidData(): void
-    {
-        $userData = UserData::memberOne();
-        $user = User::make($userData);
-        $user->setId(9999);
-        $user->setEmail('test');
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $this->userService->updateUser($user);
-    }
-
-    public function testThrowsExceptionWhenTryingToUpdateUserWithAnEmailThatAlreadyExists(): void
-    {
-        $this->pdoStatementMock->expects($this->exactly(4))
-            ->method('execute')
-            ->willReturnOnConsecutiveCalls(
-                true,
-                true,
-                true,
-                $this->throwException(new LogicException("UNIQUE constraint failed: users.email"))
-            );
-        $this->pdoStatementMock->expects($this->exactly(1))
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturnCallback(function () {
-                $userData = UserData::memberTwo();
-                $userData['id'] = 2;
-
-                return $userData;
-            });
-
-        $this->pdoMock->expects($this->exactly(4))
-            ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
-        $this->pdoMock->expects($this->exactly(2))
-            ->method('lastInsertId')
-            ->willReturn("1", "2");
-
-        $userData = UserData::memberOne();
-        $this->userService->createUser($userData);
-        $userTwoData = UserData::memberTwo();
-        $userTwo = $this->userService->createUser($userTwoData);
-
-        $userTwo->setEmail($userData['email']);
-
-        $this->expectException(EmailAlreadyExistsException::class);
-        $this->expectExceptionMessage("A user with the email '{$userData['email']}' already exists.");
-
-        $this->userService->updateUser($userTwo);
-    }
-
-    //
-    // Password hashing
-    //
-
     public function testPasswordShouldBeHashedBeforeAddingUser(): void
     {
         $userData = UserData::memberOne();
@@ -323,50 +205,6 @@ class UserServiceTest extends TestCase
         $this->assertNotSame($userData['password'], $user->getPassword());
         $this->assertTrue(PasswordUtils::isPasswordHashed($user->getPassword()));
     }
-
-    public function testPasswordShouldBeHashedBeforeUpdatingUser(): void
-    {
-        $updatedPassword = 'azerty123456';
-        $userData = UserData::memberOne();
-
-        $this->pdoStatementMock->expects($this->exactly(3))
-            ->method('execute')
-            ->willReturn(true);
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturnOnConsecutiveCalls(
-                (function () use ($userData) {
-                    $userData['id'] = 1;
-
-                    return $userData;
-                })(),
-                (function () use ($userData) {
-                    $userData['id'] = 1;
-
-                    return $userData;
-                })()
-            );
-
-        $this->pdoMock->expects($this->exactly(3))
-            ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
-        $this->pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturn("1");
-
-        $user = $this->userService->createUser($userData);
-
-        $user->setPassword($updatedPassword);
-        $this->userService->updateUser($user);
-
-        $this->assertNotSame($updatedPassword, $user->getPassword());
-        $this->assertTrue(PasswordUtils::isPasswordHashed($user->getPassword()));
-    }
-
-    //
-    // Sanitize data
-    //
 
     public function testSanitizesDataBeforeCreatingAccount(): void
     {
@@ -391,53 +229,354 @@ class UserServiceTest extends TestCase
         $this->assertSame(111, $user->getUpdatedAt());
     }
 
-    public function testSanitizesDataBeforeUpdatingAccount(): void
+    //
+    // Update
+    //
+
+    public function testUpdatesUserSuccessfully(): void
     {
         $userData = UserData::memberOne();
-        $unsanitizedData = UserData::userUnsanitizedData();
+        $userData['id'] = 1;
+        $user = User::make($userData);
+        $this->auth->login($user);
+        $userUpdatedData = UserData::updatedData();
+        $userUpdatedData['id'] = 1;
 
-        $this->pdoStatementMock->expects($this->exactly(4))
+        $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
             ->willReturn(true);
+
         $this->pdoStatementMock->expects($this->exactly(2))
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
-            ->willReturnOnConsecutiveCalls(
-                (function () use ($userData) {
-                    $userData['id'] = 1;
+            ->willReturnCallback(function () use ($user) {
+                return $user->toArray();
+            });
 
-                    return $userData;
-                })(),
-                (function () use ($unsanitizedData) {
-                    $unsanitizedData['id'] = 1;
-                    $unsanitizedData['email'] = "svgonload=confirm1@gmail.com";
-                    $unsanitizedData['first_name'] = "scriptalert'XSS'script";
-                    $unsanitizedData['last_name'] = 'Sam';
-                    $unsanitizedData['created_at'] = 88;
-
-                    return $unsanitizedData;
-                })()
-            );
-
-        $this->pdoMock->expects($this->exactly(4))
+        $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
             ->willReturn($this->pdoStatementMock);
+
+        $updatedUser = $this->userService->updateUser($userUpdatedData);
+
+        $this->assertSame(1, $updatedUser->getId());
+        $this->assertSame($userUpdatedData['email'], $updatedUser->getEmail());
+        $this->assertSame($userUpdatedData['first_name'], $updatedUser->getFirstName());
+        $this->assertSame($userUpdatedData['last_name'], $updatedUser->getLastName());
+        $this->assertSame($userData['type'], $updatedUser->getType());
+        $this->assertSame($userData['created_at'], $updatedUser->getCreatedAt());
+        $this->assertGreaterThan($userData['updated_at'], $updatedUser->getUpdatedAt());
+        $this->assertTrue(PasswordUtils::isPasswordHashed($updatedUser->getPassword()));
+    }
+
+    public function testThrowsExceptionWhenTryingToUpdateUserWhenNotLoggedIn(): void
+    {
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage("Cannot update a user when not logged in.");
+
+        $this->userService->updateUser([]);
+    }
+
+    /**
+     * @dataProvider updateUserInvalidDataProvider
+     * @param $data
+     * @param $expectedExceptionMessage
+     * @return void
+     */
+    public function testThrowsExceptionWhenTryingToUpdateUserWithInvalidOrUnsanitizedData($data, $expectedExceptionMessage): void
+    {
+        $user = $this->makeAndLoginUser();
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () use ($user) {
+                return $user->toArray();
+            });
+
         $this->pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturn("1");
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
 
-        $user = $this->userService->createUser($userData);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage($expectedExceptionMessage);
 
-        $user = User::make($unsanitizedData, $user);
+        $this->userService->updateUser($data);
+    }
 
-        $this->userService->updateUser($user);
+    public static function updateUserInvalidDataProvider(): array
+    {
+        return [
+            'Missing email' => [
+                [
+                    'first_name' => 'John',
+                    'last_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The email address is required.",
+            ],
+            'Invalid email' => [
+                [
+                    'email' => '5',
+                    'first_name' => 'John',
+                    'last_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "Invalid email address.",
+            ],
+            'Unsanitized email' => [
+                [
+                    'email' => '¹@².³',
+                    'first_name' => 'John',
+                    'last_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "Invalid email address.",
+            ],
+            'Missing first_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'last_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The first name is required.",
+            ],
+            'Invalid type of first_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'first_name' => false,
+                    'last_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The first name is of invalid type. It should be a string.",
+            ],
+            'Empty first_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'first_name' => '',
+                    'last_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The first name cannot be empty.",
+            ],
+            'Too long first_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'first_name' => str_repeat('a', 51),
+                    'last_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The first name should be equal or less than 50 characters.",
+            ],
+            'Unsanitized first_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'first_name' => '$~é',
+                    'last_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The first name cannot be empty.",
+            ],
+            'Missing last_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'first_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The last name is required.",
+            ],
+            'Invalid type of last_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'last_name' => false,
+                    'first_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The last name is of invalid type. It should be a string.",
+            ],
+            'Empty last_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'last_name' => '',
+                    'first_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The last name cannot be empty.",
+            ],
+            'Too long last_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'last_name' => str_repeat('a', 51),
+                    'first_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The last name should be equal or less than 50 characters.",
+            ],
+            'Unsanitized last_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'last_name' => '$~é',
+                    'first_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The last name cannot be empty.",
+            ],
+            'Missing password' => [
+                [
+                    'email' => 'test@email.com',
+                    'first_name' => 'Doe',
+                    'last_name' => 'John',
+                    'type' => UserType::Member->value,
+                ],
+                "The password is required",
+            ],
+            'Invalid type of password' => [
+                [
+                    'password' => false,
+                    'email' => 'test@email.com',
+                    'first_name' => 'Doe',
+                    'last_name' => 'John',
+                    'type' => UserType::Member->value,
+                ],
+                "The password is of invalid type. It should be a string.",
+            ],
+            'Short password' => [
+                [
+                    'password' => 'aaa',
+                    'email' => 'test@email.com',
+                    'first_name' => 'Doe',
+                    'last_name' => 'John',
+                    'type' => UserType::Member->value,
+                ],
+                "The password length should be between 8 and 20 characters.",
+            ],
+            'Long password' => [
+                [
+                    'password' => str_repeat('a', 21),
+                    'email' => 'test@email.com',
+                    'first_name' => 'Doe',
+                    'last_name' => 'John',
+                    'type' => UserType::Member->value,
+                ],
+                "The password length should be between 8 and 20 characters.",
+            ],
+        ];
+    }
 
-        $user = $this->userRepository->find(1);
+    public function testThrowsExceptionWhenTryingToUpdateUserWithAnEmailThatAlreadyExists(): void
+    {
+        $userOne = User::make(UserData::memberOne());
+        $userOne->setId(1);
+        $userTwo = User::make(UserData::memberTwo());
+        $userTwo->setId(2);
+        $this->auth->login($userTwo);
 
-        $this->assertSame("scriptalert'XSS'script", $user->getFirstName());
-        $this->assertSame('Sam', $user->getLastName());
-        $this->assertSame('svgonload=confirm1@gmail.com', $user->getEmail());
-        $this->assertSame(88, $user->getCreatedAt());
+        $this->pdoStatementMock->expects($this->exactly(3))
+            ->method('execute')
+            ->willReturnOnConsecutiveCalls(
+                true,
+                true,
+                $this->throwException(new LogicException("UNIQUE constraint failed: users.email"))
+            );
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () use ($userTwo) {
+                return $userTwo->toArray();
+            });
+
+        $this->pdoMock->expects($this->exactly(3))
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $userTwo->setEmail($userOne->getEmail());
+
+        $this->expectException(EmailAlreadyExistsException::class);
+        $this->expectExceptionMessage("A user with the email '{$userOne->getEmail()}' already exists.");
+
+        $this->userService->updateUser($userTwo->toArray());
+    }
+
+    public function testPasswordShouldBeHashedBeforeUpdatingUser(): void
+    {
+        $updatedPassword = 'azerty123456';
+        $userData = UserData::memberOne();
+        $userData['id'] = 1;
+        $user = User::make($userData);
+        $this->auth->login($user);
+
+        $this->pdoStatementMock->expects($this->exactly(3))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () use ($user) {
+                return $user->toArray();
+            });
+
+        $this->pdoMock->expects($this->exactly(3))
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $user->setPassword($updatedPassword);
+        $updatedUser = $this->userService->updateUser($user->toArray());
+
+        $this->assertNotSame($updatedPassword, $updatedUser->getPassword());
+        $this->assertTrue(PasswordUtils::isPasswordHashed($updatedUser->getPassword()));
+    }
+
+    public function testSanitizesDataBeforeUpdatingAccount(): void
+    {
+        $userData = UserData::memberOne();
+        $userData['id'] = 1;
+        $user = User::make($userData);
+        $this->auth->login($user);
+        $unsanitizedData = UserData::userUnsanitizedData();
+        $unsanitizedData['id'] = 1;
+
+        $this->pdoStatementMock->expects($this->exactly(3))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () use ($user) {
+                return $user->toArray();
+            });
+
+        $this->pdoMock->expects($this->exactly(3))
+            ->method('prepare')
+            ->willReturn($this->pdoStatementMock);
+
+        $updatedUser = $this->userService->updateUser($unsanitizedData);
+
+        $this->assertSame('John', $updatedUser->getFirstName());
+        $this->assertSame('Doe Test', $updatedUser->getLastName());
+        $this->assertSame('svgonload=confirm1@gmail.com', $updatedUser->getEmail());
+        $this->assertSame($userData['type'], $updatedUser->getType());
+        $this->assertSame($userData['created_at'], $updatedUser->getCreatedAt());
+        $this->assertGreaterThan($userData['updated_at'], $updatedUser->getUpdatedAt());
     }
 
     //

@@ -2,6 +2,7 @@
 
 namespace App\Users;
 
+use App\Core\Auth;
 use App\Exceptions\EmailAlreadyExistsException;
 use App\Exceptions\UserDoesNotExistException;
 use App\Utilities\PasswordUtils;
@@ -13,7 +14,8 @@ readonly class UserService
     public function __construct(
         private UserRepository $userRepository,
         private UserValidator $userValidator,
-        private UserSanitizer $userSanitizer
+        private UserSanitizer $userSanitizer,
+        private Auth $auth
     ) {
     }
 
@@ -42,21 +44,29 @@ readonly class UserService
     }
 
     /**
-     * @throws EmailAlreadyExistsException
+     * @throws Exception
      */
-    public function updateUser(User $user): void
+    public function updateUser(array $data): User
     {
-        if (!$user->getId()) {
-            throw new LogicException("Cannot update a user with an id of 0.");
+        if (!$this->auth->getUserId()) {
+            throw new LogicException("Cannot update a user when not logged in.");
         }
 
-        $data = $user->toArray();
+        $user = $this->userRepository->find($this->auth->getUserId());
+
+        // Overwrite
+        $data['id'] = $user->getId();
+        $data['type'] = $user->getType();
+        $data['created_at'] = $user->getCreatedAt();
+        $data['updated_at'] = time();
 
         $data = $this->userSanitizer->sanitize($data);
         $this->userValidator->validate($data);
+        $data['password'] = PasswordUtils::hashPasswordIfNotHashed($data['password']);
         $user = User::make($data, $user);
-        $user->setPassword(PasswordUtils::hashPasswordIfNotHashed($data['password']));
         $this->saveUser($user, $data['email']);
+
+        return $user;
     }
 
     public function softDeleteUser(int $id): User
