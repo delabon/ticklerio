@@ -63,8 +63,8 @@ class AdminServiceTest extends TestCase
         $this->userRepository = new UserRepository($this->pdoMock);
         $this->ticketRepository = new TicketRepository($this->pdoMock);
         $this->adminService = new AdminService($this->userRepository, $this->ticketRepository, new Auth($this->session));
-        $this->userService = new UserService($this->userRepository, new UserValidator(), new UserSanitizer());
         $this->auth = new Auth($this->session);
+        $this->userService = new UserService($this->userRepository, new UserValidator(), new UserSanitizer(), $this->auth);
     }
 
     protected function tearDown(): void

@@ -2,6 +2,7 @@
 
 namespace Tests\Integration\Users;
 
+use App\Core\Auth;
 use App\Exceptions\EmailAlreadyExistsException;
 use App\Exceptions\UserDoesNotExistException;
 use App\Users\User;
@@ -11,21 +12,27 @@ use App\Users\UserService;
 use App\Users\UserType;
 use App\Users\UserValidator;
 use App\Utilities\PasswordUtils;
+use InvalidArgumentException;
 use LogicException;
 use Tests\_data\UserData;
 use Tests\IntegrationTestCase;
+use Tests\Traits\GenerateUsers;
 
 class UserServiceTest extends IntegrationTestCase
 {
+    use GenerateUsers;
+
     private UserRepository $userRepository;
     private UserService $userService;
+    private Auth $auth;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->userRepository = new UserRepository($this->pdo);
-        $this->userService = new UserService($this->userRepository, new UserValidator(), new UserSanitizer());
+        $this->auth = new Auth($this->session);
+        $this->userService = new UserService($this->userRepository, new UserValidator(), new UserSanitizer(), $this->auth);
     }
 
     //
@@ -74,101 +81,252 @@ class UserServiceTest extends IntegrationTestCase
     }
 
     //
-    // Update user
+    // Update
     //
 
     public function testUpdatesUserSuccessfully(): void
     {
-        $userData = UserData::memberOne();
+        $user = $this->createAndLoginUser();
         $userUpdatedData = UserData::updatedData();
-        $user = $this->userService->createUser($userData);
-        $userUpdatedData['id'] = 1;
-        $user = User::make($userUpdatedData, $user);
 
-        $this->userService->updateUser($user);
+        $updatedUser = $this->userService->updateUser($userUpdatedData);
 
-        $updatedUser = $this->userRepository->find(1);
-
-        $this->assertSame(1, $updatedUser->getId());
+        $this->assertSame($user->getId(), $updatedUser->getId());
         $this->assertSame($userUpdatedData['email'], $updatedUser->getEmail());
         $this->assertSame($userUpdatedData['first_name'], $updatedUser->getFirstName());
         $this->assertSame($userUpdatedData['last_name'], $updatedUser->getLastName());
-        $this->assertSame($userUpdatedData['type'], $updatedUser->getType());
-        $this->assertSame($userUpdatedData['created_at'], $updatedUser->getCreatedAt());
+        $this->assertSame($user->getType(), $updatedUser->getType());
+        $this->assertSame($user->getCreatedAt(), $updatedUser->getCreatedAt());
+        $this->assertGreaterThan($user->getUpdatedAt(), $updatedUser->getUpdatedAt());
         $this->assertTrue(PasswordUtils::isPasswordHashed($updatedUser->getPassword()));
-        $this->assertCount(1, $this->userRepository->all());
     }
 
-    public function testUpdatesUserButKeepsTheEmailSuccessfully(): void
+    /**
+     * @dataProvider updateUserInvalidDataProvider
+     * @param $data
+     * @param $expectedExceptionMessage
+     * @return void
+     */
+    public function testThrowsExceptionWhenTryingToUpdateUserWithInvalidOrUnsanitizedData($data, $expectedExceptionMessage): void
     {
-        $userData = UserData::memberOne();
-        $userUpdatedData = UserData::updatedData();
-        $user = $this->userService->createUser($userData);
+        $this->createAndLoginUser();
 
-        $userUpdatedData['id'] = 1;
-        $userUpdatedData['email'] = $userData['email'];
-        $user = User::make($userUpdatedData, $user);
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage($expectedExceptionMessage);
 
-        $this->userService->updateUser($user);
-
-        $updatedUser = $this->userRepository->find(1);
-
-        $this->assertSame(1, $updatedUser->getId());
-        $this->assertSame($userUpdatedData['email'], $updatedUser->getEmail());
-        $this->assertSame($userUpdatedData['first_name'], $updatedUser->getFirstName());
-        $this->assertSame($userUpdatedData['last_name'], $updatedUser->getLastName());
-        $this->assertSame($userUpdatedData['type'], $updatedUser->getType());
-        $this->assertSame($userUpdatedData['created_at'], $updatedUser->getCreatedAt());
-        $this->assertTrue(PasswordUtils::isPasswordHashed($updatedUser->getPassword()));
-        $this->assertCount(1, $this->userRepository->all());
+        $this->userService->updateUser($data);
     }
 
-    public function testPasswordShouldBeHashedBeforeUpdatingUser(): void
+    public static function updateUserInvalidDataProvider(): array
     {
-        $userData = UserData::memberOne();
-        $user = $this->userService->createUser($userData);
-
-        $updatedPassword = 'azerty123456';
-        $user->setPassword($updatedPassword);
-        $this->userService->updateUser($user);
-
-        $this->assertNotSame($updatedPassword, $user->getPassword());
-        $this->assertTrue(PasswordUtils::isPasswordHashed($user->getPassword()));
-    }
-
-    public function testSanitizesDataBeforeUpdatingAccount(): void
-    {
-        $userData = UserData::memberOne();
-        $user = $this->userService->createUser($userData);
-        $unsanitizedData = UserData::userUnsanitizedData();
-        $user->setEmail($unsanitizedData['email']);
-        $user->setFirstName($unsanitizedData['first_name']);
-        $user->setLastName($unsanitizedData['last_name']);
-        $user->setCreatedAt($unsanitizedData['created_at']);
-
-        $this->userService->updateUser($user);
-
-        $user = $this->userRepository->find(1);
-
-        $this->assertSame('svgonload=confirm1@gmail.com', $user->getEmail());
-        $this->assertSame('John', $user->getFirstName());
-        $this->assertSame('Doe Test', $user->getLastName());
-        $this->assertSame($userData['created_at'], $user->getCreatedAt());
+        return [
+            'Missing email' => [
+                [
+                    'first_name' => 'John',
+                    'last_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The email address is required.",
+            ],
+            'Invalid email' => [
+                [
+                    'email' => '5',
+                    'first_name' => 'John',
+                    'last_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "Invalid email address.",
+            ],
+            'Unsanitized email' => [
+                [
+                    'email' => '¹@².³',
+                    'first_name' => 'John',
+                    'last_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "Invalid email address.",
+            ],
+            'Missing first_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'last_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The first name is required.",
+            ],
+            'Invalid type of first_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'first_name' => false,
+                    'last_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The first name is of invalid type. It should be a string.",
+            ],
+            'Empty first_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'first_name' => '',
+                    'last_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The first name cannot be empty.",
+            ],
+            'Too long first_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'first_name' => str_repeat('a', 51),
+                    'last_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The first name should be equal or less than 50 characters.",
+            ],
+            'Unsanitized first_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'first_name' => '$~é',
+                    'last_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The first name cannot be empty.",
+            ],
+            'Missing last_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'first_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The last name is required.",
+            ],
+            'Invalid type of last_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'last_name' => false,
+                    'first_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The last name is of invalid type. It should be a string.",
+            ],
+            'Empty last_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'last_name' => '',
+                    'first_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The last name cannot be empty.",
+            ],
+            'Too long last_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'last_name' => str_repeat('a', 51),
+                    'first_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The last name should be equal or less than 50 characters.",
+            ],
+            'Unsanitized last_name' => [
+                [
+                    'email' => 'test@email.com',
+                    'last_name' => '$~é',
+                    'first_name' => 'Doe',
+                    'password' => 'azerty123456',
+                    'type' => UserType::Member->value,
+                ],
+                "The last name cannot be empty.",
+            ],
+            'Missing password' => [
+                [
+                    'email' => 'test@email.com',
+                    'first_name' => 'Doe',
+                    'last_name' => 'John',
+                    'type' => UserType::Member->value,
+                ],
+                "The password is required",
+            ],
+            'Invalid type of password' => [
+                [
+                    'password' => false,
+                    'email' => 'test@email.com',
+                    'first_name' => 'Doe',
+                    'last_name' => 'John',
+                    'type' => UserType::Member->value,
+                ],
+                "The password is of invalid type. It should be a string.",
+            ],
+            'Short password' => [
+                [
+                    'password' => 'aaa',
+                    'email' => 'test@email.com',
+                    'first_name' => 'Doe',
+                    'last_name' => 'John',
+                    'type' => UserType::Member->value,
+                ],
+                "The password length should be between 8 and 20 characters.",
+            ],
+            'Long password' => [
+                [
+                    'password' => str_repeat('a', 21),
+                    'email' => 'test@email.com',
+                    'first_name' => 'Doe',
+                    'last_name' => 'John',
+                    'type' => UserType::Member->value,
+                ],
+                "The password length should be between 8 and 20 characters.",
+            ],
+        ];
     }
 
     public function testThrowsExceptionWhenTryingToUpdateUserWithAnEmailThatAlreadyExists(): void
     {
-        $userData = UserData::memberOne();
-        $this->userService->createUser($userData);
-        $userTwoData = UserData::memberTwo();
-        $userTwo = $this->userService->createUser($userTwoData);
+        $userOne = $this->createUser();
+        $userTwo = $this->createAndLoginUser();
 
-        $userTwo->setEmail($userData['email']);
+        $userTwo->setEmail($userOne->getEmail());
 
         $this->expectException(EmailAlreadyExistsException::class);
-        $this->expectExceptionMessage("A user with the email '{$userData['email']}' already exists.");
+        $this->expectExceptionMessage("A user with the email '{$userOne->getEmail()}' already exists.");
 
-        $this->userService->updateUser($userTwo);
+        $this->userService->updateUser($userTwo->toArray());
+    }
+
+    public function testPasswordShouldBeHashedBeforeUpdatingUser(): void
+    {
+        $updatedPassword = 'azerty123456';
+        $user = $this->createAndLoginUser();
+
+        $user->setPassword($updatedPassword);
+        $updatedUser = $this->userService->updateUser($user->toArray());
+
+        $this->assertNotSame($updatedPassword, $updatedUser->getPassword());
+        $this->assertTrue(PasswordUtils::isPasswordHashed($updatedUser->getPassword()));
+    }
+
+    public function testSanitizesDataBeforeUpdatingAccount(): void
+    {
+        $user = $this->createAndLoginUser();
+        $unsanitizedData = UserData::userUnsanitizedData();
+
+        $updatedUser = $this->userService->updateUser($unsanitizedData);
+
+        $this->assertSame('John', $updatedUser->getFirstName());
+        $this->assertSame('Doe Test', $updatedUser->getLastName());
+        $this->assertSame('svgonload=confirm1@gmail.com', $updatedUser->getEmail());
+        $this->assertSame($user->getType(), $updatedUser->getType());
+        $this->assertSame($user->getCreatedAt(), $updatedUser->getCreatedAt());
+        $this->assertGreaterThan($user->getUpdatedAt(), $updatedUser->getUpdatedAt());
     }
 
     //

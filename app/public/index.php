@@ -62,7 +62,8 @@ if ($uri === '/') {
         new UserService(
             new UserRepository($container->get(PDO::class)),
             new UserValidator(),
-            new UserSanitizer()
+            new UserSanitizer(),
+            $container->get(Auth::class)
         ),
         $container->get(Csrf::class)
     );
@@ -111,9 +112,22 @@ if ($uri === '/') {
         new UserService(
             new UserRepository($container->get(PDO::class)),
             new UserValidator(),
-            new UserSanitizer()
+            new UserSanitizer(),
+            $container->get(Auth::class)
         ),
         $container->get(Auth::class),
+        $container->get(Csrf::class)
+    );
+} elseif (preg_match("/^\/ajax\/user\/update\/?$/", $uri)) {
+    // Updates a user via ajax
+    $response = (new DeleteUserController())->update(
+        $container->get(Request::class),
+        new UserService(
+            new UserRepository($container->get(PDO::class)),
+            new UserValidator(),
+            new UserSanitizer(),
+            $container->get(Auth::class)
+        ),
         $container->get(Csrf::class)
     );
 } elseif (preg_match("/^\/ajax\/ticket\/create\/?$/", $uri)) {
