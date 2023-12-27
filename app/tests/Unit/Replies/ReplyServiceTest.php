@@ -25,11 +25,11 @@ use PHPUnit\Framework\TestCase;
 use Tests\_data\ReplyData;
 use Tests\_data\TicketData;
 use Tests\_data\UserData;
-use Tests\Traits\AuthenticatesUsers;
+use Tests\Traits\MakesUsers;
 
 class ReplyServiceTest extends TestCase
 {
-    use AuthenticatesUsers;
+    use MakesUsers;
 
     private ?Session $session;
     private ?Auth $auth;

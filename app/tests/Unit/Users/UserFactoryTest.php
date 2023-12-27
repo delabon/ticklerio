@@ -44,7 +44,6 @@ class UserFactoryTest extends TestCase
     }
 
     /**
-     * I decided to not mock the Generator::class (FakerFactory::self::create()) to keep the test simple
      * @return void
      */
     public function testMakesUsersSuccessfully(): void
@@ -59,7 +58,6 @@ class UserFactoryTest extends TestCase
     }
 
     /**
-     * I decided to not mock the Generator::class (FakerFactory::self::create()) to keep the test simple
      * @return void
      */
     public function testMakesNoUsersWhenCountIsZero(): void
@@ -70,45 +68,35 @@ class UserFactoryTest extends TestCase
     }
 
     /**
-     * I decided to not mock the Generator::class (FakerFactory::self::create()) to keep the test simple
      * @return void
      */
     public function testCreatesUsersAndPersistsThemToDatabaseSuccessfully(): void
     {
-        $this->pdoStatementMock->expects($this->exactly(3))
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('execute')
             ->willReturn(true);
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetchAll')
-            ->willReturn([
-                [
-                    'id' => 1
-                ],
-                [
-                    'id' => 2
-                ],
-            ]);
 
-        $this->pdoMock->expects($this->exactly(3))
+        $this->pdoMock->expects($this->exactly(2))
             ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
+            ->willReturnCallback(function ($query) {
+                $this->assertMatchesRegularExpression('/INSERT INTO.+?users.+?VALUES.*?\(.*?\?/is', $query);
+
+                return $this->pdoStatementMock;
+            });
+
         $this->pdoMock->expects($this->exactly(2))
             ->method('lastInsertId')
             ->willReturnOnConsecutiveCalls("1", "2");
 
         $users = $this->userFactory->count(2)->create();
-        $usersFromRepository = $this->userRepository->all();
         $this->userValidator->validate($users[0]->toArray());
         $this->userValidator->validate($users[1]->toArray());
 
         $this->assertCount(2, $users);
-        $this->assertCount(2, $usersFromRepository);
         $this->assertInstanceOf(User::class, $users[0]);
         $this->assertInstanceOf(User::class, $users[1]);
         $this->assertSame(1, $users[0]->getId());
         $this->assertSame(2, $users[1]->getId());
-        $this->assertSame(1, $usersFromRepository[0]->getId());
-        $this->assertSame(2, $usersFromRepository[1]->getId());
     }
 
     public function testOverridesAttributesWhenMakingUser(): void
@@ -143,7 +131,12 @@ class UserFactoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
+            ->willReturnCallback(function ($query) {
+                $this->assertMatchesRegularExpression('/INSERT INTO.+?users.+?VALUES.*?\(.*?\?/is', $query);
+
+                return $this->pdoStatementMock;
+            });
+
         $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturnOnConsecutiveCalls("1");

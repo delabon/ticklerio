@@ -25,7 +25,7 @@ class UserRepositoryTest extends IntegrationTestCase
     // Create user
     //
 
-    public function testAddsUserSuccessfully(): void
+    public function testInsertsUserSuccessfully(): void
     {
         $now = time();
         $userData = UserData::memberOne();
@@ -48,7 +48,7 @@ class UserRepositoryTest extends IntegrationTestCase
         $this->assertSame($now, $user->getUpdatedAt());
     }
 
-    public function testAddsMultipleUsersSuccessfully(): void
+    public function testInsertsMultipleUsersSuccessfully(): void
     {
         $userOneData = UserData::memberOne();
         $userTwoData = UserData::memberTwo();

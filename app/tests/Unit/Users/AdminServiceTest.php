@@ -25,11 +25,11 @@ use PDOStatement;
 use PHPUnit\Framework\TestCase;
 use Tests\_data\TicketData;
 use Tests\_data\UserData;
-use Tests\Traits\AuthenticatesUsers;
+use Tests\Traits\MakesUsers;
 
 class AdminServiceTest extends TestCase
 {
-    use AuthenticatesUsers;
+    use MakesUsers;
 
     private ?Session $session;
     private object $pdoStatementMock;
@@ -82,6 +82,8 @@ class AdminServiceTest extends TestCase
     public function testBansUserUsingAdminAccountSuccessfully(): void
     {
         $this->makeAndLoginAdmin();
+        $user = User::make(UserData::memberOne());
+        $user->setId(1);
 
         $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
@@ -91,33 +93,30 @@ class AdminServiceTest extends TestCase
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturnOnConsecutiveCalls(
-                (function () {
-                    $userData = UserData::memberOne();
-                    $userData['id'] = 1;
-
-                    return $userData;
+                (function () use ($user) {
+                    return $user->toArray();
                 })(),
-                (function () {
-                    $userData = UserData::memberOne();
-                    $userData['id'] = 1;
-
-                    return $userData;
+                (function () use ($user) {
+                    return $user->toArray();
                 })(),
-                (function () {
-                    $userData = UserData::memberOne();
-                    $userData['id'] = 1;
-                    $userData['type'] = UserType::Banned->value;
+                (function () use ($user) {
+                    $user->setType(UserType::Banned->value);
 
-                    return $userData;
+                    return $user->toArray();
                 })()
             );
 
         $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
+            ->willReturnCallback(function ($query) {
+                if (stripos($query, 'UPDATE') !== false) {
+                    $this->assertMatchesRegularExpression('/UPDATE.+?users.+?SET.+?WHERE.+?id = \?/is', $query);
+                } else {
+                    $this->assertMatchesRegularExpression('/SELECT.+?FROM.+?users.+?WHERE.+?id = \?/is', $query);
+                }
 
-        $user = User::make(UserData::memberOne());
-        $user->setId(1);
+                return $this->pdoStatementMock;
+            });
 
         $bannedUser = $this->adminService->banUser($user->getId());
 
@@ -160,6 +159,7 @@ class AdminServiceTest extends TestCase
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
+
         $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
@@ -182,6 +182,7 @@ class AdminServiceTest extends TestCase
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
+
         $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
@@ -210,6 +211,7 @@ class AdminServiceTest extends TestCase
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
+
         $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
@@ -238,6 +240,9 @@ class AdminServiceTest extends TestCase
     public function testUnbanUserSuccessfully(): void
     {
         $this->makeAndLoginAdmin();
+        $user = User::make(UserData::memberOne());
+        $user->setId(999);
+        $user->setType(UserType::Banned->value);
 
         $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
@@ -246,30 +251,25 @@ class AdminServiceTest extends TestCase
         $this->pdoStatementMock->expects($this->exactly(2))
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
-            ->willReturnOnConsecutiveCalls(
-                (function () {
-                    $userData = UserData::memberOne();
-                    $userData['id'] = 1;
-                    $userData['type'] = UserType::Banned->value;
-
-                    return $userData;
-                })(),
-                (function () {
-                    $userData = UserData::memberOne();
-                    $userData['id'] = 1;
-                    $userData['type'] = UserType::Banned->value;
-
-                    return $userData;
-                })(),
-            );
+            ->willReturnCallback(function () use ($user) {
+                return $user->toArray();
+            });
 
         $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
+            ->willReturnCallback(function ($query) {
+                if (stripos($query, 'UPDATE') !== false) {
+                    $this->assertMatchesRegularExpression('/UPDATE.+?users.+?SET.+?WHERE.+?id = \?/is', $query);
+                } else {
+                    $this->assertMatchesRegularExpression('/SELECT.+?FROM.+?users.+?WHERE.+?id = \?/is', $query);
+                }
+
+                return $this->pdoStatementMock;
+            });
 
         $unbannedUser = $this->adminService->unbanUser(999);
 
-        $this->assertSame(1, $unbannedUser->getId());
+        $this->assertSame(999, $unbannedUser->getId());
         $this->assertFalse($unbannedUser->isBanned());
         $this->assertSame(UserType::Member->value, $unbannedUser->getType());
     }
@@ -360,58 +360,52 @@ class AdminServiceTest extends TestCase
 
     public function testUpdatesTicketStatusSuccessfully(): void
     {
-        $this->makeAndLoginAdmin();
+        $admin = $this->makeAndLoginAdmin();
         $ticketData = TicketData::one();
+        $ticketData['id'] = 1;
         $ticketData['status'] = TicketStatus::Publish->value;
+        $ticket = Ticket::make($ticketData);
 
-        $this->pdoStatementMock->expects($this->exactly(7))
+        $this->pdoStatementMock->expects($this->exactly(5))
             ->method('execute')
             ->willReturn(true);
 
-        $this->pdoStatementMock->expects($this->exactly(5))
+        $this->pdoStatementMock->expects($this->exactly(4))
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
             ->willReturnOnConsecutiveCalls(
-                (function () {
-                    $userData = UserData::adminData();
-                    $userData['id'] = 1;
-
-                    return $userData;
+                (function () use ($admin) {
+                    return $admin->toArray();
                 })(),
-                (function () use ($ticketData) {
-                    $ticketData['id'] = 1;
-
-                    return $ticketData;
+                (function () use ($ticket) {
+                    return $ticket->toArray();
                 })(),
-                (function () use ($ticketData) {
-                    $ticketData['id'] = 1;
-
-                    return $ticketData;
+                (function () use ($ticket) {
+                    return $ticket->toArray();
                 })(),
-                (function () use ($ticketData) {
-                    $ticketData['id'] = 1;
+                (function () use ($ticket) {
+                    $ticket->setStatus(TicketStatus::Solved->value);
 
-                    return $ticketData;
-                })(),
-                (function () use ($ticketData) {
-                    $ticketData['id'] = 1;
-                    $ticketData['status'] = TicketStatus::Solved->value;
-
-                    return $ticketData;
+                    return $ticket->toArray();
                 })(),
             );
 
-        $this->pdoMock->expects($this->exactly(7))
+        $prepareCount = 1;
+        $this->pdoMock->expects($this->exactly(5))
             ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
+            ->willReturnCallback(function ($query) use (&$prepareCount) {
+                if ($prepareCount === 1) {
+                    $this->assertMatchesRegularExpression('/SELECT.+?FROM.+?users.+?WHERE.+?id = \?/is', $query);
+                } elseif ($prepareCount >= 2 && $prepareCount <= 3) {
+                    $this->assertMatchesRegularExpression('/SELECT.+?FROM.+?tickets.+?WHERE.+?id = \?/is', $query);
+                } elseif ($prepareCount === 4) {
+                    $this->assertMatchesRegularExpression('/UPDATE.+?tickets.+?SET.+?WHERE.+?id = \?/is', $query);
+                }
 
-        $this->pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturn("1");
+                $prepareCount++;
 
-        /** @var Ticket $ticket */
-        $ticket = Ticket::make($ticketData);
-        $this->ticketRepository->save($ticket);
+                return $this->pdoStatementMock;
+            });
 
         $this->adminService->updateTicketStatus($ticket->getId(), TicketStatus::Solved->value);
 

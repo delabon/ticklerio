@@ -5,7 +5,7 @@ namespace Tests\Traits;
 use App\Users\User;
 use Tests\_data\UserData;
 
-trait AuthenticatesUsers
+trait MakesUsers
 {
     protected function makeAndLoginUser(): User
     {

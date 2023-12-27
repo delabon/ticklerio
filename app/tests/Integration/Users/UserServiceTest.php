@@ -16,11 +16,11 @@ use InvalidArgumentException;
 use LogicException;
 use Tests\_data\UserData;
 use Tests\IntegrationTestCase;
-use Tests\Traits\GenerateUsers;
+use Tests\Traits\CreatesUsers;
 
 class UserServiceTest extends IntegrationTestCase
 {
-    use GenerateUsers;
+    use CreatesUsers;
 
     private UserRepository $userRepository;
     private UserService $userService;
