@@ -15,9 +15,12 @@ use Exception;
 use Faker\Factory;
 use Tests\_data\UserData;
 use Tests\FeatureTestCase;
+use Tests\Traits\GenerateUsers;
 
 class DeleteUserTest extends FeatureTestCase
 {
+    use GenerateUsers;
+
     private Auth $auth;
     private UserRepository $userRepository;
     private UserFactory $userFactory;
@@ -33,10 +36,7 @@ class DeleteUserTest extends FeatureTestCase
 
     public function testDeletesUserSuccessfully(): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value,
-        ])[0];
-        $this->auth->login($user);
+        $user = $this->createAndLoginUser();
 
         $response = $this->post(
             '/ajax/user/delete',
@@ -49,6 +49,7 @@ class DeleteUserTest extends FeatureTestCase
         $deletedUser = $this->userRepository->find($user->getId());
 
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertSame('User has been deleted successfully.', $response->getBody()->getContents());
         $this->assertSame('deleted-' . $deletedUser->getId() . '@' . $_ENV['APP_DOMAIN'], $deletedUser->getEmail());
         $this->assertSame('deleted', $deletedUser->getFirstName());
         $this->assertSame('deleted', $deletedUser->getLastName());
@@ -196,11 +197,8 @@ class DeleteUserTest extends FeatureTestCase
      */
     public function testReturnsBadRequestResponseWhenTryingToSoftDeleteUserThatHasAlreadyBeenDeleted(): void
     {
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value,
-        ])[0];
-        $this->auth->login($user);
-        $userService = new UserService($this->userRepository, new userValidator(), new UserSanitizer());
+        $user = $this->createAndLoginUser();
+        $userService = new UserService($this->userRepository, new userValidator(), new UserSanitizer(), $this->auth);
         $userService->softDeleteUser($user->getId());
 
         $response = $this->post(
