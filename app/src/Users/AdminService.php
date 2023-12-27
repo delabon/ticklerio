@@ -105,7 +105,6 @@ readonly class AdminService
             throw new TicketDoesNotExistException("Cannot update the status of a ticket that does not exist.");
         }
 
-        $ticket = $this->ticketRepository->find($id);
         $ticket->setStatus($status);
         $this->ticketRepository->save($ticket);
     }
