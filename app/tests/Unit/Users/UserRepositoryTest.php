@@ -44,7 +44,7 @@ class UserRepositoryTest extends TestCase
     // Create
     //
 
-    public function testCreatesUserSuccessfully(): void
+    public function testInsertsUserSuccessfully(): void
     {
         $userData = UserData::memberOne();
         $user = User::make($userData);
@@ -55,7 +55,7 @@ class UserRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/INSERT.+INTO.+users.+VALUES.+/is'))
+            ->with($this->matchesRegularExpression('/INSERT.+?INTO.+?users.+?VALUES.*?\(.*?\?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->pdoMock->expects($this->once())
@@ -67,7 +67,7 @@ class UserRepositoryTest extends TestCase
         $this->assertSame(1, $user->getId());
     }
 
-    public function testAddsMultipleUsersSuccessfully(): void
+    public function testInsertsMultipleUsersSuccessfully(): void
     {
         $userOneData = UserData::memberOne();
         $user = User::make($userOneData);
@@ -80,7 +80,7 @@ class UserRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->exactly(2))
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/INSERT.+INTO.+users.+VALUES.+/is'))
+            ->with($this->matchesRegularExpression('/INSERT.+?INTO.+?users.+?VALUES.*?\(.*?\?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->pdoMock->expects($this->exactly(2))
@@ -127,7 +127,15 @@ class UserRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->exactly(2))
             ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
+            ->willReturnCallback(function ($query) {
+                if (stripos($query, 'UPDATE') !== false) {
+                    $this->assertMatchesRegularExpression('/UPDATE.+?users.+?SET.+?WHERE.+?id = \?/is', $query);
+                } else {
+                    $this->assertMatchesRegularExpression('/SELECT.+?FROM.+?users.+?WHERE.+?id = \?/is', $query);
+                }
+
+                return $this->pdoStatementMock;
+            });
 
         $userData = UserData::memberOne();
         $user = User::make($userData);
@@ -205,7 +213,7 @@ class UserRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/SELECT.+FROM.+users.+WHERE.+id = \?/is'))
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?users.+?WHERE.+?id = \?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $user = User::make($userData);
@@ -266,7 +274,7 @@ class UserRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/SELECT.+FROM.+users.+/is'))
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?users/is'))
             ->willReturn($this->pdoStatementMock);
 
         $usersFound = $this->userRepository->all();
@@ -291,7 +299,7 @@ class UserRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/SELECT.+FROM.+users/is'))
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?users/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->assertCount(0, $this->userRepository->all());
@@ -333,7 +341,7 @@ class UserRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->matchesRegularExpression("/SELECT.+FROM.+users.+WHERE.+{$data['key']} = \?/is"))
+            ->with($this->matchesRegularExpression("/SELECT.+?FROM.+?users.+?WHERE.+?{$data['key']} = \?/is"))
             ->willReturn($this->pdoStatementMock);
 
         $usersFound = $this->userRepository->findBy($data['key'], $data['value']);
@@ -362,7 +370,7 @@ class UserRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->matchesRegularExpression("/SELECT.+FROM.+users.+WHERE.+{$findData['key']} = \?/is"))
+            ->with($this->matchesRegularExpression("/SELECT.+?FROM.+?users.+?WHERE.+?{$findData['key']} = \?/is"))
             ->willReturn($this->pdoStatementMock);
 
         $usersFound = $this->userRepository->findBy($findData['key'], $findData['value']);
@@ -433,7 +441,7 @@ class UserRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/DELETE.+FROM.+users.+WHERE.+id = \?/is'))
+            ->with($this->matchesRegularExpression('/DELETE.+?FROM.+?users.+?WHERE.+?id = \?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->userRepository->delete(1);
