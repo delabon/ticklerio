@@ -44,6 +44,7 @@ readonly class UserService
     }
 
     /**
+     * @param array<string, mixed> $data
      * @throws Exception
      */
     public function updateUser(array $data): User
