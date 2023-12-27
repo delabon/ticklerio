@@ -74,37 +74,30 @@ class UserServiceTest extends TestCase
     public function testCreatesUserSuccessfully(): void
     {
         $userData = UserData::memberOne();
-        $this->pdoStatementMock->expects($this->exactly(3))
+
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetch')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturnCallback(function () use ($userData) {
-                $userData['id'] = 1;
 
-                return $userData;
-            });
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetchAll')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturnCallback(function () use ($userData) {
-                $userData['id'] = 1;
-
-                return [$userData];
-            });
-
-        $this->pdoMock->expects($this->exactly(3))
+        $this->pdoMock->expects($this->once())
             ->method('prepare')
+            ->with($this->matchesRegularExpression('/INSERT INTO.+?users.+?VALUES.*?\(.*?\?/is'))
             ->willReturn($this->pdoStatementMock);
+
         $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $this->userService->createUser($userData);
+        $createdUser = $this->userService->createUser($userData);
 
-        $this->assertSame(1, $this->userRepository->find(1)->getId());
-        $this->assertCount(1, $this->userRepository->all());
+        $this->assertSame(1, $createdUser->getId());
+        $this->assertSame($userData['email'], $createdUser->getEmail());
+        $this->assertSame($userData['first_name'], $createdUser->getFirstName());
+        $this->assertSame($userData['last_name'], $createdUser->getLastName());
+        $this->assertSame($userData['type'], $createdUser->getType());
+        $this->assertSame($userData['created_at'], $createdUser->getCreatedAt());
+        $this->assertSame($userData['updated_at'], $createdUser->getUpdatedAt());
+        $this->assertTrue(PasswordUtils::isPasswordHashed($createdUser->getPassword()));
     }
 
     public function testThrowsExceptionWhenAddingUserWithInvalidEmail(): void
@@ -196,6 +189,7 @@ class UserServiceTest extends TestCase
         $this->pdoMock->expects($this->once())
             ->method('prepare')
             ->willReturn($this->pdoStatementMock);
+
         $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturn("1");
@@ -215,6 +209,7 @@ class UserServiceTest extends TestCase
         $this->pdoMock->expects($this->once())
             ->method('prepare')
             ->willReturn($this->pdoStatementMock);
+
         $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturn("1");
@@ -252,7 +247,15 @@ class UserServiceTest extends TestCase
 
         $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
+            ->willReturnCallback(function ($query) {
+                if (stripos($query, 'UPDATE') !== false) {
+                    $this->assertMatchesRegularExpression('/UPDATE.+?users.+?SET.+?WHERE.+?id = \?/is', $query);
+                } else {
+                    $this->assertMatchesRegularExpression('/SELECT.+?FROM.+?users.+?WHERE.+?id = \?/is', $query);
+                }
+
+                return $this->pdoStatementMock;
+            });
 
         $updatedUser = $this->userService->updateUser($userUpdatedData);
 
