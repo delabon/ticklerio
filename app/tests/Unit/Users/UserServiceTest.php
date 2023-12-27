@@ -599,7 +599,7 @@ class UserServiceTest extends TestCase
         $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
             ->willReturnCallback(function ($query) {
-                if (stripos($query, 'UPDATE')) {
+                if (stripos($query, 'UPDATE') !== false) {
                     $this->assertMatchesRegularExpression('/UPDATE.+users.+SET.+WHERE.+id = ?/is', $query);
                 }
 
