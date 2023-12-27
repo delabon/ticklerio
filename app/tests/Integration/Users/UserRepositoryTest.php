@@ -206,7 +206,7 @@ class UserRepositoryTest extends IntegrationTestCase
     // Delete
     //
 
-    public function testDeletesTicketSuccessfully(): void
+    public function testDeletesUserSuccessfully(): void
     {
         $user = User::make(UserData::memberOne());
         $this->userRepository->save($user);

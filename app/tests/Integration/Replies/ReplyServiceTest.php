@@ -17,16 +17,17 @@ use App\Tickets\TicketStatus;
 use App\Users\User;
 use App\Users\UserFactory;
 use App\Users\UserRepository;
-use App\Users\UserType;
 use Faker\Factory;
 use InvalidArgumentException;
 use LogicException;
 use Tests\_data\ReplyData;
 use Tests\IntegrationTestCase;
 use Tests\Traits\AuthenticatesUsers;
+use Tests\Traits\GenerateUsers;
 
 class ReplyServiceTest extends IntegrationTestCase
 {
+    use GenerateUsers;
     use AuthenticatesUsers;
 
     private TicketRepository $ticketRepository;
@@ -96,7 +97,7 @@ class ReplyServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenTryingToCreateReplyForTicketThatDoesNotExist(): void
     {
-        $user = $this->logInUser();
+        $user = $this->makeAndLoginUser();
         $replyData = ReplyData::one();
         $replyData['user_id'] = $user->getId();
         $replyData['ticket_id'] = 999;
@@ -148,7 +149,7 @@ class ReplyServiceTest extends IntegrationTestCase
 
     public function testSuccessfullyUpdatesReplyWhenLoggedInAsAdmin(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
         $user = $this->createUser();
         $ticket = $this->createTicket($user);
         $replyData = ReplyData::one($user->getId(), $ticket->getId());
@@ -170,7 +171,7 @@ class ReplyServiceTest extends IntegrationTestCase
 
     public function testSuccessfullyUpdatesReplyThatBelongsToClosedTicketWhenLoggedInAsAdmin(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
         $user = $this->createUser();
         $ticket = $this->createTicket($user, TicketStatus::Closed);
         $replyData = ReplyData::one($user->getId(), $ticket->getId());
@@ -347,7 +348,7 @@ class ReplyServiceTest extends IntegrationTestCase
 
     public function testSuccessfullyDeletesReplyWhenLoggedAsAdmin(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
         $user = $this->createUser();
         $ticket = $this->createTicket($user);
         $reply = Reply::make(ReplyData::one(1, $ticket->getId()));
@@ -362,7 +363,7 @@ class ReplyServiceTest extends IntegrationTestCase
 
     public function testSuccessfullyDeletesReplyThatBelongsToClosedTicketWhenLoggedAsAdmin(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
         $user = $this->createUser();
         $ticket = $this->createTicket($user, TicketStatus::Closed);
         $reply = Reply::make(ReplyData::one(1, $ticket->getId()));
@@ -377,7 +378,7 @@ class ReplyServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenTryingToDeleteReplyThatDoesNotExist(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->expectException(ReplyDoesNotExistException::class);
         $this->expectExceptionMessage("The reply with the id '99' does not exist.");
@@ -429,21 +430,6 @@ class ReplyServiceTest extends IntegrationTestCase
         return $ticketFactory->create([
             'user_id' => $user->getId(),
             'status' => $status->value,
-        ])[0];
-    }
-
-    private function createAndLogInUser(): User
-    {
-        $user = $this->createUser();
-        $this->auth->login($user);
-
-        return $user;
-    }
-
-    private function createUser(): User
-    {
-        return (new UserFactory($this->userRepository, Factory::create()))->create([
-            'type' => UserType::Member->value,
         ])[0];
     }
 }

@@ -81,7 +81,7 @@ class AdminServiceTest extends TestCase
 
     public function testBansUserUsingAdminAccountSuccessfully(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
 
         $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
@@ -136,7 +136,7 @@ class AdminServiceTest extends TestCase
 
     public function testThrowsExceptionWhenBanningUserUsingNonAdminAccount(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->expectException(LogicException::class);
 
@@ -145,7 +145,7 @@ class AdminServiceTest extends TestCase
 
     public function testThrowsExceptionWhenBanningUserWithNonPositiveId(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Cannot ban a user with a non-positive id.");
@@ -155,7 +155,7 @@ class AdminServiceTest extends TestCase
 
     public function testThrowsExceptionWhenBanningNonExistentUser(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
 
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
@@ -177,7 +177,7 @@ class AdminServiceTest extends TestCase
 
     public function testThrowsExceptionWhenBanningUserThatHasBeenBanned(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
 
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
@@ -205,7 +205,7 @@ class AdminServiceTest extends TestCase
 
     public function testThrowsExceptionWhenBanningUserThatHasBeenDeleted(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
 
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
@@ -237,7 +237,7 @@ class AdminServiceTest extends TestCase
 
     public function testUnbanUserSuccessfully(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
 
         $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
@@ -284,7 +284,7 @@ class AdminServiceTest extends TestCase
 
     public function testThrowsExceptionWhenUnbanningUserWithNonAdminAccount(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage("Cannot unban a user using a non-admin account.");
@@ -294,7 +294,7 @@ class AdminServiceTest extends TestCase
 
     public function testThrowsExceptionWhenUnbanningUserWithNonPositiveId(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Cannot unban a user with a non-positive id.");
@@ -304,7 +304,7 @@ class AdminServiceTest extends TestCase
 
     public function testThrowsExceptionWhenUnbanningNonExistentUser(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
 
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
@@ -327,7 +327,7 @@ class AdminServiceTest extends TestCase
 
     public function testThrowsExceptionWhenUnbanningNonBannedUser(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
 
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
@@ -360,7 +360,7 @@ class AdminServiceTest extends TestCase
 
     public function testUpdatesTicketStatusSuccessfully(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
         $ticketData = TicketData::one();
         $ticketData['status'] = TicketStatus::Publish->value;
 
@@ -431,7 +431,7 @@ class AdminServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToUpdateTicketStatusWithNonPositiveNumber(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Cannot update the status of a ticket with a non positive id.");
@@ -441,7 +441,7 @@ class AdminServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToUpdateTicketStatusWithInvalidStatus(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage("Cannot update the status of a ticket with an invalid status.");
@@ -451,7 +451,7 @@ class AdminServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToUpdateTicketStatusWhenLoggedInAsNonAdminUser(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
@@ -480,7 +480,7 @@ class AdminServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToUpdateTicketStatusOfTicketThatDoesNotExist(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
 
         $this->pdoStatementMock->expects($this->exactly(2))
             ->method('execute')
