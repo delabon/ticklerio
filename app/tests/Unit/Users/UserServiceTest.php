@@ -21,11 +21,11 @@ use PDO;
 use PDOStatement;
 use PHPUnit\Framework\TestCase;
 use Tests\_data\UserData;
-use Tests\Traits\AuthenticatesUsers;
+use Tests\Traits\MakesUsers;
 
 class UserServiceTest extends TestCase
 {
-    use AuthenticatesUsers;
+    use MakesUsers;
 
     private object $pdoStatementMock;
     private object $pdoMock;

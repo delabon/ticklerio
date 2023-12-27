@@ -16,11 +16,11 @@ use Exception;
 use Faker\Factory;
 use Tests\_data\UserData;
 use Tests\FeatureTestCase;
-use Tests\Traits\GenerateUsers;
+use Tests\Traits\CreatesUsers;
 
 class UserManagementTest extends FeatureTestCase
 {
-    use GenerateUsers;
+    use CreatesUsers;
 
     private Auth $auth;
     private UserRepository $userRepository;

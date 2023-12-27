@@ -21,11 +21,11 @@ use App\Core\Auth;
 use PDO;
 use PDOStatement;
 use Tests\_data\UserData;
-use Tests\Traits\AuthenticatesUsers;
+use Tests\Traits\MakesUsers;
 
 class TicketServiceTest extends TestCase
 {
-    use AuthenticatesUsers;
+    use MakesUsers;
 
     private ?Session $session;
     private ?Auth $auth;

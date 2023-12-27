@@ -22,13 +22,13 @@ use InvalidArgumentException;
 use LogicException;
 use Tests\_data\ReplyData;
 use Tests\IntegrationTestCase;
-use Tests\Traits\AuthenticatesUsers;
-use Tests\Traits\GenerateUsers;
+use Tests\Traits\MakesUsers;
+use Tests\Traits\CreatesUsers;
 
 class ReplyServiceTest extends IntegrationTestCase
 {
-    use GenerateUsers;
-    use AuthenticatesUsers;
+    use CreatesUsers;
+    use MakesUsers;
 
     private TicketRepository $ticketRepository;
     private ReplyRepository $replyRepository;

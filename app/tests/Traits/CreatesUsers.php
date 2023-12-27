@@ -8,7 +8,7 @@ use App\Users\UserRepository;
 use App\Users\UserType;
 use Faker\Factory;
 
-trait GenerateUsers
+trait CreatesUsers
 {
     protected function createUser(UserType $type = UserType::Member): User
     {

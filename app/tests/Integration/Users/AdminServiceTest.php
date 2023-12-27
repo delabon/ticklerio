@@ -14,11 +14,11 @@ use App\Users\UserType;
 use LogicException;
 use Tests\_data\TicketData;
 use Tests\IntegrationTestCase;
-use Tests\Traits\GenerateUsers;
+use Tests\Traits\CreatesUsers;
 
 class AdminServiceTest extends IntegrationTestCase
 {
-    use GenerateUsers;
+    use CreatesUsers;
 
     private TicketRepository $ticketRepository;
     private UserRepository $userRepository;

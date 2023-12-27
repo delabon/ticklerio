@@ -25,11 +25,11 @@ use PDOStatement;
 use PHPUnit\Framework\TestCase;
 use Tests\_data\TicketData;
 use Tests\_data\UserData;
-use Tests\Traits\AuthenticatesUsers;
+use Tests\Traits\MakesUsers;
 
 class AdminServiceTest extends TestCase
 {
-    use AuthenticatesUsers;
+    use MakesUsers;
 
     private ?Session $session;
     private object $pdoStatementMock;

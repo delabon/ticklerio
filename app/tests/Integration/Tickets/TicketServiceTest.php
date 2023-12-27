@@ -15,13 +15,13 @@ use LogicException;
 use Tests\_data\TicketData;
 use Tests\_data\UserData;
 use Tests\IntegrationTestCase;
-use Tests\Traits\AuthenticatesUsers;
-use Tests\Traits\GenerateUsers;
+use Tests\Traits\MakesUsers;
+use Tests\Traits\CreatesUsers;
 
 class TicketServiceTest extends IntegrationTestCase
 {
-    use AuthenticatesUsers;
-    use GenerateUsers;
+    use MakesUsers;
+    use CreatesUsers;
 
     private Auth $auth;
     private TicketRepository $ticketRepository;
