@@ -11,19 +11,17 @@ use App\Tickets\TicketService;
 use App\Tickets\TicketStatus;
 use App\Tickets\TicketValidator;
 use App\Users\User;
-use App\Users\UserFactory;
-use App\Users\UserRepository;
-use App\Users\UserType;
-use Faker\Factory;
 use LogicException;
 use Tests\_data\TicketData;
 use Tests\_data\UserData;
 use Tests\IntegrationTestCase;
 use Tests\Traits\AuthenticatesUsers;
+use Tests\Traits\GenerateUsers;
 
 class TicketServiceTest extends IntegrationTestCase
 {
     use AuthenticatesUsers;
+    use GenerateUsers;
 
     private Auth $auth;
     private TicketRepository $ticketRepository;
@@ -257,7 +255,7 @@ class TicketServiceTest extends IntegrationTestCase
         $ticket = Ticket::make(TicketData::one($author->getId()));
         $this->ticketRepository->save($ticket);
 
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
 
         $this->ticketService->deleteTicket($ticket->getId());
 
@@ -288,29 +286,10 @@ class TicketServiceTest extends IntegrationTestCase
 
         $this->assertCount(1, $this->ticketRepository->all());
 
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
 
         $this->ticketService->deleteTicket(1);
 
         $this->assertNull($this->ticketRepository->find(1));
-    }
-
-    //
-    // Helpers
-    //
-
-    private function createUser(): User
-    {
-        return (new UserFactory(new UserRepository($this->pdo), Factory::create()))->create([
-            'type' => UserType::Member->value,
-        ])[0];
-    }
-
-    private function createAndLoginUser(): User
-    {
-        $user = $this->createUser();
-        $this->auth->login($user);
-
-        return $user;
     }
 }

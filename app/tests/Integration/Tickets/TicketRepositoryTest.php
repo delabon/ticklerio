@@ -5,17 +5,15 @@ namespace Tests\Integration\Tickets;
 use App\Tickets\Ticket;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketStatus;
-use App\Users\User;
-use App\Users\UserFactory;
-use App\Users\UserRepository;
-use App\Users\UserType;
-use Faker\Factory;
 use OutOfBoundsException;
 use Tests\_data\TicketData;
 use Tests\IntegrationTestCase;
+use Tests\Traits\GenerateUsers;
 
 class TicketRepositoryTest extends IntegrationTestCase
 {
+    use GenerateUsers;
+
     private TicketRepository $ticketRepository;
 
     protected function setUp(): void
@@ -181,16 +179,5 @@ class TicketRepositoryTest extends IntegrationTestCase
         $this->ticketRepository->delete($ticket->getId());
 
         $this->assertNull($this->ticketRepository->find($ticket->getId()));
-    }
-
-    //
-    // Helpers
-    //
-
-    private function createUser(): User
-    {
-        return (new UserFactory(new UserRepository($this->pdo), Factory::create()))->create([
-            'type' => UserType::Member->value,
-        ])[0];
     }
 }

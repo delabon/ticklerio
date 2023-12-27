@@ -9,16 +9,17 @@ use App\Tickets\Ticket;
 use App\Tickets\TicketRepository;
 use App\Tickets\TicketStatus;
 use App\Users\AdminService;
-use App\Users\User;
 use App\Users\UserRepository;
 use App\Users\UserType;
 use LogicException;
 use Tests\_data\TicketData;
-use Tests\_data\UserData;
 use Tests\IntegrationTestCase;
+use Tests\Traits\GenerateUsers;
 
 class AdminServiceTest extends IntegrationTestCase
 {
+    use GenerateUsers;
+
     private TicketRepository $ticketRepository;
     private UserRepository $userRepository;
     private AdminService $adminService;
@@ -40,9 +41,8 @@ class AdminServiceTest extends IntegrationTestCase
 
     public function testBansUserUsingAdminAccountSuccessfully(): void
     {
-        $this->logInAdmin();
-        $user = User::make(UserData::memberOne());
-        $this->userRepository->save($user);
+        $this->createAndLoginAdmin();
+        $user = $this->createUser();
 
         $this->assertSame(UserType::Member->value, $user->getType());
 
@@ -54,7 +54,7 @@ class AdminServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenBanningNonExistentUser(): void
     {
-        $this->logInAdmin();
+        $this->createAndLoginAdmin();
 
         $this->expectException(UserDoesNotExistException::class);
         $this->expectExceptionMessage("Cannot ban a user that does not exist.");
@@ -64,10 +64,8 @@ class AdminServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenBanningUserThatHasBeenBanned(): void
     {
-        $this->logInAdmin();
-        $user = User::make(UserData::memberOne());
-        $user->setType(UserType::Banned->value);
-        $this->userRepository->save($user);
+        $this->createAndLoginAdmin();
+        $user = $this->createUser(UserType::Banned);
 
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage("Cannot ban a user that has been banned.");
@@ -77,10 +75,8 @@ class AdminServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenBanningUserThatHasBeenDeleted(): void
     {
-        $this->logInAdmin();
-        $user = User::make(UserData::memberOne());
-        $user->setType(UserType::Deleted->value);
-        $this->userRepository->save($user);
+        $this->createAndLoginAdmin();
+        $user = $this->createUser(UserType::Deleted);
 
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage("Cannot ban a user that has been deleted.");
@@ -94,10 +90,8 @@ class AdminServiceTest extends IntegrationTestCase
 
     public function testUnbanUserSuccessfully(): void
     {
-        $this->logInAdmin();
-        $user = User::make(UserData::memberOne());
-        $user->setType(UserType::Banned->value);
-        $this->userRepository->save($user);
+        $this->createAndLoginAdmin();
+        $user = $this->createUser(UserType::Banned);
 
         $unbannedUser = $this->adminService->unbanUser($user->getId());
 
@@ -108,7 +102,7 @@ class AdminServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenUnbanningNonExistentUser(): void
     {
-        $this->logInAdmin();
+        $this->createAndLoginAdmin();
 
         $this->expectException(UserDoesNotExistException::class);
         $this->expectExceptionMessage("Cannot unban a user that does not exist.");
@@ -118,9 +112,8 @@ class AdminServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenUnbanningNonBannedUser(): void
     {
-        $this->logInAdmin();
-        $user = User::make(UserData::memberOne());
-        $this->userRepository->save($user);
+        $this->createAndLoginAdmin();
+        $user = $this->createUser();
 
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage("Cannot unban a user that is not banned.");
@@ -134,7 +127,7 @@ class AdminServiceTest extends IntegrationTestCase
 
     public function testUpdatesTicketStatusSuccessfully(): void
     {
-        $this->logInAdmin();
+        $this->createAndLoginAdmin();
         $ticketData = TicketData::one();
         $ticketData['status'] = TicketStatus::Publish->value;
 
@@ -152,7 +145,7 @@ class AdminServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenTryingToUpdateTicketStatusWhenLoggedInAsNonAdminUser(): void
     {
-        $this->logInMember();
+        $this->createAndLoginUser();
 
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage("Cannot update the status of a ticket using a non-admin account.");
@@ -162,31 +155,11 @@ class AdminServiceTest extends IntegrationTestCase
 
     public function testThrowsExceptionWhenTryingToUpdateTicketStatusOfTicketThatDoesNotExist(): void
     {
-        $this->logInAdmin();
+        $this->createAndLoginAdmin();
 
         $this->expectException(TicketDoesNotExistException::class);
         $this->expectExceptionMessage("Cannot update the status of a ticket that does not exist.");
 
         $this->adminService->updateTicketStatus(1, TicketStatus::Solved->value);
-    }
-
-    /**
-     * @return void
-     */
-    protected function logInMember(): void
-    {
-        $user = User::make(UserData::memberOne());
-        $this->userRepository->save($user);
-        $this->auth->login($user);
-    }
-
-    /**
-     * @return void
-     */
-    protected function logInAdmin(): void
-    {
-        $user = User::make(UserData::adminData());
-        $this->userRepository->save($user);
-        $this->auth->login($user);
     }
 }

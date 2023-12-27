@@ -7,7 +7,7 @@ use Tests\_data\UserData;
 
 trait AuthenticatesUsers
 {
-    protected function logInUser(): User
+    protected function makeAndLoginUser(): User
     {
         $user = User::make(UserData::memberOne());
         $user->setId(1);
@@ -16,7 +16,7 @@ trait AuthenticatesUsers
         return $user;
     }
 
-    protected function logInAdmin(): User
+    protected function makeAndLoginAdmin(): User
     {
         $admin = User::make(UserData::adminData());
         $admin->setId(2);

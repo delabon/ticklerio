@@ -98,7 +98,7 @@ class TicketServiceTest extends TestCase
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->ticketService->createTicket(TicketData::one());
 
@@ -143,7 +143,7 @@ class TicketServiceTest extends TestCase
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $ticketData = TicketData::one();
         $ticketData['status'] = TicketStatus::Closed->value;
@@ -164,7 +164,7 @@ class TicketServiceTest extends TestCase
      */
     public function testValidatesDataBeforeInserting($data, $expectedException, $expectedExceptionMessage): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->expectException($expectedException);
         $this->expectExceptionMessage($expectedExceptionMessage);
@@ -290,7 +290,7 @@ class TicketServiceTest extends TestCase
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $ticket = Ticket::make(TicketData::one());
         $this->ticketRepository->save($ticket);
@@ -436,7 +436,7 @@ class TicketServiceTest extends TestCase
      */
     public function testOverwritesDataBeforeUpdating(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $ticketData = TicketData::one();
         $ticketData['created_at'] = strtotime('1999');
@@ -532,7 +532,7 @@ class TicketServiceTest extends TestCase
             ->method('prepare')
             ->willReturn($this->pdoStatementMock);
 
-        $this->logInUser();
+        $this->makeAndLoginUser();
         $data = TicketData::updated();
         $data['id'] = 999;
 
@@ -567,7 +567,7 @@ class TicketServiceTest extends TestCase
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $ticketData = TicketData::one();
         $ticketData['user_id'] = 999;
@@ -605,7 +605,7 @@ class TicketServiceTest extends TestCase
             ->method('prepare')
             ->willReturn($this->pdoStatementMock);
 
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $updatedData = TicketData::updated();
         $updatedData['id'] = 1;
@@ -643,7 +643,7 @@ class TicketServiceTest extends TestCase
             ->method('prepare')
             ->willReturn($this->pdoStatementMock);
 
-        $this->logInUser();
+        $this->makeAndLoginUser();
         $data['id'] = 1;
 
         $this->expectException($expectedException);
@@ -750,7 +750,7 @@ class TicketServiceTest extends TestCase
 
     public function testDeletesTicketSuccessfully(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
@@ -793,7 +793,7 @@ class TicketServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToDeleteTicketUsingNonPositiveId(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The id of the ticket cannot be a non-positive number.');
@@ -803,7 +803,7 @@ class TicketServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToDeleteTicketThatDoesNotExist(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
@@ -826,7 +826,7 @@ class TicketServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToDeleteTicketWhenLoggedInAsNotTheAuthorAndNotAnAdmin(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
@@ -853,7 +853,7 @@ class TicketServiceTest extends TestCase
 
     public function testDeletesTicketWhenLoggedInAsAdminWhoIsNotTheAuthorOfTheTicket(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
 
         $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
@@ -888,7 +888,7 @@ class TicketServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToDeleteTicketWhenLoggedInAsTheAuthorButTheTicketIsNotPublish(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
@@ -915,7 +915,7 @@ class TicketServiceTest extends TestCase
 
     public function testDeletesTicketWhenLoggedInAsAdminWhoIsNotTheAuthorOfTheTicketAndTheTicketStatusIsNotPublish(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
 
         $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')

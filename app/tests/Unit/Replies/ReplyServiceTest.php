@@ -118,7 +118,7 @@ class ReplyServiceTest extends TestCase
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $replyData = ReplyData::one();
         $reply = $this->replyService->createReply($replyData);
@@ -151,7 +151,7 @@ class ReplyServiceTest extends TestCase
      */
     public function testThrowsExceptionWhenTryingToCreateReply($data, $expectedExceptionMessage): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage($expectedExceptionMessage);
@@ -234,7 +234,7 @@ class ReplyServiceTest extends TestCase
      */
     public function testThrowsExceptionAfterSanitizingInvalidData($data, $expectedExceptionMessage): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage($expectedExceptionMessage);
@@ -244,7 +244,7 @@ class ReplyServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToCreateReplyForTicketThatDoesNotExist(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
         $replyData = ReplyData::one();
         $replyData['ticket_id'] = 999;
 
@@ -272,7 +272,7 @@ class ReplyServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToCreateReplyForClosedTicket(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
         $replyData = ReplyData::one();
         $replyData['ticket_id'] = 1;
 
@@ -312,7 +312,7 @@ class ReplyServiceTest extends TestCase
 
     public function testUpdatesReplySuccessfully(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
         $replyData = ReplyData::one();
         $replyData['id'] = 1;
 
@@ -368,7 +368,7 @@ class ReplyServiceTest extends TestCase
 
     public function testSuccessfullyUpdatesReplyWhenLoggedInAsAdmin(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
 
         $user = User::make(UserData::memberOne());
         $user->setId(55);
@@ -427,7 +427,7 @@ class ReplyServiceTest extends TestCase
 
     public function testSuccessfullyUpdatesReplyThatBelongsToClosedTicketWhenLoggedInAsAdmin(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
 
         $user = User::make(UserData::memberOne());
         $user->setId(55);
@@ -498,7 +498,7 @@ class ReplyServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToUpdateReplyUsingNonPositiveId(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
         $replyData = ReplyData::one();
         $replyData['id'] = 0;
 
@@ -510,7 +510,7 @@ class ReplyServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToUpdateReplyThatDoesNotExist(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
         $replyData = ReplyData::one();
         $replyData['id'] = 998;
 
@@ -539,7 +539,7 @@ class ReplyServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToUpdateReplyThatDoesNotBelongToLoggedInUser(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
         $replyData = ReplyData::one();
         $replyData['id'] = 1;
 
@@ -572,7 +572,7 @@ class ReplyServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToUpdateReplyThatBelongsToTicketThatDoesNotExist(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
         $replyData = ReplyData::one();
         $replyData['id'] = 1;
         $replyData['ticket_id'] = 999;
@@ -609,7 +609,7 @@ class ReplyServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToUpdateReplyThatBelongsToClosedTicket(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
         $replyData = ReplyData::one();
         $replyData['id'] = 1;
 
@@ -660,7 +660,7 @@ class ReplyServiceTest extends TestCase
      */
     public function testThrowsExceptionWhenTryingToUpdateUsingInvalidData($data, $expectedExceptionMessage): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
         $data['id'] = 1;
 
         $this->pdoStatementMock->expects($this->exactly(2))
@@ -710,7 +710,7 @@ class ReplyServiceTest extends TestCase
 
     public function testDeletesReplySuccessfully(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
@@ -761,7 +761,7 @@ class ReplyServiceTest extends TestCase
 
     public function testSuccessfullyDeletesReplyUsingAdminAccount(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
 
         $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
@@ -812,7 +812,7 @@ class ReplyServiceTest extends TestCase
 
     public function testSuccessfullyDeletesReplyThatBelongsToClosedTicketWhenLoggedInAsAdmin(): void
     {
-        $this->logInAdmin();
+        $this->makeAndLoginAdmin();
 
         $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
@@ -871,7 +871,7 @@ class ReplyServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToDeleteReplyUsingInvalidId(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('The reply id must be a positive number.');
@@ -881,7 +881,7 @@ class ReplyServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToDeleteReplyThatDoesNotExist(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
@@ -908,7 +908,7 @@ class ReplyServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToDeleteReplyThatDoesNotBelongToTheLoggedInUserAndNotAdmin(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->pdoStatementMock->expects($this->once())
             ->method('execute')
@@ -942,7 +942,7 @@ class ReplyServiceTest extends TestCase
 
     public function testThrowsExceptionWhenTryingToDeleteReplyThatBelongsToClosedTicket(): void
     {
-        $this->logInUser();
+        $this->makeAndLoginUser();
 
         $this->pdoStatementMock->expects($this->exactly(2))
             ->method('execute')
