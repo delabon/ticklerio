@@ -8,11 +8,11 @@ use App\Tickets\TicketStatus;
 use OutOfBoundsException;
 use Tests\_data\TicketData;
 use Tests\IntegrationTestCase;
-use Tests\Traits\GenerateUsers;
+use Tests\Traits\CreatesUsers;
 
 class TicketRepositoryTest extends IntegrationTestCase
 {
-    use GenerateUsers;
+    use CreatesUsers;
 
     private TicketRepository $ticketRepository;
 
