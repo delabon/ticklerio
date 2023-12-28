@@ -52,7 +52,7 @@ class ReplyRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/INSERT INTO.+replies.+VALUES.+/is'))
+            ->with($this->matchesRegularExpression('/INSERT INTO.+?replies.+?VALUES.+?\?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->pdoMock->expects($this->once())
@@ -74,7 +74,7 @@ class ReplyRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->exactly(2))
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/INSERT INTO.+replies.+VALUES.+/is'))
+            ->with($this->matchesRegularExpression('/INSERT INTO.+?replies.+?VALUES.+?\?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->pdoMock->expects($this->exactly(2))
@@ -123,9 +123,9 @@ class ReplyRepositoryTest extends TestCase
             ->method('prepare')
             ->willReturnCallback(function ($query) {
                 if (stripos($query, 'SELECT') !== false) {
-                    $this->assertMatchesRegularExpression('/SELECT.+FROM.+replies.+WHERE.+id = ?.+/is', $query);
+                    $this->assertMatchesRegularExpression('/SELECT.+?FROM.+?replies.+?WHERE.+?id = \?/is', $query);
                 } else {
-                    $this->assertMatchesRegularExpression('/UPDATE.+replies.+SET.+WHERE.+id = ?.+/is', $query);
+                    $this->assertMatchesRegularExpression('/UPDATE.+?replies.+?SET.+?WHERE.+?id = \?/is', $query);
                 }
 
                 return $this->pdoStatementMock;
@@ -196,7 +196,7 @@ class ReplyRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/.+DELETE.+FROM.+replies.+WHERE.+id = ?.+/is'))
+            ->with($this->matchesRegularExpression('/DELETE.+?FROM.+?replies.+?WHERE.+?id = \?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->replyRepository->delete(55);
