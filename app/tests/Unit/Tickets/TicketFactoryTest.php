@@ -112,9 +112,9 @@ class TicketFactoryTest extends TestCase
             ->method('prepare')
             ->willReturnCallback(function ($query) use (&$prepareCount) {
                 if ($prepareCount === 1) {
-                    $this->assertMatchesRegularExpression('/.+INSERT INTO.+users.+VALUES.+\?.+/is', $query);
+                    $this->assertMatchesRegularExpression('/.+?INSERT INTO.+?users.+?VALUES.+?\?/is', $query);
                 } elseif ($prepareCount === 2) {
-                    $this->assertMatchesRegularExpression('/.+INSERT INTO.+tickets.+VALUES.+\?.+/is', $query);
+                    $this->assertMatchesRegularExpression('/.+?INSERT INTO.+tickets.+?VALUES.+?\?/is', $query);
                 }
 
                 $prepareCount++;
@@ -164,7 +164,7 @@ class TicketFactoryTest extends TestCase
 
         $this->pdoMock->expects($this->exactly(2))
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/INSERT INTO.+tickets.+VALUES.+/is'))
+            ->with($this->matchesRegularExpression('/INSERT INTO.+?tickets.+?VALUES.+?\?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->pdoMock->expects($this->exactly(2))
@@ -189,7 +189,7 @@ class TicketFactoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/INSERT INTO.+tickets.+VALUES.+/is'))
+            ->with($this->matchesRegularExpression('/INSERT INTO.+?tickets.+?VALUES.+?\?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->pdoStatementMock->expects($this->once())
