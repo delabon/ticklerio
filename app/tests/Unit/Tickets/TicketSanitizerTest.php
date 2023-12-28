@@ -50,10 +50,25 @@ class TicketSanitizerTest extends TestCase
     public static function invalidTicketDataProvider(): array
     {
         return [
-            'Sanitizes user id' => [
+            'id is string' => [
                 'key' => 'user_id',
                 'value' => ' 1 ',
                 'expectedValue' => 1
+            ],
+            'id is negative' => [
+                'key' => 'user_id',
+                'value' => -5,
+                'expectedValue' => 5
+            ],
+            'user id string' => [
+                'key' => 'user_id',
+                'value' => ' 1 ',
+                'expectedValue' => 1
+            ],
+            'user id is negative' => [
+                'key' => 'user_id',
+                'value' => -88,
+                'expectedValue' => 88
             ],
             'Sanitizes title' => [
                 'key' => 'title',
@@ -93,15 +108,25 @@ class TicketSanitizerTest extends TestCase
                 'value' => "<script>alert('XSS');</script>",
                 'expectedValue' => "alert('XSS');"
             ],
-            'Sanitizes created at' => [
+            'created at is string' => [
                 'key' => 'created_at',
-                'value' => '10',
+                'value' => ' 10 ',
                 'expectedValue' => 10
             ],
-            'Sanitizes updated at' => [
+            'created at is negative' => [
+                'key' => 'created_at',
+                'value' => -311,
+                'expectedValue' => 311
+            ],
+            'updated at string' => [
                 'key' => 'updated_at',
-                'value' => '999',
+                'value' => ' 999 ',
                 'expectedValue' => 999
+            ],
+            'updated at is negative' => [
+                'key' => 'updated_at',
+                'value' => -877,
+                'expectedValue' => 877
             ],
         ];
     }
