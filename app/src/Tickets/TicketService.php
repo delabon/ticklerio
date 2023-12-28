@@ -46,9 +46,9 @@ readonly class TicketService
 
     /**
      * @param array<string, mixed> $data
-     * @return void
+     * @return Ticket
      */
-    public function updateTicket(array $data): void
+    public function updateTicket(array $data): Ticket
     {
         $id = $data['id'] ? (int)$data['id'] : 0;
 
@@ -86,6 +86,8 @@ readonly class TicketService
         $ticket->setTitle($data['title']);
         $ticket->setDescription($data['description']);
         $this->ticketRepository->save($ticket);
+
+        return $ticket;
     }
 
     public function deleteTicket(int $id): void

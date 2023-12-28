@@ -77,38 +77,29 @@ class TicketServiceTest extends TestCase
 
     public function testCreatesTicketSuccessfully(): void
     {
-        $this->pdoStatementMock->expects($this->exactly(2))
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
 
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetch')
-            ->willReturnCallback(function () {
-                $data = TicketData::one();
-                $data['id'] = 1;
-
-                return $data;
-            });
-
-        $this->pdoMock->expects($this->exactly(2))
+        $this->pdoMock->expects($this->once())
             ->method('prepare')
+            ->with($this->matchesRegularExpression('/INSERT.+?INTO.+?tickets.+?VALUES.+?\?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $this->makeAndLoginUser();
+        $user = $this->makeAndLoginUser();
 
-        $this->ticketService->createTicket(TicketData::one());
+        $createdTicket = $this->ticketService->createTicket(TicketData::one());
 
-        $ticket = $this->ticketRepository->find(1);
-        $this->assertInstanceOf(Ticket::class, $ticket);
-        $this->assertSame(1, $ticket->getId());
-        $this->assertSame(1, $ticket->getUserId());
-        $this->assertSame('Test ticket', $ticket->getTitle());
-        $this->assertSame('Test ticket description', $ticket->getDescription());
-        $this->assertSame(TicketStatus::Publish->value, $ticket->getStatus());
+        $this->assertInstanceOf(Ticket::class, $createdTicket);
+        $this->assertSame(1, $createdTicket->getId());
+        $this->assertSame($user->getId(), $createdTicket->getUserId());
+        $this->assertSame('Test ticket', $createdTicket->getTitle());
+        $this->assertSame('Test ticket description', $createdTicket->getDescription());
+        $this->assertSame(TicketStatus::Publish->value, $createdTicket->getStatus());
     }
 
     public function testThrowsExceptionWhenTryingToCreateTicketWhenNotLoggedIn(): void
@@ -121,38 +112,30 @@ class TicketServiceTest extends TestCase
 
     public function testTicketStatusMustBePublishWhenCreatingTicket(): void
     {
-        $this->pdoStatementMock->expects($this->exactly(2))
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
 
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetch')
-            ->willReturnCallback(function () {
-                $data = TicketData::one();
-                $data['id'] = 1;
-                $data['status'] = TicketStatus::Publish->value;
-
-                return $data;
-            });
-
-        $this->pdoMock->expects($this->exactly(2))
+        $this->pdoMock->expects($this->once())
             ->method('prepare')
+            ->with($this->matchesRegularExpression('/INSERT.+?INTO.+?tickets.+?VALUES.+?\?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->pdoMock->expects($this->once())
             ->method('lastInsertId')
             ->willReturn("1");
 
-        $this->makeAndLoginUser();
+        $user = $this->makeAndLoginUser();
 
         $ticketData = TicketData::one();
+        $ticketData['user_id'] = $user->getId();
         $ticketData['status'] = TicketStatus::Closed->value;
-        $this->ticketService->createTicket($ticketData);
 
-        $ticket = $this->ticketRepository->find(1);
-        $this->assertInstanceOf(Ticket::class, $ticket);
-        $this->assertSame(1, $ticket->getId());
-        $this->assertSame(TicketStatus::Publish->value, $ticket->getStatus());
+        $createdTicket = $this->ticketService->createTicket($ticketData);
+
+        $this->assertInstanceOf(Ticket::class, $createdTicket);
+        $this->assertSame(1, $createdTicket->getId());
+        $this->assertSame(TicketStatus::Publish->value, $createdTicket->getStatus());
     }
 
     /**
@@ -252,161 +235,67 @@ class TicketServiceTest extends TestCase
     // Update
     //
 
-    public function testUpdatesTicketSuccessfully(): void
+    public function updatesTicketSuccessfully(Ticket $ticket, TicketStatus $expectedStatus = TicketStatus::Publish): void
     {
-        $this->pdoStatementMock->expects($this->exactly(5))
+        $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
             ->willReturn(true);
 
-        $this->pdoStatementMock->expects($this->exactly(3))
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('fetch')
-            ->willReturnOnConsecutiveCalls(
-                (function () {
-                    $data = TicketData::one();
-                    $data['id'] = 1;
+            ->willReturnCallback(function () use ($ticket) {
+                return $ticket->toArray();
+            });
 
-                    return $data;
-                })(),
-                (function () {
-                    $data = TicketData::one();
-                    $data['id'] = 1;
-
-                    return $data;
-                })(),
-                (function () {
-                    $data = TicketData::updated();
-                    $data['id'] = 1;
-                    $data['status'] = TicketStatus::Publish->value;
-
-                    return $data;
-                })()
-            );
-
-        $this->pdoMock->expects($this->exactly(5))
+        $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
+            ->willReturnCallback(function ($sql) {
+                if (stripos($sql, 'UPDATE') !== false) {
+                    $this->assertMatchesRegularExpression('/UPDATE.+?tickets.+?SET.+?\?.+?WHERE.+?id = \?/is', $sql);
+                } else {
+                    $this->assertMatchesRegularExpression('/SELECT.+?FROM.+?tickets.+?WHERE.+?id = \?/is', $sql);
+                }
 
-        $this->pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturn("1");
-
-        $this->makeAndLoginUser();
-
-        $ticket = Ticket::make(TicketData::one());
-        $this->ticketRepository->save($ticket);
+                return $this->pdoStatementMock;
+            });
 
         $updatedData = TicketData::updated();
         $updatedData['id'] = 1;
-        $this->ticketService->updateTicket($updatedData);
 
-        $updatedTicket = $this->ticketRepository->find(1);
+        $updatedTicket = $this->ticketService->updateTicket($updatedData);
+
         $this->assertInstanceOf(Ticket::class, $updatedTicket);
         $this->assertSame(1, $updatedTicket->getId());
         $this->assertSame(1, $updatedTicket->getUserId());
         $this->assertSame('Updated ticket title', $updatedTicket->getTitle());
         $this->assertSame('Updated ticket description 2', $updatedTicket->getDescription());
-        $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
+        $this->assertSame($expectedStatus->value, $updatedTicket->getStatus());
+    }
+
+    public function testAuthorUpdatesTicketSuccessfully(): void
+    {
+        $user = $this->makeAndLoginUser();
+        $ticket = Ticket::make(TicketData::one($user->getId()));
+        $ticket->setId(1);
+
+        $this->updatesTicketSuccessfully($ticket);
     }
 
     public function testAdminCanUpdateAnyTicketSuccessfully(): void
     {
-        $this->pdoStatementMock->expects($this->exactly(5))
-            ->method('execute')
-            ->willReturn(true);
-
-        $this->pdoStatementMock->expects($this->exactly(3))
-            ->method('fetch')
-            ->willReturnOnConsecutiveCalls(
-                (function () {
-                    $data = TicketData::one();
-                    $data['id'] = 1;
-
-                    return $data;
-                })(),
-                (function () {
-                    $data = TicketData::one();
-                    $data['id'] = 1;
-
-                    return $data;
-                })(),
-                (function () {
-                    $data = TicketData::updated();
-                    $data['id'] = 1;
-                    $data['status'] = TicketStatus::Publish->value;
-
-                    return $data;
-                })()
-            );
-
-        $this->pdoMock->expects($this->exactly(5))
-            ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
-
-        $this->pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturn("1");
-
         $user = User::make(UserData::memberOne());
         $user->setId(1);
         $admin = User::make(UserData::adminData());
         $admin->setId(2);
         $this->auth->login($admin);
         $ticket = Ticket::make(TicketData::one($user->getId()));
-        $this->ticketRepository->save($ticket);
+        $ticket->setId(1);
 
-        $updatedData = TicketData::updated();
-        $updatedData['id'] = 1;
-        $this->ticketService->updateTicket($updatedData);
-
-        $updatedTicket = $this->ticketRepository->find(1);
-        $this->assertInstanceOf(Ticket::class, $updatedTicket);
-        $this->assertSame(1, $updatedTicket->getId());
-        $this->assertSame(1, $updatedTicket->getUserId());
-        $this->assertSame('Updated ticket title', $updatedTicket->getTitle());
-        $this->assertSame('Updated ticket description 2', $updatedTicket->getDescription());
-        $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
+        $this->updatesTicketSuccessfully($ticket);
     }
 
     public function testAdminCanUpdateNonPublishTicketSuccessfully(): void
     {
-        $this->pdoStatementMock->expects($this->exactly(5))
-            ->method('execute')
-            ->willReturn(true);
-
-        $this->pdoStatementMock->expects($this->exactly(3))
-            ->method('fetch')
-            ->willReturnOnConsecutiveCalls(
-                (function () {
-                    $data = TicketData::one();
-                    $data['id'] = 1;
-                    $data['status'] = TicketStatus::Closed->value;
-
-                    return $data;
-                })(),
-                (function () {
-                    $data = TicketData::one();
-                    $data['id'] = 1;
-                    $data['status'] = TicketStatus::Closed->value;
-
-                    return $data;
-                })(),
-                (function () {
-                    $data = TicketData::updated();
-                    $data['id'] = 1;
-                    $data['status'] = TicketStatus::Publish->value;
-
-                    return $data;
-                })()
-            );
-
-        $this->pdoMock->expects($this->exactly(5))
-            ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
-
-        $this->pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturn("1");
-
         $user = User::make(UserData::memberOne());
         $user->setId(1);
         $admin = User::make(UserData::adminData());
@@ -414,19 +303,9 @@ class TicketServiceTest extends TestCase
         $this->auth->login($admin);
         $ticket = Ticket::make(TicketData::one($user->getId()));
         $ticket->setStatus(TicketStatus::Closed->value);
-        $this->ticketRepository->save($ticket);
+        $ticket->setId(1);
 
-        $updatedData = TicketData::updated();
-        $updatedData['id'] = 1;
-        $this->ticketService->updateTicket($updatedData);
-
-        $updatedTicket = $this->ticketRepository->find(1);
-        $this->assertInstanceOf(Ticket::class, $updatedTicket);
-        $this->assertSame(1, $updatedTicket->getId());
-        $this->assertSame(1, $updatedTicket->getUserId());
-        $this->assertSame('Updated ticket title', $updatedTicket->getTitle());
-        $this->assertSame('Updated ticket description 2', $updatedTicket->getDescription());
-        $this->assertSame(TicketStatus::Publish->value, $updatedTicket->getStatus());
+        $this->updatesTicketSuccessfully($ticket, TicketStatus::Closed);
     }
 
     /**
@@ -442,51 +321,37 @@ class TicketServiceTest extends TestCase
         $ticketData['created_at'] = strtotime('1999');
         $ticketData['updated_at'] = strtotime('1999');
         $ticketData['status'] = TicketStatus::Publish->value;
+        $ticket = Ticket::make($ticketData);
+        $ticket->setId(1);
 
-        $this->pdoStatementMock->expects($this->exactly(5))
+        $this->pdoStatementMock->expects($this->exactly(3))
             ->method('execute')
             ->willReturn(true);
 
-        $this->pdoStatementMock->expects($this->exactly(3))
+        $this->pdoStatementMock->expects($this->exactly(2))
             ->method('fetch')
-            ->willReturnOnConsecutiveCalls(
-                (function () use ($ticketData) {
-                    $ticketData['id'] = 1;
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () use ($ticket) {
+                return $ticket->toArray();
+            });
 
-                    return $ticketData;
-                })(),
-                (function () use ($ticketData) {
-                    $ticketData['id'] = 1;
-
-                    return $ticketData;
-                })(),
-                (function () use ($ticketData) {
-                    $updatedData = TicketData::updated();
-                    $updatedData['id'] = 1;
-                    $updatedData['status'] = $ticketData['status'];
-                    $updatedData['created_at'] = $ticketData['created_at'];
-                    $updatedData['updated_at'] = time();
-
-                    return $updatedData;
-                })()
-            );
-
-        $this->pdoMock->expects($this->exactly(5))
+        $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
+            ->willReturnCallback(function ($sql) {
+                if (stripos($sql, 'UPDATE') !== false) {
+                    $this->assertMatchesRegularExpression('/UPDATE.+?tickets.+?SET.+?\?.+?WHERE.+?id = \?/is', $sql);
+                } else {
+                    $this->assertMatchesRegularExpression('/SELECT.+?FROM.+?tickets.+?WHERE.+?id = \?/is', $sql);
+                }
 
-        $this->pdoMock->expects($this->once())
-            ->method('lastInsertId')
-            ->willReturn("1");
-
-        $ticket = Ticket::make($ticketData);
-        $this->ticketRepository->save($ticket);
+                return $this->pdoStatementMock;
+            });
 
         $updatedData = TicketData::updated();
         $updatedData['id'] = 1;
-        $this->ticketService->updateTicket($updatedData);
 
-        $updatedTicket = $this->ticketRepository->find(1);
+        $updatedTicket = $this->ticketService->updateTicket($updatedData);
+
         $this->assertInstanceOf(Ticket::class, $updatedTicket);
         $this->assertSame(1, $updatedTicket->getId());
         $this->assertSame(1, $updatedTicket->getUserId());
@@ -771,8 +636,8 @@ class TicketServiceTest extends TestCase
         $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
             ->willReturnCallback(function ($sql) {
-                if (stripos($sql, 'DELETE FROM') !== false) {
-                    $this->assertMatchesRegularExpression('/DELETE.+FROM.+tickets.+WHERE.+id = \?/is', $sql);
+                if (stripos($sql, 'DELETE') !== false) {
+                    $this->assertMatchesRegularExpression('/DELETE.+?FROM.+?tickets.+?WHERE.+?id = \?/is', $sql);
                 }
 
                 return $this->pdoStatementMock;
@@ -936,8 +801,8 @@ class TicketServiceTest extends TestCase
         $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
             ->willReturnCallback(function ($sql) {
-                if (stripos($sql, 'DELETE FROM') !== false) {
-                    $this->assertMatchesRegularExpression('/DELETE.+FROM.+tickets.+WHERE.+id = \?/is', $sql);
+                if (stripos($sql, 'DELETE') !== false) {
+                    $this->assertMatchesRegularExpression('/DELETE.+?FROM.+?tickets.+?WHERE.+?id = \?/is', $sql);
                 }
 
                 return $this->pdoStatementMock;

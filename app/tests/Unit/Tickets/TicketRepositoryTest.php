@@ -54,7 +54,7 @@ class TicketRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/INSERT.+INTO.+tickets.+VALUES.+/is'))
+            ->with($this->matchesRegularExpression('/INSERT.+?INTO.+?tickets.+?VALUES.+?\?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->pdoMock->expects($this->once())
@@ -76,7 +76,7 @@ class TicketRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->exactly(2))
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/INSERT.+INTO.+tickets.+VALUES.+/is'))
+            ->with($this->matchesRegularExpression('/INSERT.+?INTO.+?tickets.+?VALUES.+?\?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->pdoMock->expects($this->exactly(2))
@@ -128,7 +128,7 @@ class TicketRepositoryTest extends TestCase
             ->method('prepare')
             ->willReturnCallback(function ($sql) {
                 if (stripos($sql, 'UPDATE') !== false) {
-                    $this->assertMatchesRegularExpression('/UPDATE.+tickets.+SET.+title.+description.+status.+updated_at.+WHERE.+id = \?/is', $sql);
+                    $this->assertMatchesRegularExpression('/UPDATE.+?tickets.+?SET.+?\?.+?WHERE.+id = \?/is', $sql);
                 }
 
                 return $this->pdoStatementMock;
@@ -164,7 +164,7 @@ class TicketRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/.*SELECT.*FROM.*tickets.*WHERE.*id = \?/is'))
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?tickets.+?WHERE.+?id = \?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $ticket = Ticket::make(TicketData::one());
@@ -211,7 +211,7 @@ class TicketRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/.*SELECT.*FROM.*tickets.*WHERE.*id = \?/is'))
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?tickets.+?WHERE.+?id = \?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $ticket = $this->ticketRepository->find(1);
@@ -239,7 +239,7 @@ class TicketRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/.*SELECT.*FROM.*tickets.*WHERE.*id = \?/is'))
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?tickets.+?WHERE.+?id = \?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $ticket = $this->ticketRepository->find(999);
@@ -275,7 +275,7 @@ class TicketRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/.*SELECT.*FROM.*tickets.*/is'))
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?tickets/is'))
             ->willReturn($this->pdoStatementMock);
 
         $ticketsFound = $this->ticketRepository->all();
@@ -300,7 +300,7 @@ class TicketRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/.*SELECT.*FROM.*tickets.*/is'))
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?tickets/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->assertCount(0, $this->ticketRepository->all());
@@ -345,7 +345,7 @@ class TicketRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/.*SELECT.*FROM.*tickets.*WHERE.*' . $data['key'] . ' = \?/is'))
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?tickets.+?WHERE.+?' . $data['key'] . ' = \?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $found = $this->ticketRepository->findBy($data['key'], $data['value']);
@@ -373,7 +373,7 @@ class TicketRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/.*SELECT.*FROM.*tickets.*WHERE.*' . $data['key'] . ' = \?/is'))
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?tickets.+?WHERE.+?' . $data['key'] . ' = \?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $usersFound = $this->ticketRepository->findBy($data['key'], $data['value']);
@@ -443,7 +443,7 @@ class TicketRepositoryTest extends TestCase
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->with($this->matchesRegularExpression('/DELETE.+FROM.+tickets.+WHERE.+id = \?/is'))
+            ->with($this->matchesRegularExpression('/DELETE.+?FROM.+?tickets.+?WHERE.+?id = \?/is'))
             ->willReturn($this->pdoStatementMock);
 
         $this->ticketRepository->delete(1);
