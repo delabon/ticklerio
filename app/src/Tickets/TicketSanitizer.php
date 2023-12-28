@@ -12,11 +12,12 @@ class TicketSanitizer implements SanitizerInterface
      */
     public function sanitize(array $data): array
     {
-        $data = $this->sanitizeUserId($data);
+        $data = $this->sanitizeNumber($data, 'id');
+        $data = $this->sanitizeNumber($data, 'user_id');
         $data = $this->sanitizeTitle($data);
         $data = $this->sanitizeDescription($data);
-        $data = $this->sanitizeCreatedAt($data);
-        $data = $this->sanitizeUpdatedAt($data);
+        $data = $this->sanitizeNumber($data, 'created_at');
+        $data = $this->sanitizeNumber($data, 'updated_at');
 
         return $data;
     }
@@ -25,13 +26,14 @@ class TicketSanitizer implements SanitizerInterface
      * @param array<string, mixed> $data
      * @return array<string, mixed>
      */
-    private function sanitizeUserId(array $data): array
+    private function sanitizeNumber(array $data, string $key): array
     {
-        if (!isset($data['user_id'])) {
+        if (!isset($data[$key])) {
             return $data;
         }
 
-        $data['user_id'] = (int) $data['user_id'];
+        $data[$key] = (int) $data[$key];
+        $data[$key] = abs($data[$key]);
 
         return $data;
     }
@@ -66,36 +68,6 @@ class TicketSanitizer implements SanitizerInterface
 
         $data['description'] = strip_tags($data['description']);
         $data['description'] = trim($data['description']);
-
-        return $data;
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     */
-    private function sanitizeCreatedAt(array $data): array
-    {
-        if (!isset($data['created_at'])) {
-            return $data;
-        }
-
-        $data['created_at'] = (int) $data['created_at'];
-
-        return $data;
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     */
-    private function sanitizeUpdatedAt(array $data): array
-    {
-        if (!isset($data['updated_at'])) {
-            return $data;
-        }
-
-        $data['updated_at'] = (int) $data['updated_at'];
 
         return $data;
     }

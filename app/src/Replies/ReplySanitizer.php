@@ -12,31 +12,14 @@ class ReplySanitizer implements SanitizerInterface
      */
     public function sanitize(array $data): array
     {
-        $data = $this->sanitizeUserId($data);
-        $data = $this->sanitizeTicketId($data);
+        $data = $this->sanitizeInt($data, 'id');
+        $data = $this->sanitizeInt($data, 'user_id');
+        $data = $this->sanitizeInt($data, 'ticket_id');
         $data = $this->sanitizeMessage($data);
-        $data = $this->sanitizeCreatedAt($data);
-        $data = $this->sanitizeUpdatedAt($data);
+        $data = $this->sanitizeInt($data, 'created_at');
+        $data = $this->sanitizeInt($data, 'updated_at');
 
         return $data;
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     */
-    private function sanitizeUserId(array $data): array
-    {
-        return $this->sanitizeInt($data, 'user_id');
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     */
-    private function sanitizeTicketId(array $data): array
-    {
-        return $this->sanitizeInt($data, 'ticket_id');
     }
 
     /**
@@ -53,24 +36,6 @@ class ReplySanitizer implements SanitizerInterface
         $data['message'] = trim($data['message']);
 
         return $data;
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     */
-    private function sanitizeCreatedAt(array $data): array
-    {
-        return $this->sanitizeInt($data, 'created_at');
-    }
-
-    /**
-     * @param array<string, mixed> $data
-     * @return array<string, mixed>
-     */
-    private function sanitizeUpdatedAt(array $data): array
-    {
-        return $this->sanitizeInt($data, 'updated_at');
     }
 
     /**

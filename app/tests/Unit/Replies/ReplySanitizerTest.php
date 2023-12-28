@@ -51,6 +51,34 @@ class ReplySanitizerTest extends TestCase
     public static function unsanitizedDataProvider(): array
     {
         return [
+            'id is string' => [
+                [
+                    'id' => ' 5 ',
+                ],
+                'id',
+                5,
+            ],
+            'id is alpha char' => [
+                [
+                    'id' => 'e',
+                ],
+                'id',
+                0,
+            ],
+            'id is float' => [
+                [
+                    'id' => 88.1,
+                ],
+                'id',
+                88,
+            ],
+            'id is negative' => [
+                [
+                    'id' => -55,
+                ],
+                'id',
+                55,
+            ],
             'user_id is string' => [
                 [
                     'user_id' => '1',

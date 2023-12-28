@@ -12,11 +12,12 @@ class UserSanitizer implements SanitizerInterface
      */
     public function sanitize(array $data): array
     {
+        $data = $this->sanitizeNumber($data, 'id');
         $data = $this->sanitizeName($data, 'first_name');
         $data = $this->sanitizeName($data, 'last_name');
         $data = $this->sanitizeEmail($data);
-        $data = $this->sanitizeTimestamp($data, 'created_at');
-        $data = $this->sanitizeTimestamp($data, 'updated_at');
+        $data = $this->sanitizeNumber($data, 'created_at');
+        $data = $this->sanitizeNumber($data, 'updated_at');
 
         return $data;
     }
@@ -59,13 +60,14 @@ class UserSanitizer implements SanitizerInterface
      * @param string $key
      * @return mixed[]|array
      */
-    private function sanitizeTimestamp(array $data, string $key): array
+    private function sanitizeNumber(array $data, string $key): array
     {
         if (!isset($data[$key])) {
             return $data;
         }
 
         $data[$key] = (int)$data[$key];
+        $data[$key] = abs($data[$key]);
 
         return $data;
     }
