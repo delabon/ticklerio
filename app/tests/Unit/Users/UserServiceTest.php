@@ -241,9 +241,7 @@ class UserServiceTest extends TestCase
         $this->pdoStatementMock->expects($this->exactly(2))
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
-            ->willReturnCallback(function () use ($user) {
-                return $user->toArray();
-            });
+            ->willReturn($user->toArray());
 
         $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
@@ -294,9 +292,7 @@ class UserServiceTest extends TestCase
         $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
-            ->willReturnCallback(function () use ($user) {
-                return $user->toArray();
-            });
+            ->willReturn($user->toArray());
 
         $this->pdoMock->expects($this->once())
             ->method('prepare')
@@ -530,9 +526,7 @@ class UserServiceTest extends TestCase
         $this->pdoStatementMock->expects($this->exactly(2))
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
-            ->willReturnCallback(function () use ($user) {
-                return $user->toArray();
-            });
+            ->willReturn($user->toArray());
 
         $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
@@ -561,9 +555,7 @@ class UserServiceTest extends TestCase
         $this->pdoStatementMock->expects($this->exactly(2))
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
-            ->willReturnCallback(function () use ($user) {
-                return $user->toArray();
-            });
+            ->willReturn($user->toArray());
 
         $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
@@ -595,9 +587,7 @@ class UserServiceTest extends TestCase
         $this->pdoStatementMock->expects($this->exactly(2))
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
-            ->willReturnCallback(function () use ($user) {
-                return $user->toArray();
-            });
+            ->willReturn($user->toArray());
 
         $this->pdoMock->expects($this->exactly(3))
             ->method('prepare')
