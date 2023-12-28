@@ -51,12 +51,12 @@ class TicketSanitizerTest extends TestCase
     {
         return [
             'id is string' => [
-                'key' => 'user_id',
+                'key' => 'id',
                 'value' => ' 1 ',
                 'expectedValue' => 1
             ],
             'id is negative' => [
-                'key' => 'user_id',
+                'key' => 'id',
                 'value' => -5,
                 'expectedValue' => 5
             ],
