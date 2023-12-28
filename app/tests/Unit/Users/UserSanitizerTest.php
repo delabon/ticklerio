@@ -42,6 +42,16 @@ class UserSanitizerTest extends TestCase
     public static function userDataProvider(): array
     {
         return [
+            'id is string' => [
+                'key' => 'id',
+                'value' => '7788',
+                'expectedValue' => 7788
+            ],
+            'id is negative' => [
+                'key' => 'id',
+                'value' => -10,
+                'expectedValue' => 10
+            ],
             'Sanitizes first_name' => [
                 'key' => 'first_name',
                 'value' => ' $*J\'0hn_ -doe ',
@@ -72,15 +82,25 @@ class UserSanitizerTest extends TestCase
                 'value' => '“><svg/onload=confirm(1)>”@gmail.com',
                 'expectedValue' => 'svgonload=confirm1@gmail.com'
             ],
-            'Sanitizes created_at' => [
+            'created_at is string' => [
                 'key' => 'created_at',
-                'value' => '10',
-                'expectedValue' => 10
+                'value' => '510',
+                'expectedValue' => 510
             ],
-            'Sanitizes updated_at' => [
+            'created_at is negative' => [
+                'key' => 'created_at',
+                'value' => '-8510',
+                'expectedValue' => 8510
+            ],
+            'updated_at is string' => [
                 'key' => 'updated_at',
                 'value' => '999',
                 'expectedValue' => 999
+            ],
+            'updated_at is negative' => [
+                'key' => 'updated_at',
+                'value' => '-366',
+                'expectedValue' => 366
             ],
         ];
     }
