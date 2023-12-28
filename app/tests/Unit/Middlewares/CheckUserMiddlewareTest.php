@@ -20,6 +20,8 @@ class CheckUserMiddlewareTest extends TestCase
 {
     private ?Auth $auth;
     private ?Session $session;
+    private object $pdoStatementMock;
+    private object $pdoMock;
 
     protected function setUp(): void
     {
@@ -39,6 +41,8 @@ class CheckUserMiddlewareTest extends TestCase
         );
         $this->session->start();
         $this->auth = new Auth($this->session);
+        $this->pdoStatementMock = $this->createMock(PDOStatement::class);
+        $this->pdoMock = $this->createMock(PDO::class);
     }
 
     protected function tearDown(): void
@@ -51,36 +55,29 @@ class CheckUserMiddlewareTest extends TestCase
 
     public function testDoesNotLogOutNormalUserSuccessfully(): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->expects($this->once())
+        $user = User::make(UserData::memberOne());
+        $user->setId(775);
+
+        $this->pdoStatementMock->expects($this->once())
             ->method('execute')
             ->willReturn(true);
-        $pdoStatementMock->expects($this->once())
+
+        $this->pdoStatementMock->expects($this->once())
             ->method('fetch')
             ->with(PDO::FETCH_ASSOC)
-            ->willReturnCallback(function () {
-                $userData = UserData::memberOne();
-                $userData['id'] = 1;
-                $userData['type'] = UserType::Member->value;
+            ->willReturn($user->toArray());
 
-                return $userData;
-            });
-
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->expects($this->once())
+        $this->pdoMock->expects($this->once())
             ->method('prepare')
-            ->willReturn($pdoStatementMock);
-
-        $user = new User();
-        $user->setId(1);
-        $user->setType(UserType::Member->value);
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?users.+?WHERE.+?id = \?/is'))
+            ->willReturn($this->pdoStatementMock);
 
         $this->auth->login($user);
-        $middleware = new CheckUserMiddleware($this->auth, new UserRepository($pdoMock));
+        $middleware = new CheckUserMiddleware($this->auth, new UserRepository($this->pdoMock));
 
         $middleware->handle();
 
-        $this->assertSame(1, $this->auth->getUserId());
+        $this->assertSame($user->getId(), $this->auth->getUserId());
         $this->assertTrue($this->session->has('auth'));
     }
 
@@ -94,19 +91,25 @@ class CheckUserMiddlewareTest extends TestCase
      */
     public function testMiddlewareLogsOutUser($userData, $expectedUserId, $expectedSessionAuth): void
     {
-        $pdoStatementMock = $this->createMock(PDOStatement::class);
-        $pdoStatementMock->method('execute')->willReturn(true);
-        $pdoStatementMock->method('fetch')->with(PDO::FETCH_ASSOC)->willReturn($userData);
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
 
-        $pdoMock = $this->createMock(PDO::class);
-        $pdoMock->method('prepare')->willReturn($pdoStatementMock);
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn($userData);
 
-        $user = new User();
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?users.+?WHERE.+?id = \?/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $user = User::make(UserData::memberOne());
         $user->setId(1);
-        $user->setType(UserType::Member->value);
         $this->auth->login($user);
 
-        $middleware = new CheckUserMiddleware($this->auth, new UserRepository($pdoMock));
+        $middleware = new CheckUserMiddleware($this->auth, new UserRepository($this->pdoMock));
         $middleware->handle();
 
         $this->assertSame($expectedUserId, $this->auth->getUserId());
@@ -116,11 +119,9 @@ class CheckUserMiddlewareTest extends TestCase
     public static function userStatusDataProvider(): array
     {
         $userData = UserData::memberOne();
-        $bannedUserData = $userData;
-        $bannedUserData['id'] = 1;
+        $userData['id'] = 1;
+        $bannedUserData = $deletedUserData = $userData;
         $bannedUserData['type'] = UserType::Banned->value;
-        $deletedUserData = $userData;
-        $deletedUserData['id'] = 1;
         $deletedUserData['type'] = UserType::Deleted->value;
 
         return [
