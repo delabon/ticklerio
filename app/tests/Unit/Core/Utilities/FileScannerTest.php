@@ -2,7 +2,7 @@
 
 namespace Tests\Unit\Core;
 
-use App\Core\DatabaseOperationFileHandler;
+use App\Core\FileScanner;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
@@ -10,7 +10,7 @@ class DatabaseOperationFileHandlerTest extends TestCase
 {
     public function testGetFilePathsMethodReturnsAnArrayOfOnlyFilePaths(): void
     {
-        $fileHandler = new DatabaseOperationFileHandler('migration');
+        $fileHandler = new FileScanner('migration');
 
         $result = $fileHandler->getFilePaths(__DIR__ . '/../../_migrations/Unit/');
 
@@ -22,7 +22,7 @@ class DatabaseOperationFileHandlerTest extends TestCase
 
     public function testValidateFileNamesMethodValidatesFileNamesCorrectly(): void
     {
-        $fileHandler = new DatabaseOperationFileHandler('migration');
+        $fileHandler = new FileScanner('migration');
 
         $fileHandler->validateFileNames([
             '1_create_dummy_table.php',
@@ -35,7 +35,7 @@ class DatabaseOperationFileHandlerTest extends TestCase
     public function testValidateFileNamesMethodThrowsExceptionWhenFileNamesAreIncorrect(): void
     {
         $filePath = 'create_dummy_table.php';
-        $fileHandler = new DatabaseOperationFileHandler('migration');
+        $fileHandler = new FileScanner('migration');
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage(
