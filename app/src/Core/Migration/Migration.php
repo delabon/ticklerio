@@ -4,6 +4,7 @@ namespace App\Core\Migration;
 
 use App\Core\Abstracts\AbstractDatabaseOperation;
 use App\Core\DatabaseOperationFileHandler;
+use App\Core\Utilities\FilePathToClassNameConverter;
 use RuntimeException;
 use PDO;
 
@@ -28,7 +29,7 @@ class Migration extends AbstractDatabaseOperation
     {
         $filePaths = $this->fileHandler->getFilePaths($this->migrationsPath);
         $this->fileHandler->validateFileNames($filePaths);
-        $classes = $this->fileHandler->convertFilePathsToClassNames($filePaths);
+        $classes = FilePathToClassNameConverter::convert($filePaths);
         $this->createMigrationTableIfNotExists();
 
         foreach ($classes as $fileName => $className) {
@@ -50,7 +51,7 @@ class Migration extends AbstractDatabaseOperation
     {
         $filePaths = $this->fileHandler->getFilePaths($this->migrationsPath);
         $this->fileHandler->validateFileNames($filePaths);
-        $classes = $this->fileHandler->convertFilePathsToClassNames($filePaths);
+        $classes = FilePathToClassNameConverter::convert($filePaths);
         $this->createMigrationTableIfNotExists();
 
         foreach (array_reverse($classes) as $fileName => $className) {

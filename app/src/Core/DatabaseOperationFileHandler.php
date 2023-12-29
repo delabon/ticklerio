@@ -49,23 +49,4 @@ readonly class DatabaseOperationFileHandler
             }
         }
     }
-
-    /**
-     * @param array<int, string> $filePaths
-     * @return array<string, string>
-     */
-    public function convertFilePathsToClassNames(array $filePaths): array
-    {
-        $classes = [];
-
-        foreach ($filePaths as $path) {
-            $name = str_replace('.php', '', strtolower(basename($path)));
-            $name = preg_replace("/^[0-9]+?_/", '', $name);
-            $words = explode('_', $name);
-            $words = array_map(fn($word) => ucfirst($word), $words);
-            $classes[$path] = implode('', $words);
-        }
-
-        return $classes;
-    }
 }

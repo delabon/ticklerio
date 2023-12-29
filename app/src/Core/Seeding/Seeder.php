@@ -4,6 +4,7 @@ namespace App\Core\Seeding;
 
 use App\Core\Abstracts\AbstractDatabaseOperation;
 use App\Core\DatabaseOperationFileHandler;
+use App\Core\Utilities\FilePathToClassNameConverter;
 use RuntimeException;
 use PDO;
 
@@ -26,10 +27,10 @@ class Seeder extends AbstractDatabaseOperation
 
     public function seed(): void
     {
-        $this->createSeedersTableIfNotExists();
         $filePaths = $this->fileHandler->getFilePaths($this->seedersPath);
         $this->fileHandler->validateFileNames($filePaths);
-        $classes = $this->fileHandler->convertFilePathsToClassNames($filePaths);
+        $classes = FilePathToClassNameConverter::convert($filePaths);
+        $this->createSeedersTableIfNotExists();
 
         foreach ($classes as $fileName => $className) {
             $filePath = $this->seedersPath . $fileName;
@@ -48,10 +49,10 @@ class Seeder extends AbstractDatabaseOperation
 
     public function rollback(): void
     {
-        $this->createSeedersTableIfNotExists();
         $filePaths = $this->fileHandler->getFilePaths($this->seedersPath);
         $this->fileHandler->validateFileNames($filePaths);
-        $classes = $this->fileHandler->convertFilePathsToClassNames($filePaths);
+        $classes = FilePathToClassNameConverter::convert($filePaths);
+        $this->createSeedersTableIfNotExists();
 
         foreach (array_reverse($classes) as $fileName => $className) {
             $filePath = $this->seedersPath . $fileName;
