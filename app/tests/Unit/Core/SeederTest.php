@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Core;
 
+use App\Core\Abstracts\AbstractDatabaseOperation;
 use PHPUnit\Framework\TestCase;
 use App\Core\Seeding\Seeder;
 use RuntimeException;
@@ -27,6 +28,15 @@ class SeederTest extends TestCase
     }
 
     //
+    // Create instance
+    //
+
+    public function testCreatesInstanceSuccessfully(): void
+    {
+        $this->assertInstanceOf(AbstractDatabaseOperation::class, $this->seeder);
+    }
+
+    //
     // Seed
     //
 
@@ -48,7 +58,7 @@ class SeederTest extends TestCase
             ->method('exec')
             ->willReturnCallback(function ($query) use (&$execCount) {
                 if ($execCount === 1) {
-                    $this->assertMatchesRegularExpression("/CREATE TABLE IF NOT EXISTS.+?" . Seeder::TABLE . ".+/is", $query);
+                    $this->assertMatchesRegularExpression("/CREATE TABLE IF NOT EXISTS.+?" . $this->seeder->table . ".+/is", $query);
                 } elseif ($execCount === 2) {
                     $this->assertMatchesRegularExpression("/.+?INSERT INTO.+?dummy .+/is", $query);
                 } elseif ($execCount === 3) {
@@ -135,7 +145,7 @@ class SeederTest extends TestCase
             ->method('exec')
             ->willReturnCallback(function ($query) use (&$execCount) {
                 if (in_array($execCount, [1, 4])) {
-                    $this->assertMatchesRegularExpression("/CREATE TABLE IF NOT EXISTS.+?" . Seeder::TABLE . ".+/is", $query);
+                    $this->assertMatchesRegularExpression("/CREATE TABLE IF NOT EXISTS.+?" . $this->seeder->table . ".+/is", $query);
                 } elseif ($execCount === 2) {
                     $this->assertMatchesRegularExpression("/.+?INSERT INTO.+?dummy .+/is", $query);
                 } elseif ($execCount === 3) {
@@ -177,7 +187,7 @@ class SeederTest extends TestCase
             ->method('exec')
             ->willReturnCallback(function ($query) use (&$execCount) {
                 if ($execCount === 1) {
-                    $this->assertMatchesRegularExpression("/CREATE TABLE IF NOT EXISTS.+?" . Seeder::TABLE . ".+/is", $query);
+                    $this->assertMatchesRegularExpression("/CREATE TABLE IF NOT EXISTS.+?" . $this->seeder->table . ".+/is", $query);
                 } elseif ($execCount === 2) {
                     $this->assertMatchesRegularExpression("/.+?DELETE FROM.+?dummy2 .+/is", $query);
                 } elseif ($execCount === 3) {
@@ -251,7 +261,7 @@ class SeederTest extends TestCase
             ->method('exec')
             ->willReturnCallback(function ($query) use (&$execCount) {
                 if (in_array($execCount, [1, 4])) {
-                    $this->assertMatchesRegularExpression("/CREATE TABLE IF NOT EXISTS.+?" . Seeder::TABLE . ".+/is", $query);
+                    $this->assertMatchesRegularExpression("/CREATE TABLE IF NOT EXISTS.+?" . $this->seeder->table . ".+/is", $query);
                 } elseif ($execCount === 2) {
                     $this->assertMatchesRegularExpression("/.+?DELETE FROM.+?dummy2 .+/is", $query);
                 } elseif ($execCount === 3) {

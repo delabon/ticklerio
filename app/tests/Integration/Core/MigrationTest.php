@@ -42,7 +42,7 @@ class MigrationTest extends TestCase
     {
         $this->migration->migrate();
 
-        $stmt = $this->pdo->query("SELECT * FROM " . Migration::TABLE . " ORDER BY id ASC");
+        $stmt = $this->pdo->query("SELECT * FROM " . $this->migration->table . " ORDER BY id ASC");
         $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $this->assertSame('1_create_test_table.php', basename($result[0]['file_path']));

@@ -36,7 +36,7 @@ class SeederTest extends TestCase
     {
         $this->seeder->seed();
 
-        $stmt = $this->pdo->query("SELECT * FROM " . Seeder::TABLE . " ORDER BY id ASC");
+        $stmt = $this->pdo->query("SELECT * FROM " . $this->seeder->table . " ORDER BY id ASC");
         $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
         $this->assertSame('1_add_data_to_table_test.php', basename($result[0]['file_path']));

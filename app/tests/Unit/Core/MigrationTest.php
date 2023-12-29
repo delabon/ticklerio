@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Core;
 
+use App\Core\Abstracts\AbstractDatabaseOperation;
 use App\Core\Migration\Migration;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -12,6 +13,7 @@ class MigrationTest extends TestCase
 {
     private object $pdoStatementMock;
     private object $pdoMock;
+    private Migration $migration;
 
     protected function setUp(): void
     {
@@ -19,6 +21,19 @@ class MigrationTest extends TestCase
 
         $this->pdoStatementMock = $this->createMock(PDOStatement::class);
         $this->pdoMock = $this->createMock(PDO::class);
+        $this->migration = new Migration(
+            $this->pdoMock,
+            __DIR__ . '/../../_migrations/Unit/'
+        );
+    }
+
+    //
+    // Create instance
+    //
+
+    public function testCreatesInstanceSuccessfully(): void
+    {
+        $this->assertInstanceOf(AbstractDatabaseOperation::class, $this->migration);
     }
 
     //
@@ -46,11 +61,7 @@ class MigrationTest extends TestCase
             ->method('prepare')
             ->willReturn($this->pdoStatementMock);
 
-        $migration = new Migration(
-            $this->pdoMock,
-            __DIR__ . '/../../_migrations/Unit/'
-        );
-        $migration->migrate();
+        $this->migration->migrate();
     }
 
     public function testMigratesScriptsInAscendingOrderSuccessfully(): void
@@ -71,8 +82,7 @@ class MigrationTest extends TestCase
             ->method('exec')
             ->willReturnCallback(function ($query) use (&$execCount) {
                 if ($execCount === 1) {
-                    $table = Migration::TABLE;
-                    $this->assertMatchesRegularExpression("/CREATE TABLE IF NOT EXISTS.+$table.+/is", $query);
+                    $this->assertMatchesRegularExpression("/CREATE TABLE IF NOT EXISTS.+" . $this->migration->table . ".+/is", $query);
                 } elseif ($execCount === 2) {
                     $this->assertMatchesRegularExpression("/ CREATE TABLE dummy \(/i", $query);
                 } elseif ($execCount === 3) {
@@ -88,11 +98,7 @@ class MigrationTest extends TestCase
             ->method('prepare')
             ->willReturn($this->pdoStatementMock);
 
-        $migration = new Migration(
-            $this->pdoMock,
-            __DIR__ . '/../../_migrations/Unit/'
-        );
-        $migration->migrate();
+        $this->migration->migrate();
     }
 
     public function testThrowsExceptionWhenTheMigrationsFolderPathIsIncorrect(): void
@@ -200,12 +206,7 @@ class MigrationTest extends TestCase
             ->method('prepare')
             ->willReturn($this->pdoStatementMock);
 
-        $migration = new Migration(
-            $this->pdoMock,
-            __DIR__ . '/../../_migrations/Unit/'
-        );
-
-        $migration->rollback();
+        $this->migration->rollback();
     }
 
     public function testThrowsExceptionWhenTryingToRollbackButScriptHasIncorrectFileNameStructure(): void
@@ -252,8 +253,7 @@ class MigrationTest extends TestCase
             ->method('exec')
             ->willReturnCallback(function ($query) use (&$execCount) {
                 if ($execCount === 1) {
-                    $table = Migration::TABLE;
-                    $this->assertMatchesRegularExpression("/CREATE TABLE IF NOT EXISTS.+$table.+/is", $query);
+                    $this->assertMatchesRegularExpression("/CREATE TABLE IF NOT EXISTS.+" . $this->migration->table . ".+/is", $query);
                 } elseif ($execCount === 2) {
                     $this->assertMatchesRegularExpression("/.+DROP TABLE dummy20.+/is", $query);
                 } elseif ($execCount === 3) {
@@ -269,10 +269,6 @@ class MigrationTest extends TestCase
             ->method('prepare')
             ->willReturn($this->pdoStatementMock);
 
-        $migration = new Migration(
-            $this->pdoMock,
-            __DIR__ . '/../../_migrations/Unit/'
-        );
-        $migration->rollback();
+        $this->migration->rollback();
     }
 }
