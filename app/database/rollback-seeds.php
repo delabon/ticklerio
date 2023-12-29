@@ -13,6 +13,6 @@ $container = require_once __DIR__ . '/../src/bootstrap.php';
 $migration = new Seeder(
     $container->get(PDO::class),
     new ClassNameConverter(),
-    __DIR__ . '/migrations/'
+    __DIR__ . '/seeders/'
 );
 $migration->rollback();
