@@ -28,7 +28,7 @@ readonly class DatabaseOperationFileHandler
         unset($result[0]);
         unset($result[1]);
 
-        return $result;
+        return array_filter($result, fn($file) => is_file($path . $file));
     }
 
     /**
