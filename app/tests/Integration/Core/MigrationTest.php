@@ -29,17 +29,6 @@ class MigrationTest extends TestCase
     // Migrate
     //
 
-    public function testMigratesSuccessfully(): void
-    {
-        $this->migration->migrate();
-
-        $stmt = $this->pdo->query("SELECT count(*) AS is_found FROM sqlite_master WHERE type='table' AND name='test'");
-        $stmtTwo = $this->pdo->query("SELECT count(*) AS is_found FROM sqlite_master WHERE type='table' AND name='test20'");
-
-        $this->assertEquals(1, $stmt->fetch(PDO::FETCH_OBJ)->is_found);
-        $this->assertEquals(1, $stmtTwo->fetch(PDO::FETCH_OBJ)->is_found);
-    }
-
     public function testMigratesScriptsInOrderSuccessfully(): void
     {
         $this->migration->migrate();
@@ -51,11 +40,27 @@ class MigrationTest extends TestCase
         $this->assertSame('20_create_test_table_twenty.php', basename($result[1]['file_path']));
     }
 
+    public function testMigratesTheSameScriptTwiceWillOnlyExecuteTheMigrationScriptOnce(): void
+    {
+        $migration = new Migration(
+            $this->pdo,
+            new DatabaseOperationFileHandler('migration'),
+            __DIR__ . '/../../_migrations/Integration2'
+        );
+        $migration->migrate();
+        $migration->migrate();
+
+        $stmt = $this->pdo->query("SELECT * FROM people");
+        $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $this->assertSame(1, count($result));
+    }
+
     //
     // Rollback
     //
 
-    public function testRollbacksAllMigrationsSuccessfully(): void
+    public function testRollbacksScriptsInDescendingOrderSuccessfully(): void
     {
         $this->migration->migrate();
 

@@ -42,31 +42,7 @@ class MigrationTest extends TestCase
     // Migrate
     //
 
-    public function testMigratesSuccessfully(): void
-    {
-        $this->pdoStatementMock->expects($this->exactly(4))
-            ->method('execute')
-            ->willReturn(true);
-
-        $this->pdoStatementMock->expects($this->exactly(2))
-            ->method('fetch')
-            ->with(PDO::FETCH_OBJ)
-            ->willReturn((object)[
-                'is_migrated' => 0
-            ]);
-
-        $this->pdoMock->expects($this->exactly(3))
-            ->method('exec')
-            ->willReturn(1);
-
-        $this->pdoMock->expects($this->exactly(4))
-            ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
-
-        $this->migration->migrate();
-    }
-
-    public function testMigratesScriptsInAscendingOrderSuccessfully(): void
+    public function testMigratesInAscendingOrderSuccessfully(): void
     {
         $this->pdoStatementMock->expects($this->exactly(4))
             ->method('execute')
@@ -187,62 +163,6 @@ class MigrationTest extends TestCase
     // Rollback
     //
 
-    public function testRollbacksAllMigrationsSuccessfully(): void
-    {
-        $this->pdoStatementMock->expects($this->exactly(4))
-            ->method('execute')
-            ->willReturn(true);
-
-        $this->pdoStatementMock->expects($this->exactly(2))
-            ->method('fetch')
-            ->with(PDO::FETCH_OBJ)
-            ->willReturnOnConsecutiveCalls(
-                (object)[
-                    'is_migrated' => 1
-                ],
-                (object)[
-                    'is_migrated' => 1
-                ],
-            );
-
-        $this->pdoMock->expects($this->exactly(3))
-            ->method('exec');
-
-        $this->pdoMock->expects($this->exactly(4))
-            ->method('prepare')
-            ->willReturn($this->pdoStatementMock);
-
-        $this->migration->rollback();
-    }
-
-    public function testThrowsExceptionWhenTryingToRollbackButScriptHasIncorrectFileNameStructure(): void
-    {
-        $migration = new Migration(
-            $this->pdoMock,
-            new DatabaseOperationFileHandler('migration'),
-            __DIR__ . '/../../_migrations/InvalidStructures/One/'
-        );
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage("The migration file name 'invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
-
-        $migration->rollback();
-    }
-
-    public function testThrowsExceptionWhenTryingToRollbackScriptHasIncorrectFileNameStructureTwo(): void
-    {
-        $migration = new Migration(
-            $this->pdoMock,
-            new DatabaseOperationFileHandler('migration'),
-            __DIR__ . '/../../_migrations/InvalidStructures/Two/'
-        );
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage("The migration file name '01_invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
-
-        $migration->rollback();
-    }
-
     public function testRollbacksScriptsInDescendingOrderSuccessfully(): void
     {
         $this->pdoStatementMock->expects($this->exactly(4))
@@ -279,4 +199,33 @@ class MigrationTest extends TestCase
 
         $this->migration->rollback();
     }
+
+    public function testThrowsExceptionWhenTryingToRollbackButScriptHasIncorrectFileNameStructure(): void
+    {
+        $migration = new Migration(
+            $this->pdoMock,
+            new DatabaseOperationFileHandler('migration'),
+            __DIR__ . '/../../_migrations/InvalidStructures/One/'
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("The migration file name 'invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+
+        $migration->rollback();
+    }
+
+    public function testThrowsExceptionWhenTryingToRollbackScriptHasIncorrectFileNameStructureTwo(): void
+    {
+        $migration = new Migration(
+            $this->pdoMock,
+            new DatabaseOperationFileHandler('migration'),
+            __DIR__ . '/../../_migrations/InvalidStructures/Two/'
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("The migration file name '01_invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+
+        $migration->rollback();
+    }
+
 }
