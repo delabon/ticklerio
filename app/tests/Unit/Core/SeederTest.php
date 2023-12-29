@@ -93,34 +93,6 @@ class SeederTest extends TestCase
         );
     }
 
-    public function testThrowsExceptionWhenTheSeederScriptHasIncorrectFileNameStructure(): void
-    {
-        $seeder = new Seeder(
-            $this->pdoMock,
-            new DatabaseOperationFileHandler('seeder'),
-            __DIR__ . '/../../_migrations/InvalidStructures/One/'
-        );
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage("The seeder file name 'invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
-
-        $seeder->seed();
-    }
-
-    public function testThrowsExceptionWhenTheSeederScriptHasIncorrectFileNameStructureTwo(): void
-    {
-        $seeder = new Seeder(
-            $this->pdoMock,
-            new DatabaseOperationFileHandler('seeder'),
-            __DIR__ . '/../../_migrations/InvalidStructures/Two/'
-        );
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage("The seeder file name '01_invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
-
-        $seeder->seed();
-    }
-
     public function testSeedsTheSameScriptTwiceWillOnlyExecuteTheSeederScriptOnce(): void
     {
         $this->pdoStatementMock->expects($this->exactly(6))
@@ -209,34 +181,6 @@ class SeederTest extends TestCase
             ->willReturn($this->pdoStatementMock);
 
         $this->seeder->rollback();
-    }
-
-    public function testThrowsExceptionWhenRollingBackButTheSeederScriptHasIncorrectFileNameStructure(): void
-    {
-        $seeder = new Seeder(
-            $this->pdoMock,
-            new DatabaseOperationFileHandler('seeder'),
-            __DIR__ . '/../../_migrations/InvalidStructures/One/'
-        );
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage("The seeder file name 'invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
-
-        $seeder->rollback();
-    }
-
-    public function testThrowsExceptionWhenRollingBackButTheSeederScriptHasIncorrectFileNameStructureTwo(): void
-    {
-        $seeder = new Seeder(
-            $this->pdoMock,
-            new DatabaseOperationFileHandler('seeder'),
-            __DIR__ . '/../../_migrations/InvalidStructures/Two/'
-        );
-
-        $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage("The seeder file name '01_invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
-
-        $seeder->rollback();
     }
 
     public function testRollbacksTheSameScriptTwiceWillOnlyExecuteTheSeederScriptOnce(): void

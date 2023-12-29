@@ -6,6 +6,7 @@ use App\Core\DatabaseOperationFileHandler;
 use App\Core\Migration\Migration;
 use PHPUnit\Framework\TestCase;
 use App\Core\Seeding\Seeder;
+use RuntimeException;
 use PDO;
 
 class SeederTest extends TestCase
@@ -49,6 +50,42 @@ class SeederTest extends TestCase
         $this->assertSame('test 20', $this->allInTestTwentyTable()[0]['test_col']);
     }
 
+    /**
+     * This is an integration test because it tests the interaction between the Seeder class and the DatabaseOperationFileHandler class.
+     * @return void
+     */
+    public function testThrowsExceptionWhenTheSeederScriptHasIncorrectFileNameStructure(): void
+    {
+        $seeder = new Seeder(
+            $this->pdo,
+            new DatabaseOperationFileHandler('seeder'),
+            __DIR__ . '/../../_migrations/InvalidStructures/One/'
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("The seeder file name 'invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+
+        $seeder->seed();
+    }
+
+    /**
+     * This is an integration test because it tests the interaction between the Seeder class and the DatabaseOperationFileHandler class.
+     * @return void
+     */
+    public function testThrowsExceptionWhenTheSeederScriptHasIncorrectFileNameStructureTwo(): void
+    {
+        $seeder = new Seeder(
+            $this->pdo,
+            new DatabaseOperationFileHandler('seeder'),
+            __DIR__ . '/../../_migrations/InvalidStructures/Two/'
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("The seeder file name '01_invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+
+        $seeder->seed();
+    }
+
     //
     // Rollback
     //
@@ -64,6 +101,34 @@ class SeederTest extends TestCase
 
         $this->assertCount(0, $this->allInTestTable());
         $this->assertCount(0, $this->allInTestTwentyTable());
+    }
+
+    public function testThrowsExceptionWhenRollingBackButTheSeederScriptHasIncorrectFileNameStructure(): void
+    {
+        $seeder = new Seeder(
+            $this->pdo,
+            new DatabaseOperationFileHandler('seeder'),
+            __DIR__ . '/../../_migrations/InvalidStructures/One/'
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("The seeder file name 'invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+
+        $seeder->rollback();
+    }
+
+    public function testThrowsExceptionWhenRollingBackButTheSeederScriptHasIncorrectFileNameStructureTwo(): void
+    {
+        $seeder = new Seeder(
+            $this->pdo,
+            new DatabaseOperationFileHandler('seeder'),
+            __DIR__ . '/../../_migrations/InvalidStructures/Two/'
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("The seeder file name '01_invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+
+        $seeder->rollback();
     }
 
     //
