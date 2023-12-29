@@ -2,6 +2,7 @@
 
 namespace Tests\Integration\Core;
 
+use App\Core\DatabaseOperationFileHandler;
 use App\Core\Migration\Migration;
 use PHPUnit\Framework\TestCase;
 use PDO;
@@ -18,6 +19,7 @@ class MigrationTest extends TestCase
         $this->pdo = new PDO('sqlite::memory:');
         $this->migration = new Migration(
             $this->pdo,
+            new DatabaseOperationFileHandler('migration'),
             __DIR__ . '/../../_migrations/Integration/'
         );
         $this->migration->migrate();

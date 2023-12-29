@@ -2,6 +2,7 @@
 
 namespace Tests\Integration\Core;
 
+use App\Core\DatabaseOperationFileHandler;
 use App\Core\Migration\Migration;
 use PHPUnit\Framework\TestCase;
 use App\Core\Seeding\Seeder;
@@ -19,11 +20,13 @@ class SeederTest extends TestCase
         $this->pdo = new PDO('sqlite::memory:');
         $migration = new Migration(
             $this->pdo,
+            new DatabaseOperationFileHandler('migration'),
             __DIR__ . '/../../_migrations/Integration/'
         );
         $migration->migrate();
         $this->seeder = new Seeder(
             $this->pdo,
+            new DatabaseOperationFileHandler('seeder'),
             __DIR__ . '/../../_seeders/Integration/'
         );
     }
