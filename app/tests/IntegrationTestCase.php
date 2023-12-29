@@ -6,6 +6,8 @@ use App\Core\Migration\Migration;
 use App\Core\Session\ArraySessionHandler;
 use App\Core\Session\Session;
 use App\Core\Session\SessionHandlerType;
+use App\Core\Utilities\ClassNameConverter;
+use App\Core\Utilities\FileScanner;
 use PDO;
 use PHPUnit\Framework\TestCase;
 
@@ -28,6 +30,7 @@ class IntegrationTestCase extends TestCase
 
         $this->migration = new Migration(
             $this->pdo,
+            new ClassNameConverter(),
             __DIR__ . '/../database/migrations/'
         );
         $this->migration->migrate();
