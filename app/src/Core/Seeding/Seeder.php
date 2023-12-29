@@ -14,7 +14,7 @@ class Seeder extends AbstractDatabaseOperation
 
     public function __construct(protected PDO $pdo, protected DatabaseOperationFileHandler $fileHandler, string $seedersPath)
     {
-        parent::__construct($pdo, $fileHandler);
+        parent::__construct($pdo);
         $seedersPath = rtrim($seedersPath, '/') . '/';
 
         if (!is_dir($seedersPath)) {

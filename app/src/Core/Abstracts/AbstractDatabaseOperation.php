@@ -2,14 +2,13 @@
 
 namespace App\Core\Abstracts;
 
-use App\Core\DatabaseOperationFileHandler;
 use PDO;
 
 abstract class AbstractDatabaseOperation
 {
     public string $table = '';
 
-    public function __construct(protected PDO $pdo, protected DatabaseOperationFileHandler $fileHandler)
+    public function __construct(protected PDO $pdo)
     {
     }
 

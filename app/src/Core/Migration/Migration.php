@@ -14,7 +14,7 @@ class Migration extends AbstractDatabaseOperation
 
     public function __construct(protected PDO $PDO, protected DatabaseOperationFileHandler $fileHandler, string $migrationsPath)
     {
-        parent::__construct($PDO, $fileHandler);
+        parent::__construct($PDO);
         $migrationsPath = rtrim($migrationsPath, '/') . '/';
 
         if (!is_dir($migrationsPath)) {
