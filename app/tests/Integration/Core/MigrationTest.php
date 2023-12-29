@@ -6,6 +6,7 @@ use App\Core\DatabaseOperationFileHandler;
 use App\Core\Migration\Migration;
 use PHPUnit\Framework\TestCase;
 use PDO;
+use RuntimeException;
 
 class MigrationTest extends TestCase
 {
@@ -56,6 +57,35 @@ class MigrationTest extends TestCase
         $this->assertSame(1, count($result));
     }
 
+    public function testThrowsExceptionWhenTheMigrationScriptHasIncorrectFileNameStructure(): void
+    {
+        $migration = new Migration(
+            $this->pdo,
+            new DatabaseOperationFileHandler('migration'),
+            __DIR__ . '/../../_migrations/InvalidStructures/One/'
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("The migration file name 'invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+
+        $migration->migrate();
+    }
+
+    public function testThrowsExceptionWhenTheMigrationScriptHasIncorrectFileNameStructureTwo(): void
+    {
+        $migration = new Migration(
+            $this->pdo,
+            new DatabaseOperationFileHandler('migration'),
+            __DIR__ . '/../../_migrations/InvalidStructures/Two/'
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("The migration file name '01_invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+
+        $migration->migrate();
+    }
+
+
     //
     // Rollback
     //
@@ -71,5 +101,33 @@ class MigrationTest extends TestCase
 
         $this->assertEquals(0, $stmt->fetch(PDO::FETCH_OBJ)->is_found);
         $this->assertEquals(0, $stmtTwo->fetch(PDO::FETCH_OBJ)->is_found);
+    }
+
+    public function testThrowsExceptionWhenTryingToRollbackButScriptHasIncorrectFileNameStructure(): void
+    {
+        $migration = new Migration(
+            $this->pdo,
+            new DatabaseOperationFileHandler('migration'),
+            __DIR__ . '/../../_migrations/InvalidStructures/One/'
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("The migration file name 'invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+
+        $migration->rollback();
+    }
+
+    public function testThrowsExceptionWhenTryingToRollbackScriptHasIncorrectFileNameStructureTwo(): void
+    {
+        $migration = new Migration(
+            $this->pdo,
+            new DatabaseOperationFileHandler('migration'),
+            __DIR__ . '/../../_migrations/InvalidStructures/Two/'
+        );
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage("The migration file name '01_invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+
+        $migration->rollback();
     }
 }
