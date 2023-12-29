@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Core;
+namespace App\Core\Utilities;
+
+use RuntimeException;
 
 class FileScanner
 {
@@ -10,7 +12,12 @@ class FileScanner
      */
     public static function getFilePaths(string $path): array
     {
+        if (!is_dir($path)) {
+            throw new RuntimeException(sprintf('The folder "%s" does not exist or is not a folder.', $path));
+        }
+
         $result = scandir($path);
+
         unset($result[0]);
         unset($result[1]);
 

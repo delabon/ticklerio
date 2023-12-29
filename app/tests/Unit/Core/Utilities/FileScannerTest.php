@@ -1,18 +1,16 @@
 <?php
 
-namespace Tests\Unit\Core;
+namespace Tests\Unit\Core\Utilities;
 
-use App\Core\FileScanner;
+use App\Core\Utilities\FileScanner;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
-class DatabaseOperationFileHandlerTest extends TestCase
+class FileScannerTest extends TestCase
 {
     public function testGetFilePathsMethodReturnsAnArrayOfOnlyFilePaths(): void
     {
-        $fileHandler = new FileScanner('migration');
-
-        $result = $fileHandler->getFilePaths(__DIR__ . '/../../_migrations/Unit/');
+        $result = FileScanner::getFilePaths(__DIR__ . '/../../../_migrations/Unit/');
 
         $this->assertIsArray($result);
         $this->assertCount(2, $result);
@@ -20,34 +18,19 @@ class DatabaseOperationFileHandlerTest extends TestCase
         $this->assertContains('20_create_dummy_table_twenty.php', $result);
     }
 
-    public function testValidateFileNamesMethodValidatesFileNamesCorrectly(): void
+    public function testThrowsExceptionWhenUsingPathThatDoesNotExist(): void
     {
-        $fileHandler = new FileScanner('migration');
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('The folder "/invalid/path/that/does/not/exist" does not exist or is not a folder.');
 
-        $fileHandler->validateFileNames([
-            '1_create_dummy_table.php',
-            '20_create_dummy_table_twenty.php'
-        ]);
-
-        $this->expectNotToPerformAssertions();
+        FileScanner::getFilePaths('/invalid/path/that/does/not/exist');
     }
 
-    public function testValidateFileNamesMethodThrowsExceptionWhenFileNamesAreIncorrect(): void
+    public function testThrowsExceptionWhenUsingPathThatIsNotFolder(): void
     {
-        $filePath = 'create_dummy_table.php';
-        $fileHandler = new FileScanner('migration');
-
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage(
-            sprintf(
-                "The %s file name '%s' is invalid. It should be in the format of '[1-9]_file_name.php'.",
-                'migration',
-                $filePath
-            )
-        );
+        $this->expectExceptionMessage('The folder "' . __FILE__ . '" does not exist or is not a folder.');
 
-        $fileHandler->validateFileNames([
-            $filePath,
-        ]);
+        FileScanner::getFilePaths(__FILE__);
     }
 }
