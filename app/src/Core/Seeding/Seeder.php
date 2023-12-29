@@ -1,0 +1,175 @@
+<?php
+
+namespace App\Core\Seeding;
+
+use PDO;
+use RuntimeException;
+
+readonly class Seeder
+{
+    public const TABLE = 'seeders';
+    private string $seedersPath;
+
+    public function __construct(private PDO $pdo, string $seedersPath)
+    {
+        $seedersPath = rtrim($seedersPath, '/') . '/';
+
+        if (!is_dir($seedersPath)) {
+            throw new RuntimeException(sprintf('The seeders folder "%s" does not exist.', $seedersPath));
+        }
+
+        $this->seedersPath = $seedersPath;
+    }
+
+    public function seed(): void
+    {
+        $this->createSeedersTableIfNotExists();
+        $filePaths = $this->getFilePaths($this->seedersPath);
+        $this->validateFileNames($filePaths);
+        $classes = $this->convertFilePathsToClassNames($filePaths);
+
+        foreach ($classes as $fileName => $className) {
+            $filePath = $this->seedersPath . $fileName;
+
+            if ($this->isSeeded($filePath)) {
+                continue;
+            }
+
+            require_once $this->seedersPath . $fileName;
+            $ob = new $className($this->pdo);
+            $ob->up();
+
+            $this->setItAsSeeded($filePath);
+        }
+    }
+
+    public function rollback(): void
+    {
+        $this->createSeedersTableIfNotExists();
+        $filePaths = $this->getFilePaths($this->seedersPath);
+        $this->validateFileNames($filePaths);
+        $classes = $this->convertFilePathsToClassNames($filePaths);
+
+        foreach (array_reverse($classes) as $fileName => $className) {
+            $filePath = $this->seedersPath . $fileName;
+
+            if (!$this->isSeeded($filePath)) {
+                continue;
+            }
+
+            require_once $this->seedersPath . $fileName;
+            $ob = new $className($this->pdo);
+            $ob->down();
+
+            $this->deleteRow($filePath);
+        }
+    }
+
+    protected function createSeedersTableIfNotExists(): void
+    {
+        $this->pdo->exec("
+            CREATE TABLE IF NOT EXISTS " . self::TABLE . " (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                file_path VARCHAR(255),
+                seed_date BIGINT
+            )
+        ");
+    }
+
+    /**
+     * @param string $path
+     * @return array<int, string>
+     */
+    private function getFilePaths(string $path): array
+    {
+        $result = scandir($path);
+        unset($result[0]);
+        unset($result[1]);
+
+        return $result;
+    }
+
+    /**
+     * @param array<int, string> $filePaths
+     * @return void
+     */
+    private function validateFileNames(array $filePaths): void
+    {
+        foreach ($filePaths as $path) {
+            if (!preg_match('/^[1-9][0-9]*?_[a-z0-9_]+\.php$/', $path)) {
+                throw new RuntimeException(sprintf(
+                    "The seeder file name '%s' is invalid. It should be in the format of '[1-9]_file_name.php'.",
+                    $path
+                ));
+            }
+        }
+    }
+
+    /**
+     * @param array<int, string> $filePaths
+     * @return array<string, string>
+     */
+    private function convertFilePathsToClassNames(array $filePaths): array
+    {
+        $classes = [];
+
+        foreach ($filePaths as $path) {
+            $name = str_replace('.php', '', strtolower(basename($path)));
+            $name = preg_replace("/^[0-9]+?_/", '', $name);
+            $words = explode('_', $name);
+            $words = array_map(fn ($word) => ucfirst($word), $words);
+            $classes[$path] = implode('', $words);
+        }
+
+        return $classes;
+    }
+
+    private function isSeeded(string $filePath): bool
+    {
+        $stmt = $this->pdo->prepare("
+            SELECT
+                COUNT(*) AS is_seeded
+            FROM
+                " . self::TABLE . "
+            WHERE
+                file_path = ?
+        ");
+
+        $stmt->execute([
+            $filePath
+        ]);
+        $result = $stmt->fetch(PDO::FETCH_OBJ);
+
+        if ((int)$result->is_seeded) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function setItAsSeeded(string $filePath): void
+    {
+        $stmt = $this->pdo->prepare("
+            INSERT INTO
+                " . self::TABLE . "
+                (file_path, seed_date)
+                VALUES(?, ?)
+        ");
+        $stmt->execute([
+            $filePath,
+            time()
+        ]);
+    }
+
+    private function deleteRow(string $filePath): void
+    {
+        $this->pdo->prepare("
+            DELETE FROM
+                " . self::TABLE . "
+            WHERE
+                file_path = ?
+        ")->execute([
+            $filePath,
+        ]);
+    }
+}
