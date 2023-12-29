@@ -25,10 +25,10 @@ class Migration
 
     public function migrate(): void
     {
-        $this->createMigrationTableIfNotExists();
         $filePaths = $this->getFilePaths($this->migrationsPath);
         $this->validateFileNames($filePaths);
         $classes = $this->convertFilePathsToClassNames($filePaths);
+        $this->createMigrationTableIfNotExists();
 
         foreach ($classes as $fileName => $className) {
             $filePath = $this->migrationsPath . $fileName;
@@ -47,10 +47,10 @@ class Migration
 
     public function rollback(): void
     {
-        $this->createMigrationTableIfNotExists();
         $filePaths = $this->getFilePaths($this->migrationsPath);
         $this->validateFileNames($filePaths);
         $classes = $this->convertFilePathsToClassNames($filePaths);
+        $this->createMigrationTableIfNotExists();
 
         foreach (array_reverse($classes) as $fileName => $className) {
             $filePath = $this->migrationsPath . $fileName;
