@@ -3,6 +3,7 @@
 namespace App\Core\Migration;
 
 use App\Core\Abstracts\AbstractDatabaseOperation;
+use App\Core\DatabaseOperationFileHandler;
 use RuntimeException;
 use PDO;
 
@@ -10,25 +11,24 @@ class Migration extends AbstractDatabaseOperation
 {
     public string $table = 'migrations';
     private string $migrationsPath;
-    protected PDO $pdo;
 
-    public function __construct(PDO $PDO, string $migrationsPath)
+    public function __construct(protected PDO $PDO, protected DatabaseOperationFileHandler $fileHandler, string $migrationsPath)
     {
+        parent::__construct($PDO, $fileHandler);
         $migrationsPath = rtrim($migrationsPath, '/') . '/';
 
         if (!is_dir($migrationsPath)) {
             throw new RuntimeException(sprintf('The migrations folder "%s" does not exist.', $migrationsPath));
         }
 
-        $this->pdo = $PDO;
         $this->migrationsPath = $migrationsPath;
     }
 
     public function migrate(): void
     {
-        $filePaths = $this->getFilePaths($this->migrationsPath);
-        $this->validateFileNames($filePaths);
-        $classes = $this->convertFilePathsToClassNames($filePaths);
+        $filePaths = $this->fileHandler->getFilePaths($this->migrationsPath);
+        $this->fileHandler->validateFileNames($filePaths);
+        $classes = $this->fileHandler->convertFilePathsToClassNames($filePaths);
         $this->createMigrationTableIfNotExists();
 
         foreach ($classes as $fileName => $className) {
@@ -48,9 +48,9 @@ class Migration extends AbstractDatabaseOperation
 
     public function rollback(): void
     {
-        $filePaths = $this->getFilePaths($this->migrationsPath);
-        $this->validateFileNames($filePaths);
-        $classes = $this->convertFilePathsToClassNames($filePaths);
+        $filePaths = $this->fileHandler->getFilePaths($this->migrationsPath);
+        $this->fileHandler->validateFileNames($filePaths);
+        $classes = $this->fileHandler->convertFilePathsToClassNames($filePaths);
         $this->createMigrationTableIfNotExists();
 
         foreach (array_reverse($classes) as $fileName => $className) {

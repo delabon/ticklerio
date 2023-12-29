@@ -3,6 +3,7 @@
 namespace Tests\Unit\Core;
 
 use App\Core\Abstracts\AbstractDatabaseOperation;
+use App\Core\DatabaseOperationFileHandler;
 use PHPUnit\Framework\TestCase;
 use App\Core\Seeding\Seeder;
 use RuntimeException;
@@ -23,6 +24,7 @@ class SeederTest extends TestCase
         $this->pdoMock = $this->createMock(PDO::class);
         $this->seeder = new Seeder(
             $this->pdoMock,
+            new DatabaseOperationFileHandler('seeder'),
             __DIR__ . '/../../_seeders/Unit/'
         );
     }
@@ -86,6 +88,7 @@ class SeederTest extends TestCase
 
         new Seeder(
             $this->pdoMock,
+            new DatabaseOperationFileHandler('seeder'),
             $seedersFolder
         );
     }
@@ -94,6 +97,7 @@ class SeederTest extends TestCase
     {
         $seeder = new Seeder(
             $this->pdoMock,
+            new DatabaseOperationFileHandler('seeder'),
             __DIR__ . '/../../_migrations/InvalidStructures/One/'
         );
 
@@ -107,6 +111,7 @@ class SeederTest extends TestCase
     {
         $seeder = new Seeder(
             $this->pdoMock,
+            new DatabaseOperationFileHandler('seeder'),
             __DIR__ . '/../../_migrations/InvalidStructures/Two/'
         );
 
@@ -210,6 +215,7 @@ class SeederTest extends TestCase
     {
         $seeder = new Seeder(
             $this->pdoMock,
+            new DatabaseOperationFileHandler('seeder'),
             __DIR__ . '/../../_migrations/InvalidStructures/One/'
         );
 
@@ -223,6 +229,7 @@ class SeederTest extends TestCase
     {
         $seeder = new Seeder(
             $this->pdoMock,
+            new DatabaseOperationFileHandler('seeder'),
             __DIR__ . '/../../_migrations/InvalidStructures/Two/'
         );
 

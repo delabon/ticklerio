@@ -3,6 +3,7 @@
 namespace App\Core\Seeding;
 
 use App\Core\Abstracts\AbstractDatabaseOperation;
+use App\Core\DatabaseOperationFileHandler;
 use RuntimeException;
 use PDO;
 
@@ -10,26 +11,25 @@ class Seeder extends AbstractDatabaseOperation
 {
     public string $table = 'seeders';
     private string $seedersPath;
-    protected PDO $pdo;
 
-    public function __construct(PDO $pdo, string $seedersPath)
+    public function __construct(protected PDO $pdo, protected DatabaseOperationFileHandler $fileHandler, string $seedersPath)
     {
+        parent::__construct($pdo, $fileHandler);
         $seedersPath = rtrim($seedersPath, '/') . '/';
 
         if (!is_dir($seedersPath)) {
             throw new RuntimeException(sprintf('The seeders folder "%s" does not exist.', $seedersPath));
         }
 
-        $this->pdo = $pdo;
         $this->seedersPath = $seedersPath;
     }
 
     public function seed(): void
     {
         $this->createSeedersTableIfNotExists();
-        $filePaths = $this->getFilePaths($this->seedersPath);
-        $this->validateFileNames($filePaths);
-        $classes = $this->convertFilePathsToClassNames($filePaths);
+        $filePaths = $this->fileHandler->getFilePaths($this->seedersPath);
+        $this->fileHandler->validateFileNames($filePaths);
+        $classes = $this->fileHandler->convertFilePathsToClassNames($filePaths);
 
         foreach ($classes as $fileName => $className) {
             $filePath = $this->seedersPath . $fileName;
@@ -49,9 +49,9 @@ class Seeder extends AbstractDatabaseOperation
     public function rollback(): void
     {
         $this->createSeedersTableIfNotExists();
-        $filePaths = $this->getFilePaths($this->seedersPath);
-        $this->validateFileNames($filePaths);
-        $classes = $this->convertFilePathsToClassNames($filePaths);
+        $filePaths = $this->fileHandler->getFilePaths($this->seedersPath);
+        $this->fileHandler->validateFileNames($filePaths);
+        $classes = $this->fileHandler->convertFilePathsToClassNames($filePaths);
 
         foreach (array_reverse($classes) as $fileName => $className) {
             $filePath = $this->seedersPath . $fileName;

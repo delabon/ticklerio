@@ -3,6 +3,7 @@
 namespace Tests\Unit\Core;
 
 use App\Core\Abstracts\AbstractDatabaseOperation;
+use App\Core\DatabaseOperationFileHandler;
 use App\Core\Migration\Migration;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -23,6 +24,7 @@ class MigrationTest extends TestCase
         $this->pdoMock = $this->createMock(PDO::class);
         $this->migration = new Migration(
             $this->pdoMock,
+            new DatabaseOperationFileHandler('migration'),
             __DIR__ . '/../../_migrations/Unit/'
         );
     }
@@ -107,6 +109,7 @@ class MigrationTest extends TestCase
 
         new Migration(
             $this->pdoMock,
+            new DatabaseOperationFileHandler('migration'),
             __DIR__ . '/tmptmptmptmp/'
         );
     }
@@ -115,6 +118,7 @@ class MigrationTest extends TestCase
     {
         $migration = new Migration(
             $this->pdoMock,
+            new DatabaseOperationFileHandler('migration'),
             __DIR__ . '/../../_migrations/InvalidStructures/One/'
         );
 
@@ -128,6 +132,7 @@ class MigrationTest extends TestCase
     {
         $migration = new Migration(
             $this->pdoMock,
+            new DatabaseOperationFileHandler('migration'),
             __DIR__ . '/../../_migrations/InvalidStructures/Two/'
         );
 
@@ -171,6 +176,7 @@ class MigrationTest extends TestCase
 
         $migration = new Migration(
             $this->pdoMock,
+            new DatabaseOperationFileHandler('migration'),
             __DIR__ . '/../../_migrations/Unit/'
         );
         $migration->migrate();
@@ -213,6 +219,7 @@ class MigrationTest extends TestCase
     {
         $migration = new Migration(
             $this->pdoMock,
+            new DatabaseOperationFileHandler('migration'),
             __DIR__ . '/../../_migrations/InvalidStructures/One/'
         );
 
@@ -226,6 +233,7 @@ class MigrationTest extends TestCase
     {
         $migration = new Migration(
             $this->pdoMock,
+            new DatabaseOperationFileHandler('migration'),
             __DIR__ . '/../../_migrations/InvalidStructures/Two/'
         );
 
