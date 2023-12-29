@@ -321,8 +321,8 @@ class ReplyManagementTest extends FeatureTestCase
         $this->assertSame($ticket->getId(), $replies[0]->getTicketId());
         $this->assertSame($user->getId(), $replies[0]->getUserId());
         $this->assertSame('This is an updated reply', $replies[0]->getMessage());
-        $this->assertSame(strtotime('-1 year'), $replies[0]->getCreatedAt());
-        $this->assertGreaterThan(strtotime('-1 year'), $replies[0]->getUpdatedAt());
+        $this->assertSame($reply->getCreatedAt(), $replies[0]->getCreatedAt());
+        $this->assertGreaterThan($reply->getUpdatedAt(), $replies[0]->getUpdatedAt());
     }
 
     public function testReturnsForbiddenResponseWhenTryingToUpdateReplyUsingInvalidCsrfToken(): void
