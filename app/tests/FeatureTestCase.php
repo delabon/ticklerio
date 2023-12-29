@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Core\Csrf;
+use App\Core\DatabaseOperationFileHandler;
 use App\Core\Http\RequestType;
 use App\Core\Migration\Migration;
 use App\Core\Session\FileSessionHandler;
@@ -148,6 +149,7 @@ class FeatureTestCase extends TestCase
     {
         $this->migration = new Migration(
             $this->pdo,
+            new DatabaseOperationFileHandler('migration'),
             __DIR__ . '/../database/migrations/'
         );
         $this->migration->migrate();

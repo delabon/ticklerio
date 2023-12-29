@@ -2,6 +2,7 @@
 
 namespace Tests;
 
+use App\Core\DatabaseOperationFileHandler;
 use App\Core\Migration\Migration;
 use App\Core\Session\ArraySessionHandler;
 use App\Core\Session\Session;
@@ -28,6 +29,7 @@ class IntegrationTestCase extends TestCase
 
         $this->migration = new Migration(
             $this->pdo,
+            new DatabaseOperationFileHandler('migration'),
             __DIR__ . '/../database/migrations/'
         );
         $this->migration->migrate();
