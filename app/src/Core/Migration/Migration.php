@@ -3,18 +3,21 @@
 namespace App\Core\Migration;
 
 use App\Core\Abstracts\AbstractDatabaseOperation;
-use App\Core\DatabaseOperationFileHandler;
-use App\Core\Utilities\FilePathToClassNameConverter;
-use RuntimeException;
+use App\Core\Utilities\ClassNameConverter;
+use App\Core\Utilities\FileScanner;
 use PDO;
+use RuntimeException;
 
 class Migration extends AbstractDatabaseOperation
 {
     public string $table = 'migrations';
     private string $migrationsPath;
 
-    public function __construct(protected PDO $PDO, protected DatabaseOperationFileHandler $fileHandler, string $migrationsPath)
-    {
+    public function __construct(
+        protected PDO $PDO,
+        readonly private ClassNameConverter $classNameConverter,
+        string $migrationsPath
+    ) {
         parent::__construct($PDO);
         $migrationsPath = rtrim($migrationsPath, '/') . '/';
 
@@ -27,9 +30,8 @@ class Migration extends AbstractDatabaseOperation
 
     public function migrate(): void
     {
-        $filePaths = $this->fileHandler->getFilePaths($this->migrationsPath);
-        $this->fileHandler->validateFileNames($filePaths);
-        $classes = FilePathToClassNameConverter::convert($filePaths);
+        $filePaths = FileScanner::getFilePaths($this->migrationsPath);
+        $classes = $this->classNameConverter->convert($filePaths);
         $this->createMigrationTableIfNotExists();
 
         foreach ($classes as $fileName => $className) {
@@ -49,9 +51,8 @@ class Migration extends AbstractDatabaseOperation
 
     public function rollback(): void
     {
-        $filePaths = $this->fileHandler->getFilePaths($this->migrationsPath);
-        $this->fileHandler->validateFileNames($filePaths);
-        $classes = FilePathToClassNameConverter::convert($filePaths);
+        $filePaths = FileScanner::getFilePaths($this->migrationsPath);
+        $classes = $this->classNameConverter->convert($filePaths);
         $this->createMigrationTableIfNotExists();
 
         foreach (array_reverse($classes) as $fileName => $className) {

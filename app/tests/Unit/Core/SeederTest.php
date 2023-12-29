@@ -3,7 +3,7 @@
 namespace Tests\Unit\Core;
 
 use App\Core\Abstracts\AbstractDatabaseOperation;
-use App\Core\DatabaseOperationFileHandler;
+use App\Core\Utilities\ClassNameConverter;
 use PHPUnit\Framework\TestCase;
 use App\Core\Seeding\Seeder;
 use RuntimeException;
@@ -24,7 +24,7 @@ class SeederTest extends TestCase
         $this->pdoMock = $this->createMock(PDO::class);
         $this->seeder = new Seeder(
             $this->pdoMock,
-            new DatabaseOperationFileHandler('seeder'),
+            new ClassNameConverter(),
             __DIR__ . '/../../_seeders/Unit/'
         );
     }
@@ -88,7 +88,7 @@ class SeederTest extends TestCase
 
         new Seeder(
             $this->pdoMock,
-            new DatabaseOperationFileHandler('seeder'),
+            new ClassNameConverter(),
             $seedersFolder
         );
     }

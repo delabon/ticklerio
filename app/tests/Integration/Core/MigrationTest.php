@@ -2,11 +2,11 @@
 
 namespace Tests\Integration\Core;
 
-use App\Core\DatabaseOperationFileHandler;
+use App\Core\Utilities\ClassNameConverter;
 use App\Core\Migration\Migration;
 use PHPUnit\Framework\TestCase;
-use PDO;
 use RuntimeException;
+use PDO;
 
 class MigrationTest extends TestCase
 {
@@ -20,7 +20,7 @@ class MigrationTest extends TestCase
         $this->pdo = new PDO('sqlite::memory:');
         $this->migration = new Migration(
             $this->pdo,
-            new DatabaseOperationFileHandler('migration'),
+            new ClassNameConverter(),
             __DIR__ . '/../../_migrations/Integration/'
         );
         $this->migration->migrate();
@@ -45,7 +45,7 @@ class MigrationTest extends TestCase
     {
         $migration = new Migration(
             $this->pdo,
-            new DatabaseOperationFileHandler('migration'),
+            new ClassNameConverter(),
             __DIR__ . '/../../_migrations/Integration2'
         );
         $migration->migrate();
@@ -61,12 +61,12 @@ class MigrationTest extends TestCase
     {
         $migration = new Migration(
             $this->pdo,
-            new DatabaseOperationFileHandler('migration'),
+            new ClassNameConverter(),
             __DIR__ . '/../../_migrations/InvalidStructures/One/'
         );
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage("The migration file name 'invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+        $this->expectExceptionMessage("The file name 'invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
 
         $migration->migrate();
     }
@@ -75,12 +75,12 @@ class MigrationTest extends TestCase
     {
         $migration = new Migration(
             $this->pdo,
-            new DatabaseOperationFileHandler('migration'),
+            new ClassNameConverter(),
             __DIR__ . '/../../_migrations/InvalidStructures/Two/'
         );
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage("The migration file name '01_invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+        $this->expectExceptionMessage("The file name '01_invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
 
         $migration->migrate();
     }
@@ -107,12 +107,12 @@ class MigrationTest extends TestCase
     {
         $migration = new Migration(
             $this->pdo,
-            new DatabaseOperationFileHandler('migration'),
+            new ClassNameConverter(),
             __DIR__ . '/../../_migrations/InvalidStructures/One/'
         );
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage("The migration file name 'invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+        $this->expectExceptionMessage("The file name 'invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
 
         $migration->rollback();
     }
@@ -121,12 +121,12 @@ class MigrationTest extends TestCase
     {
         $migration = new Migration(
             $this->pdo,
-            new DatabaseOperationFileHandler('migration'),
+            new ClassNameConverter(),
             __DIR__ . '/../../_migrations/InvalidStructures/Two/'
         );
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage("The migration file name '01_invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+        $this->expectExceptionMessage("The file name '01_invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
 
         $migration->rollback();
     }

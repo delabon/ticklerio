@@ -2,7 +2,7 @@
 
 namespace Tests\Integration\Core;
 
-use App\Core\DatabaseOperationFileHandler;
+use App\Core\Utilities\ClassNameConverter;
 use App\Core\Migration\Migration;
 use PHPUnit\Framework\TestCase;
 use App\Core\Seeding\Seeder;
@@ -21,13 +21,13 @@ class SeederTest extends TestCase
         $this->pdo = new PDO('sqlite::memory:');
         $migration = new Migration(
             $this->pdo,
-            new DatabaseOperationFileHandler('migration'),
+            new ClassNameConverter(),
             __DIR__ . '/../../_migrations/Integration/'
         );
         $migration->migrate();
         $this->seeder = new Seeder(
             $this->pdo,
-            new DatabaseOperationFileHandler('seeder'),
+            new ClassNameConverter(),
             __DIR__ . '/../../_seeders/Integration/'
         );
     }
@@ -58,12 +58,12 @@ class SeederTest extends TestCase
     {
         $seeder = new Seeder(
             $this->pdo,
-            new DatabaseOperationFileHandler('seeder'),
+            new ClassNameConverter(),
             __DIR__ . '/../../_migrations/InvalidStructures/One/'
         );
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage("The seeder file name 'invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+        $this->expectExceptionMessage("The file name 'invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
 
         $seeder->seed();
     }
@@ -76,12 +76,12 @@ class SeederTest extends TestCase
     {
         $seeder = new Seeder(
             $this->pdo,
-            new DatabaseOperationFileHandler('seeder'),
+            new ClassNameConverter(),
             __DIR__ . '/../../_migrations/InvalidStructures/Two/'
         );
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage("The seeder file name '01_invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+        $this->expectExceptionMessage("The file name '01_invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
 
         $seeder->seed();
     }
@@ -107,12 +107,12 @@ class SeederTest extends TestCase
     {
         $seeder = new Seeder(
             $this->pdo,
-            new DatabaseOperationFileHandler('seeder'),
+            new ClassNameConverter(),
             __DIR__ . '/../../_migrations/InvalidStructures/One/'
         );
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage("The seeder file name 'invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+        $this->expectExceptionMessage("The file name 'invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
 
         $seeder->rollback();
     }
@@ -121,12 +121,12 @@ class SeederTest extends TestCase
     {
         $seeder = new Seeder(
             $this->pdo,
-            new DatabaseOperationFileHandler('seeder'),
+            new ClassNameConverter(),
             __DIR__ . '/../../_migrations/InvalidStructures/Two/'
         );
 
         $this->expectException(RuntimeException::class);
-        $this->expectExceptionMessage("The seeder file name '01_invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
+        $this->expectExceptionMessage("The file name '01_invalid.php' is invalid. It should be in the format of '[1-9]_file_name.php'.");
 
         $seeder->rollback();
     }

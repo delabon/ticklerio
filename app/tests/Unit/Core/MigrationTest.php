@@ -3,7 +3,7 @@
 namespace Tests\Unit\Core;
 
 use App\Core\Abstracts\AbstractDatabaseOperation;
-use App\Core\DatabaseOperationFileHandler;
+use App\Core\Utilities\ClassNameConverter;
 use App\Core\Migration\Migration;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -24,7 +24,7 @@ class MigrationTest extends TestCase
         $this->pdoMock = $this->createMock(PDO::class);
         $this->migration = new Migration(
             $this->pdoMock,
-            new DatabaseOperationFileHandler('migration'),
+            new ClassNameConverter(),
             __DIR__ . '/../../_migrations/Unit/'
         );
     }
@@ -85,7 +85,7 @@ class MigrationTest extends TestCase
 
         new Migration(
             $this->pdoMock,
-            new DatabaseOperationFileHandler('migration'),
+            new ClassNameConverter(),
             __DIR__ . '/tmptmptmptmp/'
         );
     }
@@ -124,7 +124,7 @@ class MigrationTest extends TestCase
 
         $migration = new Migration(
             $this->pdoMock,
-            new DatabaseOperationFileHandler('migration'),
+            new ClassNameConverter(),
             __DIR__ . '/../../_migrations/Unit/'
         );
         $migration->migrate();
