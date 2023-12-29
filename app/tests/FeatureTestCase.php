@@ -8,6 +8,7 @@ use App\Core\Migration\Migration;
 use App\Core\Session\FileSessionHandler;
 use App\Core\Session\Session;
 use App\Core\Session\SessionHandlerType;
+use App\Core\Utilities\ClassNameConverter;
 use App\Core\Utilities\FileScanner;
 use Dotenv\Dotenv;
 use GuzzleHttp\Client;
@@ -149,7 +150,7 @@ class FeatureTestCase extends TestCase
     {
         $this->migration = new Migration(
             $this->pdo,
-            new FileScanner('migration'),
+            new ClassNameConverter(),
             __DIR__ . '/../database/migrations/'
         );
         $this->migration->migrate();
