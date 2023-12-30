@@ -5,6 +5,7 @@
 /app/.env
 /app/sessions
 /app/node_modules
+/app/public/dist
 /app/.cache
 /app/.config
 /app/.local
