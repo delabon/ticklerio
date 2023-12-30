@@ -3,6 +3,7 @@
 /logs
 /config/ssls/*
 /app/.env
+/app/sessions
 /app/.cache
 /app/.config
 /app/.local

@@ -65,7 +65,7 @@ if (!isset($_ENV['DB_FILE'])) {
     throw new RuntimeException("The DB_FILE environment constant is not set.");
 }
 
-if (str_contains($_ENV['DB_FILE'], '/')) {
+if (str_starts_with($_ENV['DB_FILE'], '/')) {
     $dbFile = $_ENV['DB_FILE'];
 } else {
     $dbFile = __DIR__ . '/../' . $_ENV['DB_FILE'];
