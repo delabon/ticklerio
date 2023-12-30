@@ -3,11 +3,12 @@
 namespace App\Controllers;
 
 use App\Core\Http\Response;
+use App\Core\Utilities\View;
 
 class HomeController
 {
     public function index(): Response
     {
-        return new Response('Welcome to homepage!');
+        return View::load('home');
     }
 }
