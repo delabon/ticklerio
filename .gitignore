@@ -4,6 +4,7 @@
 /config/ssls/*
 /app/.env
 /app/sessions
+/app/node_modules
 /app/.cache
 /app/.config
 /app/.local
