@@ -140,6 +140,12 @@ $container->singleton(Csrf::class, function () use ($container) {
 });
 
 //
+// Load helper functions
+//
+
+require __DIR__ . '/Core/helpers.php';
+
+//
 // We're ready
 //
 
