@@ -7,6 +7,7 @@
     <title><?= $_ENV['APP_NAME'] ?></title>
 
     <link rel="stylesheet" href="https://<?= $_ENV['APP_DOMAIN'] ?>/dist/app.min.css">
+    <meta name="csrf-token" content="<?= csrf() ?>">
 </head>
 <body>
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
@@ -28,7 +29,7 @@
                             <a class="nav-link" href="/tickets">Tickets</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/logout" id="logout-btn">Logout</a>
+                            <a class="nav-link" href="/logout">Logout</a>
                         </li>
                     <?php else : ?>
                         <li class="nav-item">

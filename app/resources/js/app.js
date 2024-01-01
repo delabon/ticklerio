@@ -83,3 +83,32 @@ if (registerBtn) {
         });
     });
 }
+
+//
+// Logout
+//
+
+const logoutBtns = document.querySelectorAll('[href="/logout"]');
+
+if (logoutBtns.length > 0) {
+    logoutBtns.forEach((logoutBtn) => {
+        logoutBtn.addEventListener('click', function (e){
+            e.preventDefault();
+
+            // Send form data
+            let formData = new FormData();
+            formData.append('csrf_token', document.querySelector('[name="csrf-token"]').attributes.content.value);
+
+            fetch('/ajax/auth/logout', {
+                'method': 'POST',
+                'body': formData
+            }).then((response) => {
+                if (response.status === 200) {
+                    location.href = '/';
+                }
+            }).catch((error) => {
+                console.log(error);
+            });
+        });
+    });
+}
