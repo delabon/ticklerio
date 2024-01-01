@@ -11,7 +11,7 @@ require __DIR__ . '/parts/header.php';
                 <?php if (isLoggedIn()) : ?>
                     <p class="text-center mt-5">
                         <a href="/tickets" class="btn btn-primary">Tickets</a>
-                        <a href="/logout" class="btn btn-secondary ms-3">Logout</a>
+                        <a href="/logout" class="btn btn-secondary ms-3" id="logout-btn">Logout</a>
                     </p>
                 <?php else : ?>
                     <p class="text-center mt-5">
