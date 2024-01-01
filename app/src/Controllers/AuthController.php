@@ -11,7 +11,6 @@ use App\Core\Http\Response;
 use App\Core\Utilities\View;
 use App\Users\UserRepository;
 use LogicException;
-use UnexpectedValueException;
 
 class AuthController
 {
@@ -55,26 +54,17 @@ class AuthController
         }
     }
 
-    public function logout(Request $request, Auth $auth, UserRepository $userRepository, Csrf $csrf): Response
+    public function logout(Request $request, Auth $auth, Csrf $csrf): Response
     {
         if (!$csrf->validate($request->query(RequestType::Post, 'csrf_token') ?: '')) {
             return new Response('Invalid CSRF token.', HttpStatusCode::Forbidden);
         }
 
-        $id = (int)$request->query(RequestType::Post, 'id');
-        $user = $userRepository->find($id);
+        $auth->forceLogout();
 
-        try {
-            $auth->logout($user);
-
-            return new Response([
-                'success' => true,
-                'message' => 'The user has been logged-off successfully.',
-            ]);
-        } catch (LogicException $e) {
-            return new Response($e->getMessage(), HttpStatusCode::BadRequest);
-        } catch (UnexpectedValueException $e) {
-            return new Response($e->getMessage(), HttpStatusCode::Unauthorized);
-        }
+        return new Response([
+            'success' => true,
+            'message' => 'The user has been logged-off successfully.',
+        ]);
     }
 }

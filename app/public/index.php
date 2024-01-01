@@ -80,7 +80,6 @@ if ($uri === '/') {
     $response = (new AuthController())->logout(
         $container->get(Request::class),
         $container->get(Auth::class),
-        new UserRepository($container->get(PDO::class)),
         $container->get(Csrf::class)
     );
 } elseif (preg_match("/^\/ajax\/user\/ban\/?$/", $uri)) {

@@ -64,7 +64,6 @@ class AuthTest extends FeatureTestCase
         $response = $this->post(
             '/ajax/auth/logout',
             [
-                'id' => $user->getId(),
                 'csrf_token' => $this->csrf->generate()
             ],
             self::DISABLE_GUZZLE_EXCEPTION
@@ -73,22 +72,6 @@ class AuthTest extends FeatureTestCase
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
         $this->assertFalse($this->auth->isAuth($user));
         $this->assertArrayNotHasKey('auth', $_SESSION);
-    }
-
-    public function testReturnsBadRequestResponseWhenLoggingOutUserWhoIsNotLoggedIn(): void
-    {
-        $user = $this->userFactory->create()[0];
-
-        $response = $this->post(
-            '/ajax/auth/logout',
-            [
-                'id' => $user->getId(),
-                'csrf_token' => $this->csrf->generate()
-            ],
-            self::DISABLE_GUZZLE_EXCEPTION
-        );
-
-        $this->assertSame(HttpStatusCode::BadRequest->value, $response->getStatusCode());
     }
 
     public function testReturnsForbiddenResponseWhenTryingToLogInUserUsingInvalidCsrfToken(): void

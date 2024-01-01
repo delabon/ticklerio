@@ -45,9 +45,6 @@ readonly class Auth
             $this->session->get('auth')['id'] === $user->getId();
     }
 
-    /**
-     * @throws Exception
-     */
     public function logout(User $user): void
     {
         if (!$this->isAuth($user)) {
