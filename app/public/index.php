@@ -219,6 +219,9 @@ if ($uri === '/') {
 } elseif (preg_match("/^\/login\/?$/", $uri)) {
     // Login page
     $response = (new AuthController())->index();
+} elseif (preg_match("/^\/register\/?$/", $uri)) {
+    // Register page
+    $response = (new RegisterController())->index();
 }
 
 //

@@ -40,3 +40,46 @@ if (loginBtn) {
         });
     });
 }
+
+//
+// Register
+//
+
+const registerBtn = document.getElementById('register-btn');
+
+if (registerBtn) {
+    const alert = document.getElementById('register-alert');
+
+    registerBtn.addEventListener('click', function (e){
+        e.preventDefault();
+
+        // Reset alert
+        alert.classList.add('d-none');
+        alert.innerHTML = '';
+
+        // Send form data
+        let formData = new FormData();
+        formData.append('email', document.getElementById('email').value);
+        formData.append('first_name', document.getElementById('first-name').value);
+        formData.append('last_name', document.getElementById('last-name').value);
+        formData.append('password', document.getElementById('password').value);
+        formData.append('csrf_token', document.getElementById('csrf_token').value);
+
+        fetch('/ajax/register', {
+            'method': 'POST',
+            'body': formData
+        }).then((response) => {
+            if (response.status === 200) {
+                location.href = '/login';
+            } else {
+                response.text().then((text) => {
+                    alert.classList.remove('d-none');
+                    alert.innerHTML = text;
+                });
+            }
+        }).catch((error) => {
+            alert.classList.remove('d-none');
+            alert.innerHTML = 'Something went wrong. Please try again later.';
+        });
+    });
+}
