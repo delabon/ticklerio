@@ -20,5 +20,5 @@ function isLoggedIn(): bool
 {
     global $container;
 
-    return $container->get(Auth::class)->isLoggedIn();
+    return $container->get(Auth::class)->getUserId() > 0;
 }
