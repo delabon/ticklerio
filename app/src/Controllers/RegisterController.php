@@ -7,12 +7,18 @@ use App\Core\Http\HttpStatusCode;
 use App\Core\Http\Request;
 use App\Core\Http\RequestType;
 use App\Core\Http\Response;
+use App\Core\Utilities\View;
 use App\Users\UserService;
 use App\Users\UserType;
 use Exception;
 
 class RegisterController
 {
+    public function index(): Response
+    {
+        return View::load('register');
+    }
+
     public function register(Request $request, UserService $userService, Csrf $csrf): Response
     {
         $params = $request->postParams;
