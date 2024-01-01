@@ -6,7 +6,7 @@
 
 use App\Controllers\AuthController;
 use App\Controllers\BanUnbanController;
-use App\Controllers\DeleteUserController;
+use App\Controllers\UserController;
 use App\Controllers\HomeController;
 use App\Controllers\RegisterController;
 use App\Controllers\ReplyController;
@@ -107,7 +107,7 @@ if ($uri === '/') {
     );
 } elseif (preg_match("/^\/ajax\/user\/delete\/?$/", $uri)) {
     // Deletes a user via ajax
-    $response = (new DeleteUserController())->delete(
+    $response = (new UserController())->delete(
         $container->get(Request::class),
         new UserService(
             new UserRepository($container->get(PDO::class)),
@@ -120,7 +120,7 @@ if ($uri === '/') {
     );
 } elseif (preg_match("/^\/ajax\/user\/update\/?$/", $uri)) {
     // Updates a user via ajax
-    $response = (new DeleteUserController())->update(
+    $response = (new UserController())->update(
         $container->get(Request::class),
         new UserService(
             new UserRepository($container->get(PDO::class)),
@@ -222,6 +222,9 @@ if ($uri === '/') {
 } elseif (preg_match("/^\/register\/?$/", $uri)) {
     // Register page
     $response = (new RegisterController())->index();
+} elseif (preg_match("/^\/account\/?$/", $uri)) {
+    // Account page
+    $response = (new UserController())->edit();
 }
 
 //

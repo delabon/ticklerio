@@ -7,13 +7,14 @@ use App\Core\Csrf;
 use App\Core\Http\HttpStatusCode;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
+use App\Core\Utilities\View;
 use App\Exceptions\UserDoesNotExistException;
 use App\Users\UserService;
 use Exception;
 use InvalidArgumentException;
 use LogicException;
 
-class DeleteUserController
+class UserController
 {
     public function delete(Request $request, UserService $userService, Auth $auth, Csrf $csrf): Response
     {
@@ -44,6 +45,11 @@ class DeleteUserController
         } catch (Exception $e) {
             return new Response('Exception ' . $e->getMessage() . "An error occurred while trying to delete the user.", HttpStatusCode::InternalServerError);
         }
+    }
+
+    public function edit(): Response
+    {
+        return View::load('users.edit');
     }
 
     public function update(Request $request, UserService $userService, Csrf $csrf): Response
