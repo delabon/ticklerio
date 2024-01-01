@@ -8,12 +8,18 @@ use App\Core\Http\HttpStatusCode;
 use App\Core\Http\Request;
 use App\Core\Http\RequestType;
 use App\Core\Http\Response;
+use App\Core\Utilities\View;
 use App\Users\UserRepository;
 use LogicException;
 use UnexpectedValueException;
 
 class AuthController
 {
+    public function index(): Response
+    {
+        return View::load('login');
+    }
+
     public function login(Request $request, Auth $auth, UserRepository $userRepository, Csrf $csrf): Response
     {
         if (!$csrf->validate($request->query(RequestType::Post, 'csrf_token') ?: '')) {

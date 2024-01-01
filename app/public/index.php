@@ -216,6 +216,9 @@ if ($uri === '/') {
         ),
         $container->get(Csrf::class)
     );
+} elseif (preg_match("/^\/login\/?$/", $uri)) {
+    // Login page
+    $response = (new AuthController())->index();
 }
 
 //
