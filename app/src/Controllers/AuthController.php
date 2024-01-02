@@ -2,19 +2,17 @@
 
 namespace App\Controllers;
 
-use App\Core\Auth;
-use App\Core\Csrf;
-use App\Core\Http\HttpStatusCode;
-use App\Core\Http\Request;
-use App\Core\Http\RequestType;
-use App\Core\Http\Response;
-use App\Core\Utilities\View;
 use App\Exceptions\PasswordDoesNotMatchException;
 use App\Exceptions\UserDoesNotExistException;
+use App\Core\Http\HttpStatusCode;
+use App\Core\Http\RequestType;
+use App\Core\Utilities\View;
+use App\Core\Http\Response;
 use App\Users\AuthService;
-use App\Users\UserRepository;
-use Exception;
+use App\Core\Http\Request;
 use LogicException;
+use App\Core\Csrf;
+use Exception;
 
 class AuthController
 {
