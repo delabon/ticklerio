@@ -30,6 +30,11 @@ function isLoggedIn(): bool
     return $container->get(Auth::class)->getUserId() > 0;
 }
 
+/**
+ * @param string $path
+ * @param array<string, mixed> $params
+ * @return Response
+ */
 function view(string $path, array $params = []): Response
 {
     return View::load($path, $params);

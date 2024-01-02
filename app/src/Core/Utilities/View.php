@@ -7,6 +7,11 @@ use RuntimeException;
 
 class View
 {
+    /**
+     * @param string $path
+     * @param array<string, mixed> $params
+     * @return Response
+     */
     public static function load(string $path, array $params = []): Response
     {
         $path = str_replace('.', '/', $path);
