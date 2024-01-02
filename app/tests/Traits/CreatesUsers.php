@@ -10,9 +10,12 @@ use Faker\Factory;
 
 trait CreatesUsers
 {
-    protected function createUser(UserType $type = UserType::Member): User
+    protected function createUser(UserType $type = UserType::Member, string $password = '12345678'): User
     {
-        return (new UserFactory(new UserRepository($this->pdo), Factory::create()))->create(['type' => $type->value])[0];
+        return (new UserFactory(new UserRepository($this->pdo), Factory::create()))->create([
+            'type' => $type->value,
+            'password' => $password,
+        ])[0];
     }
 
     protected function createAndLoginUser(): User

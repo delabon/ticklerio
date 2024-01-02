@@ -7,6 +7,14 @@ use Tests\_data\UserData;
 
 trait MakesUsers
 {
+    protected function makeUser(): User
+    {
+        $user = User::make(UserData::memberOne());
+        $user->setId(966);
+
+        return $user;
+    }
+
     protected function makeAndLoginUser(): User
     {
         $user = User::make(UserData::memberOne());
