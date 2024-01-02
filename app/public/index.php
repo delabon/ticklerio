@@ -76,7 +76,7 @@ if ($uri === '/') {
             $container->get(Auth::class),
             new UserRepository($container->get(PDO::class))
         ),
-        $container->get(Auth::class),
+        $container->get(Csrf::class),
     );
 } elseif (preg_match("/^\/ajax\/auth\/logout\/?$/", $uri)) {
     // Logs out a user via ajax

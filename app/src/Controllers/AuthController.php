@@ -43,7 +43,7 @@ class AuthController
         } catch (UserDoesNotExistException $e) {
             return new Response($e->getMessage(), HttpStatusCode::NotFound);
         } catch (PasswordDoesNotMatchException $e) {
-            return new Response($e->getMessage(), HttpStatusCode::Forbidden);
+            return new Response($e->getMessage(), HttpStatusCode::Unauthorized);
         } catch (LogicException $e) {
             return new Response($e->getMessage(), HttpStatusCode::Forbidden);
         } catch (Exception $e) {

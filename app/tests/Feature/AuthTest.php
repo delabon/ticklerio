@@ -2,13 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Core\Auth;
 use App\Core\Http\HttpStatusCode;
-use App\Users\UserFactory;
 use App\Users\UserRepository;
-use App\Users\UserType;
-use Faker\Factory;
+use App\Users\UserFactory;
 use Tests\FeatureTestCase;
+use App\Users\UserType;
+use App\Core\Auth;
+use Faker\Factory;
 
 class AuthTest extends FeatureTestCase
 {
@@ -85,7 +85,7 @@ class AuthTest extends FeatureTestCase
         $this->assertArrayNotHasKey('auth', $_SESSION);
     }
 
-    public function testReturnsInvalidResponseWhenTryingToLogInWithInvalidPassword(): void
+    public function testReturnsInvalidResponseWhenTryingToLogInWithPasswordThatDoesNotMatch(): void
     {
         $password = '123456789';
         $user = $this->userFactory->create([
@@ -103,6 +103,7 @@ class AuthTest extends FeatureTestCase
         );
 
         $this->assertSame(HttpStatusCode::Unauthorized->value, $response->getStatusCode());
+        $this->assertSame("The password does not match the user's password in database", $response->getBody()->getContents());
         $this->assertArrayNotHasKey('auth', $_SESSION);
     }
 
