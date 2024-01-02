@@ -9,7 +9,11 @@ use App\Core\Http\Request;
 use App\Core\Http\RequestType;
 use App\Core\Http\Response;
 use App\Core\Utilities\View;
+use App\Exceptions\PasswordDoesNotMatchException;
+use App\Exceptions\UserDoesNotExistException;
+use App\Users\AuthService;
 use App\Users\UserRepository;
+use Exception;
 use LogicException;
 
 class AuthController
@@ -19,38 +23,31 @@ class AuthController
         return View::load('login');
     }
 
-    public function login(Request $request, Auth $auth, UserRepository $userRepository, Csrf $csrf): Response
+    public function login(Request $request, AuthService $authService, Csrf $csrf): Response
     {
         if (!$csrf->validate($request->query(RequestType::Post, 'csrf_token') ?: '')) {
             return new Response('Invalid CSRF token.', HttpStatusCode::Forbidden);
         }
 
-        $email = $request->query(RequestType::Post, 'email');
-        $password = $request->query(RequestType::Post, 'password');
-        $results = $userRepository->findBy('email', $email);
-
-        // Email does not exist in the database
-        if (empty($results)) {
-            return new Response("No user found with the email address '{$email}'.", HttpStatusCode::NotFound);
-        }
-
-        $user = $results[0];
-
-        // Password does not match the user's password in database
-        if (!password_verify($password, $user->getPassword())) {
-            return new Response("The password does not match the user's password in database", HttpStatusCode::Unauthorized);
-        }
-
         // Log in
         try {
-            $auth->login($user);
+            $authService->loginUser(
+                $request->query(RequestType::Post, 'email') ?: '',
+                $request->query(RequestType::Post, 'password') ?: ''
+            );
 
             return new Response([
                 'success' => true,
                 'message' => 'The user has been logged-in successfully.',
             ]);
+        } catch (UserDoesNotExistException $e) {
+            return new Response($e->getMessage(), HttpStatusCode::NotFound);
+        } catch (PasswordDoesNotMatchException $e) {
+            return new Response($e->getMessage(), HttpStatusCode::Forbidden);
         } catch (LogicException $e) {
             return new Response($e->getMessage(), HttpStatusCode::Forbidden);
+        } catch (Exception $e) {
+            return new Response($e->getMessage(), HttpStatusCode::InternalServerError);
         }
     }
 

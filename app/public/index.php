@@ -26,6 +26,7 @@ use App\Tickets\TicketSanitizer;
 use App\Tickets\TicketService;
 use App\Tickets\TicketValidator;
 use App\Users\AdminService;
+use App\Users\AuthService;
 use App\Users\UserRepository;
 use App\Users\UserSanitizer;
 use App\Users\UserService;
@@ -71,9 +72,11 @@ if ($uri === '/') {
     // Logs in a user via ajax
     $response = (new AuthController())->login(
         $container->get(Request::class),
+        new AuthService(
+            $container->get(Auth::class),
+            new UserRepository($container->get(PDO::class))
+        ),
         $container->get(Auth::class),
-        new UserRepository($container->get(PDO::class)),
-        $container->get(Csrf::class)
     );
 } elseif (preg_match("/^\/ajax\/auth\/logout\/?$/", $uri)) {
     // Logs out a user via ajax

@@ -25,6 +25,10 @@ class AuthTest extends FeatureTestCase
         $this->userFactory = new UserFactory($this->userRepository, Factory::create());
     }
 
+    //
+    // Login
+    //
+
     public function testLogsInUserSuccessfully(): void
     {
         $password = '123456789';
@@ -50,30 +54,6 @@ class AuthTest extends FeatureTestCase
         $this->assertArrayHasKey('type', $_SESSION['auth']);
     }
 
-    public function testLogsOutUserSuccessfully(): void
-    {
-        $password = '123456789';
-        $user = $this->userFactory->create([
-            'type' => UserType::Member->value,
-            'password' => $password
-        ])[0];
-
-        $this->auth->login($user);
-        $this->assertTrue($this->auth->isAuth($user));
-
-        $response = $this->post(
-            '/ajax/auth/logout',
-            [
-                'csrf_token' => $this->csrf->generate()
-            ],
-            self::DISABLE_GUZZLE_EXCEPTION
-        );
-
-        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
-        $this->assertFalse($this->auth->isAuth($user));
-        $this->assertArrayNotHasKey('auth', $_SESSION);
-    }
-
     public function testReturnsForbiddenResponseWhenTryingToLogInUserUsingInvalidCsrfToken(): void
     {
         $response = $this->post(
@@ -87,21 +67,6 @@ class AuthTest extends FeatureTestCase
         );
 
         $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
-    }
-
-    public function testReturnsForbiddenResponseWhenTryingToLogoutUserUsingInvalidCsrfToken(): void
-    {
-        $response = $this->post(
-            '/ajax/auth/logout',
-            [
-                'id' => 1,
-                // 'csrf_token' => ''
-            ],
-            self::DISABLE_GUZZLE_EXCEPTION
-        );
-
-        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
-        $this->assertStringContainsStringIgnoringCase('csrf', $response->getBody()->getContents());
     }
 
     public function testReturnsNotFoundResponseWhenTryingToLogInWithAnEmailThatIsNotRegistered(): void
@@ -183,6 +148,49 @@ class AuthTest extends FeatureTestCase
         $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
         $this->assertStringContainsStringIgnoringCase('deleted', $response->getBody()->getContents());
         $this->assertSame(UserType::Deleted->value, $user->getType());
+    }
+
+    //
+    // Logout
+    //
+
+    public function testLogsOutUserSuccessfully(): void
+    {
+        $password = '123456789';
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value,
+            'password' => $password
+        ])[0];
+
+        $this->auth->login($user);
+        $this->assertTrue($this->auth->isAuth($user));
+
+        $response = $this->post(
+            '/ajax/auth/logout',
+            [
+                'csrf_token' => $this->csrf->generate()
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertFalse($this->auth->isAuth($user));
+        $this->assertArrayNotHasKey('auth', $_SESSION);
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToLogoutUserUsingInvalidCsrfToken(): void
+    {
+        $response = $this->post(
+            '/ajax/auth/logout',
+            [
+                'id' => 1,
+                // 'csrf_token' => ''
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertStringContainsStringIgnoringCase('csrf', $response->getBody()->getContents());
     }
 
     public function testAutomaticallyLogsOutBannedUser(): void
