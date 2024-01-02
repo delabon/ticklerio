@@ -24,6 +24,31 @@ class ViewTest extends TestCase
         $this->assertEquals('Another Test!', $response2->getBody());
     }
 
+    public function testLoadsViewWithParamsSuccessfully()
+    {
+        $response = View::load('test.test3', [
+            'name' => 'John Doe',
+            'age' => 30,
+        ]);
+
+        $this->assertInstanceOf(Response::class, $response);
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertStringContainsString('John Doe', $response->getBody());
+        $this->assertStringContainsString('30', $response->getBody());
+
+        $response2 = View::load('test.test3', [
+            'name' => 'Adam Smith',
+            'age' => 45,
+        ]);
+
+        $this->assertInstanceOf(Response::class, $response2);
+        $this->assertSame(HttpStatusCode::OK->value, $response2->getStatusCode());
+        $this->assertStringContainsString('Adam Smith', $response2->getBody());
+        $this->assertStringContainsString('45', $response2->getBody());
+        $this->assertStringNotContainsString('John Doe', $response2->getBody());
+        $this->assertStringNotContainsString('30', $response2->getBody());
+    }
+
     public function testThrowsExceptionWhenViewNotFound()
     {
         $this->expectException(RuntimeException::class);

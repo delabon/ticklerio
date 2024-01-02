@@ -1,5 +1,7 @@
 import * as bootstrap from 'bootstrap'
 
+const csrfToken = document.querySelector('[name="csrf-token"]').attributes.content.value;
+
 //
 // Login
 //
@@ -20,7 +22,7 @@ if (loginBtn) {
         let formData = new FormData();
         formData.append('email', document.getElementById('email').value);
         formData.append('password', document.getElementById('password').value);
-        formData.append('csrf_token', document.getElementById('csrf_token').value);
+        formData.append('csrf_token', csrfToken);
 
         fetch('/ajax/auth/login', {
             'method': 'POST',
@@ -63,7 +65,7 @@ if (registerBtn) {
         formData.append('first_name', document.getElementById('first-name').value);
         formData.append('last_name', document.getElementById('last-name').value);
         formData.append('password', document.getElementById('password').value);
-        formData.append('csrf_token', document.getElementById('csrf_token').value);
+        formData.append('csrf_token', csrfToken);
 
         fetch('/ajax/register', {
             'method': 'POST',
@@ -97,7 +99,7 @@ if (logoutBtns.length > 0) {
 
             // Send form data
             let formData = new FormData();
-            formData.append('csrf_token', document.querySelector('[name="csrf-token"]').attributes.content.value);
+            formData.append('csrf_token', csrfToken);
 
             fetch('/ajax/auth/logout', {
                 'method': 'POST',
@@ -109,6 +111,51 @@ if (logoutBtns.length > 0) {
             }).catch((error) => {
                 console.log(error);
             });
+        });
+    });
+}
+
+//
+// Account (edit)
+//
+
+const updateAccountBtn = document.getElementById('update-account-btn');
+
+if (updateAccountBtn) {
+    const errorAlert = document.getElementById('account-error-alert');
+    const successAlert = document.getElementById('account-success-alert');
+
+    updateAccountBtn.addEventListener('click', function (e){
+        e.preventDefault();
+
+        // Reset alerts
+        successAlert.classList.add('d-none');
+        errorAlert.classList.add('d-none');
+        errorAlert.innerHTML = '';
+
+        // Send form data
+        let formData = new FormData();
+        formData.append('email', document.getElementById('email').value);
+        formData.append('first_name', document.getElementById('first-name').value);
+        formData.append('last_name', document.getElementById('last-name').value);
+        formData.append('password', document.getElementById('password').value);
+        formData.append('csrf_token', csrfToken);
+
+        fetch('/ajax/user/update', {
+            'method': 'POST',
+            'body': formData
+        }).then((response) => {
+            if (response.status === 200) {
+                successAlert.classList.remove('d-none');
+            } else {
+                response.text().then((text) => {
+                    errorAlert.classList.remove('d-none');
+                    errorAlert.innerHTML = text;
+                });
+            }
+        }).catch((error) => {
+            errorAlert.classList.remove('d-none');
+            errorAlert.innerHTML = 'Something went wrong. Please try again later.';
         });
     });
 }

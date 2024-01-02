@@ -7,8 +7,6 @@ require __DIR__ . '/parts/header.php';
         <h1 class="text-center mt-5">Login</h1>
 
         <form action="/login" method="post" id="login_form">
-            <input type="hidden" name="csrf_token" id="csrf_token" value="<?= csrf() ?>">
-
             <div id="login-alert" class="alert alert-danger d-none" role="alert"></div>
 
             <div class="mb-3">

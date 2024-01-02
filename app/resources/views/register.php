@@ -7,8 +7,6 @@ require __DIR__ . '/parts/header.php';
         <h1 class="text-center mt-5">Register</h1>
 
         <form action="/register" method="post" id="register-form">
-            <input type="hidden" name="csrf_token" id="csrf_token" value="<?= csrf() ?>">
-
             <div id="register-alert" class="alert alert-danger d-none" role="alert"></div>
 
             <div class="mb-3">
