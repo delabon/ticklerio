@@ -2,21 +2,19 @@
 
 namespace Tests\Unit\Users;
 
-use App\Core\Auth;
-use App\Core\Session\ArraySessionHandler;
-use App\Core\Session\Session;
-use App\Core\Session\SessionHandlerType;
 use App\Exceptions\PasswordDoesNotMatchException;
 use App\Exceptions\UserDoesNotExistException;
-use App\Tickets\TicketRepository;
-use App\Users\AdminService;
-use App\Users\AuthService;
-use App\Users\UserRepository;
+use App\Core\Session\ArraySessionHandler;
+use App\Core\Session\SessionHandlerType;
 use App\Utilities\PasswordUtils;
-use PDO;
-use PDOStatement;
 use PHPUnit\Framework\TestCase;
+use App\Users\UserRepository;
+use App\Core\Session\Session;
 use Tests\Traits\MakesUsers;
+use App\Users\AuthService;
+use App\Core\Auth;
+use PDOStatement;
+use PDO;
 
 class AuthServiceTest extends TestCase
 {

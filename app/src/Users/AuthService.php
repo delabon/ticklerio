@@ -2,10 +2,9 @@
 
 namespace App\Users;
 
-use App\Core\Auth;
 use App\Exceptions\PasswordDoesNotMatchException;
 use App\Exceptions\UserDoesNotExistException;
-use Exception;
+use App\Core\Auth;
 
 readonly class AuthService
 {
