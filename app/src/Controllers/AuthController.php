@@ -51,13 +51,13 @@ class AuthController
         }
     }
 
-    public function logout(Request $request, Auth $auth, Csrf $csrf): Response
+    public function logout(Request $request, AuthService $authService, Csrf $csrf): Response
     {
         if (!$csrf->validate($request->query(RequestType::Post, 'csrf_token') ?: '')) {
             return new Response('Invalid CSRF token.', HttpStatusCode::Forbidden);
         }
 
-        $auth->forceLogout();
+        $authService->logoutUser();
 
         return new Response([
             'success' => true,

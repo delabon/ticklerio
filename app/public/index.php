@@ -82,8 +82,11 @@ if ($uri === '/') {
     // Logs out a user via ajax
     $response = (new AuthController())->logout(
         $container->get(Request::class),
-        $container->get(Auth::class),
-        $container->get(Csrf::class)
+        new AuthService(
+            $container->get(Auth::class),
+            new UserRepository($container->get(PDO::class))
+        ),
+        $container->get(Csrf::class),
     );
 } elseif (preg_match("/^\/ajax\/user\/ban\/?$/", $uri)) {
     // Bans a user via ajax
