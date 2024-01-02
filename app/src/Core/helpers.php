@@ -2,18 +2,25 @@
 
 use App\Core\Auth;
 use App\Core\Csrf;
+use App\Core\Http\Response;
+use App\Core\Utilities\View;
 
 function csrf(): string
 {
     global $container;
 
-    $csrf = $container->get(Csrf::class)->get();
+    $csrf = $container->get(Csrf::class);
+    $token = $csrf->get();
 
-    if (!$csrf) {
-        $csrf = $container->get(Csrf::class)->generate();
+    if (!$token) {
+        $token = $csrf->generate();
     }
 
-    return $csrf;
+    if (!$csrf->validate($token)) {
+        $token = $csrf->generate();
+    }
+
+    return $token;
 }
 
 function isLoggedIn(): bool
@@ -21,4 +28,14 @@ function isLoggedIn(): bool
     global $container;
 
     return $container->get(Auth::class)->getUserId() > 0;
+}
+
+/**
+ * @param string $path
+ * @param array<string, mixed> $params
+ * @return Response
+ */
+function view(string $path, array $params = []): Response
+{
+    return View::load($path, $params);
 }

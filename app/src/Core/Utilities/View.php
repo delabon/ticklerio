@@ -7,7 +7,12 @@ use RuntimeException;
 
 class View
 {
-    public static function load(string $path): Response
+    /**
+     * @param string $path
+     * @param array<string, mixed> $params
+     * @return Response
+     */
+    public static function load(string $path, array $params = []): Response
     {
         $path = str_replace('.', '/', $path);
         $path = str_replace('\\', '/', $path);
@@ -18,7 +23,8 @@ class View
         }
 
         ob_start();
-        require_once $path;
+        extract($params);
+        require $path;
         $content = ob_get_clean();
 
         return new Response($content);

@@ -223,7 +223,10 @@ if ($uri === '/') {
     $response = (new RegisterController())->index();
 } elseif (preg_match("/^\/account\/?$/", $uri)) {
     // Account page
-    $response = (new UserController())->edit();
+    $response = (new UserController())->edit(
+        new UserRepository($container->get(PDO::class)),
+        $container->get(Auth::class),
+    );
 }
 
 //

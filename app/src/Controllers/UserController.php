@@ -9,6 +9,7 @@ use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Core\Utilities\View;
 use App\Exceptions\UserDoesNotExistException;
+use App\Users\UserRepository;
 use App\Users\UserService;
 use Exception;
 use InvalidArgumentException;
@@ -47,9 +48,17 @@ class UserController
         }
     }
 
-    public function edit(): Response
+    public function edit(UserRepository $userRepository, Auth $auth): Response
     {
-        return View::load('users.edit');
+        if (!$auth->getUserId()) {
+            return new Response("You must be logged in to edit this account.", HttpStatusCode::Forbidden);
+        }
+
+        $user = $userRepository->find($auth->getUserId());
+
+        return view('users.edit', [
+            'user' => $user,
+        ]);
     }
 
     public function update(Request $request, UserService $userService, Csrf $csrf): Response
