@@ -54,6 +54,6 @@ class ViewTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('View not found.');
 
-        View::load('test.test3');
+        View::load('test.5ze5az5e58ze8za8e8z');
     }
 }
