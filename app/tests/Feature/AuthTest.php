@@ -54,6 +54,31 @@ class AuthTest extends FeatureTestCase
         $this->assertArrayHasKey('type', $_SESSION['auth']);
     }
 
+    public function testSuccessfullyRegeneratesCsrfTokenAfterLogIn(): void
+    {
+        $password = '123456789';
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value,
+            'password' => $password
+        ])[0];
+
+        $this->csrf->generate();
+        $oldCsrf = $this->csrf->get();
+
+        $response = $this->post(
+            '/ajax/auth/login',
+            [
+                'email' => $user->getEmail(),
+                'password' => $password,
+                'csrf_token' => $this->csrf->generate()
+            ]
+        );
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertNotNull($this->csrf->get());
+        $this->assertNotSame($oldCsrf, $this->csrf->get());
+    }
+
     public function testReturnsForbiddenResponseWhenTryingToLogInUserUsingInvalidCsrfToken(): void
     {
         $response = $this->post(
@@ -177,6 +202,33 @@ class AuthTest extends FeatureTestCase
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
         $this->assertFalse($this->auth->isAuth($user));
         $this->assertArrayNotHasKey('auth', $_SESSION);
+    }
+
+    public function testSuccessfullyRegeneratesCsrfTokenAfterLogout(): void
+    {
+        $password = '123456789';
+        $user = $this->userFactory->create([
+            'type' => UserType::Member->value,
+            'password' => $password
+        ])[0];
+
+        $this->auth->login($user);
+        $this->assertTrue($this->auth->isAuth($user));
+
+        $this->csrf->generate();
+        $oldCsrf = $this->csrf->get();
+
+        $response = $this->post(
+            '/ajax/auth/logout',
+            [
+                'csrf_token' => $this->csrf->generate()
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertNotNull($this->csrf->get());
+        $this->assertNotSame($oldCsrf, $this->csrf->get());
     }
 
     public function testReturnsForbiddenResponseWhenTryingToLogoutUserUsingInvalidCsrfToken(): void

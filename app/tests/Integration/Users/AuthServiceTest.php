@@ -120,4 +120,23 @@ class AuthServiceTest extends IntegrationTestCase
 
         $this->authService->loginUser($user->getEmail(), '12345678');
     }
+
+    //
+    // Logout
+    //
+
+    public function testSuccessfullyRegeneratesCsrfAfterLogout(): void
+    {
+        $user = $this->createUser();
+        $password = '12345678';
+        $this->authService->loginUser($user->getEmail(), $password);
+        $oldCsrf = $this->csrf->get();
+
+        $this->assertNotNull($oldCsrf);
+
+        $this->authService->logoutUser();
+
+        $this->assertNotNull($this->csrf->get());
+        $this->assertNotSame($oldCsrf, $this->csrf->get());
+    }
 }
