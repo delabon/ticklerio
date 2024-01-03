@@ -39,3 +39,13 @@ function view(string $path, array $params = []): Response
 {
     return View::load($path, $params);
 }
+
+function url(string $path): string
+{
+    return sprintf('https://%s/%s', $_ENV['APP_DOMAIN'], ltrim($path, '/'));
+}
+
+function asset(string $path): string
+{
+    return url(sprintf('dist/%s', ltrim($path, '/')));
+}
