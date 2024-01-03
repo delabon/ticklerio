@@ -37,5 +37,6 @@ readonly class AuthService
     public function logoutUser(): void
     {
         $this->auth->forceLogout();
+        $this->csrf->generate();
     }
 }
