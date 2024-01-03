@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title><?= $_ENV['APP_NAME'] ?></title>
 
-    <link rel="stylesheet" href="https://<?= $_ENV['APP_DOMAIN'] ?>/dist/app.min.css">
+    <link rel="stylesheet" href="<?= asset('app.min.css') ?>">
     <meta name="csrf-token" content="<?= csrf() ?>">
 </head>
 <body>
