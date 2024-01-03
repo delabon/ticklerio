@@ -29,6 +29,7 @@ class UserTest extends TestCase
         $data = $user->toArray();
 
         $this->assertIsArray($data);
+        $this->assertArrayHasKey('id', $data);
         $this->assertArrayHasKey('first_name', $data);
         $this->assertArrayHasKey('last_name', $data);
         $this->assertArrayHasKey('email', $data);
