@@ -136,7 +136,9 @@ $container->singleton(Auth::class, function () use ($container) {
 //
 
 $container->singleton(Csrf::class, function () use ($container) {
-    return new Csrf($container->get(Session::class), $_ENV['CSRF_SALT'], $_ENV['CSRF_LIFE_TIME_FOR_NON_LOGGED_IN']);
+    $lifeTime = $container->get(Auth::class)->getUserId() ? $_ENV['SESSION_LIFE_TIME'] : $_ENV['CSRF_LIFE_TIME_FOR_NON_LOGGED_IN'];
+
+    return new Csrf($container->get(Session::class), $_ENV['CSRF_SALT'], (int) $lifeTime);
 });
 
 //

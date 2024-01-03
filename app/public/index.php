@@ -74,7 +74,8 @@ if ($uri === '/') {
         $container->get(Request::class),
         new AuthService(
             $container->get(Auth::class),
-            new UserRepository($container->get(PDO::class))
+            new UserRepository($container->get(PDO::class)),
+            $container->get(Csrf::class)
         ),
         $container->get(Csrf::class),
     );
@@ -84,7 +85,8 @@ if ($uri === '/') {
         $container->get(Request::class),
         new AuthService(
             $container->get(Auth::class),
-            new UserRepository($container->get(PDO::class))
+            new UserRepository($container->get(PDO::class)),
+            $container->get(Csrf::class)
         ),
         $container->get(Csrf::class),
     );
