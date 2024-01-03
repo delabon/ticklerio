@@ -2,13 +2,14 @@
 
 namespace App\Users;
 
+use App\Core\Csrf;
 use App\Exceptions\PasswordDoesNotMatchException;
 use App\Exceptions\UserDoesNotExistException;
 use App\Core\Auth;
 
 readonly class AuthService
 {
-    public function __construct(private Auth $auth, private UserRepository $userRepository)
+    public function __construct(private Auth $auth, private UserRepository $userRepository, private Csrf $csrf)
     {
     }
 
@@ -30,6 +31,7 @@ readonly class AuthService
         }
 
         $this->auth->login($user);
+        $this->csrf->generate();
     }
 
     public function logoutUser(): void

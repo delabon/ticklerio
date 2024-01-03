@@ -2,6 +2,7 @@
 
 namespace Tests\Integration\Users;
 
+use App\Core\Csrf;
 use App\Exceptions\PasswordDoesNotMatchException;
 use App\Exceptions\UserDoesNotExistException;
 use Tests\IntegrationTestCase;
@@ -20,14 +21,18 @@ class AuthServiceTest extends IntegrationTestCase
     private Auth $adminService;
     private Auth $auth;
     private AuthService $authService;
+    private Csrf $csrf;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->userRepository = new UserRepository($this->pdo);
+        $this->csrf = new Csrf($this->session, 'mySaltHere');
         $this->auth = new Auth($this->session);
-        $this->authService = new AuthService($this->auth, $this->userRepository);
+        $this->userRepository = new UserRepository($this->pdo);
+        $this->authService = new AuthService($this->auth, $this->userRepository, $this->csrf);
+
+        $this->csrf->generate();
     }
 
     //
@@ -48,6 +53,20 @@ class AuthServiceTest extends IntegrationTestCase
         $this->assertArrayHasKey('type', $_SESSION['auth']);
         $this->assertSame($user->getId(), $_SESSION['auth']['id']);
         $this->assertSame($user->getType(), $_SESSION['auth']['type']);
+    }
+
+    public function testSuccessfullyRegeneratesCsrfAfterLogin(): void
+    {
+        $user = $this->createUser();
+        $password = '12345678';
+        $oldCsrf = $this->csrf->get();
+
+        $this->assertNotNull($oldCsrf);
+
+        $this->authService->loginUser($user->getEmail(), $password);
+
+        $this->assertNotNull($this->csrf->get());
+        $this->assertNotSame($oldCsrf, $this->csrf->get());
     }
 
     public function testThrowsExceptionWhenTryingToLoginUserUsingEmailThatDoesNotExist(): void

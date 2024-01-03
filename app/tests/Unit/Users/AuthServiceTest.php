@@ -2,6 +2,7 @@
 
 namespace Tests\Unit\Users;
 
+use App\Core\Csrf;
 use App\Exceptions\PasswordDoesNotMatchException;
 use App\Exceptions\UserDoesNotExistException;
 use App\Core\Session\ArraySessionHandler;
@@ -51,7 +52,8 @@ class AuthServiceTest extends TestCase
         $this->auth = new Auth($this->session);
         $this->authService = new AuthService(
             $this->auth,
-            $this->userRepository
+            $this->userRepository,
+            new Csrf($this->session, 'mySaltHere')
         );
     }
 
