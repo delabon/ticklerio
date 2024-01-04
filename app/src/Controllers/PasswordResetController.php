@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Core\Csrf;
 use App\Core\Http\HttpStatusCode;
 use App\Core\Http\Request;
 use App\Core\Http\RequestType;
@@ -17,11 +18,15 @@ class PasswordResetController
 {
     public function index(): Response
     {
-        return View::load('home');
+        return View::load('users.password-reset.index');
     }
 
-    public function send(Request $request, PasswordResetService $passwordResetService): Response
+    public function send(Request $request, PasswordResetService $passwordResetService, Csrf $csrf): Response
     {
+        if (!$csrf->validate($request->query(RequestType::Post, 'csrf_token') ?? '')) {
+            return new Response('Invalid CSRF token.', HttpStatusCode::Forbidden);
+        }
+
         try {
             $passwordResetService->sendEmail($request->query(RequestType::Post, 'email') ?? '');
 

@@ -81,7 +81,8 @@ if ($uri === '/') {
             new UserRepository($container->get(PDO::class)),
             $container->get(Auth::class),
             $container->get(Mailer::class)
-        )
+        ),
+        $container->get(Csrf::class)
     );
 } elseif (preg_match("/^\/ajax\/auth\/login\/?$/", $uri)) {
     // Logs in a user via ajax
@@ -250,6 +251,9 @@ if ($uri === '/') {
         new UserRepository($container->get(PDO::class)),
         $container->get(Auth::class),
     );
+} elseif (preg_match("/^\/password-reset\/.+\/?$/", $uri)) {
+    // Password-reset page
+    $response = (new PasswordResetController())->index();
 }
 
 //

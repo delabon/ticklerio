@@ -4,6 +4,9 @@ namespace Tests\Feature;
 
 use App\Core\Auth;
 use App\Core\Http\HttpStatusCode;
+use App\Users\PasswordReset\PasswordReset;
+use App\Users\PasswordReset\PasswordResetRepository;
+use App\Users\User;
 use Tests\Traits\CreatesUsers;
 use Tests\FeatureTestCase;
 
@@ -12,13 +15,19 @@ class PasswordResetTest extends FeatureTestCase
     use CreatesUsers;
 
     private Auth $auth;
+    private PasswordResetRepository $passwordResetRepository;
 
     protected function setUp(): void
     {
         parent::setUp();
 
         $this->auth = new Auth($this->session);
+        $this->passwordResetRepository = new PasswordResetRepository($this->pdo);
     }
+
+    //
+    // Send
+    //
 
     public function testSendsPasswordResetEmailSuccessfully(): void
     {
@@ -28,6 +37,7 @@ class PasswordResetTest extends FeatureTestCase
             '/ajax/password-reset',
             [
                 'email' => $user->getEmail(),
+                'csrf_token' => $this->csrf->generate(),
             ]
         );
 
@@ -35,7 +45,22 @@ class PasswordResetTest extends FeatureTestCase
         $this->assertSame('The password-reset email has been sent!', $response->getBody()->getContents());
     }
 
-    public function testReturnsForbiddenResponseWhenTryingToResetPasswordWhenLoggedIn(): void
+    public function testReturnsForbiddenResponseWhenTryingToSendResetPasswordEmailWithInvalidCsrfToken(): void
+    {
+        $response = $this->post(
+            '/ajax/password-reset',
+            [
+                'email' => 'test@test.com',
+                'csrf_token' => 'invalid-csrf-token',
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame('Invalid CSRF token.', $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToSendResetPasswordEmailWhenLoggedIn(): void
     {
         $this->createAndLoginUser();
 
@@ -43,6 +68,7 @@ class PasswordResetTest extends FeatureTestCase
             '/ajax/password-reset',
             [
                 'email' => 'test@test.com',
+                'csrf_token' => $this->csrf->generate(),
             ],
             self::DISABLE_GUZZLE_EXCEPTION
         );
@@ -51,12 +77,13 @@ class PasswordResetTest extends FeatureTestCase
         $this->assertSame('Cannot send password-reset email when the user is logged in!', $response->getBody()->getContents());
     }
 
-    public function testReturnsBadRequestResponseWhenTryingToResetPasswordWithInvalidEmail(): void
+    public function testReturnsBadRequestResponseWhenTryingToSendResetPasswordEmailWithInvalidEmailAddress(): void
     {
         $response = $this->post(
             '/ajax/password-reset',
             [
                 'email' => 'invalid-email',
+                'csrf_token' => $this->csrf->generate(),
             ],
             self::DISABLE_GUZZLE_EXCEPTION
         );
@@ -65,7 +92,7 @@ class PasswordResetTest extends FeatureTestCase
         $this->assertSame('The email must be a valid email address.', $response->getBody()->getContents());
     }
 
-    public function testReturnsNotFoundResponseWhenTryingToResetPasswordWithEmailThatDoesNotExist(): void
+    public function testReturnsNotFoundResponseWhenTryingToSendResetPasswordEmailWithEmailAddressThatDoesNotExist(): void
     {
         $email = 'doesnt-exist@email.com';
 
@@ -73,11 +100,47 @@ class PasswordResetTest extends FeatureTestCase
             '/ajax/password-reset',
             [
                 'email' => $email,
+                'csrf_token' => $this->csrf->generate(),
             ],
             self::DISABLE_GUZZLE_EXCEPTION
         );
 
         $this->assertSame(HttpStatusCode::NotFound->value, $response->getStatusCode());
         $this->assertSame('There is no user with this email address "' . $email . '"!', $response->getBody()->getContents());
+    }
+
+    //
+    // Reset password page
+    //
+
+    public function testOpensResetPasswordPageUsingValidTokenSuccessfully(): void
+    {
+        $user = $this->createUser();
+        $token = $this->createPasswordResetToken($user);
+
+        $response = $this->get('/password-reset/?token=' . $token);
+
+        $body = $response->getBody()->getContents();
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertMatchesRegularExpression('/<input.*?type="hidden".*?name="reset_password_token".*?value="' . $token . '".*?>/i', $body);
+        $this->assertMatchesRegularExpression('/<input.*?type="password".*?name="password".*?>/i', $body);
+        $this->assertMatchesRegularExpression('/<input.*?type="password".*?name="password_match".*?>/i', $body);
+    }
+
+    //
+    // Helpers
+    //
+
+    private function createPasswordResetToken(User $user): string
+    {
+        $token = bin2hex(random_bytes(32));
+        $passwordReset = PasswordReset::make([
+            'user_id' => $user->getId(),
+            'token' => $token,
+            'created_at' => time(),
+        ]);
+        $this->passwordResetRepository->save($passwordReset);
+
+        return $token;
     }
 }
