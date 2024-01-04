@@ -7,6 +7,7 @@ use App\Users\PasswordReset\PasswordResetRepository;
 use App\Users\PasswordReset\PasswordResetService;
 use App\Core\Session\ArraySessionHandler;
 use App\Core\Session\SessionHandlerType;
+use InvalidArgumentException;
 use LogicException;
 use PHPUnit\Framework\TestCase;
 use App\Users\UserRepository;
@@ -122,6 +123,16 @@ class PasswordResetServiceTest extends TestCase
         $this->makeAndLoginUser();
 
         $this->passwordResetService->sendEmail('test@test.com');
+    }
+
+    public function testThrowsExceptionWhenInvalidEmail(): void
+    {
+        $email = 'invalid-email';
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The email must be a valid email address.');
+
+        $this->passwordResetService->sendEmail($email);
     }
 
     public function testThrowsExceptionWhenEmailDoesNotExist(): void
