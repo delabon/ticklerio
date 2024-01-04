@@ -20,7 +20,7 @@ readonly class PasswordResetService
     ) {
     }
 
-    public function sendEmail(string $email): bool
+    public function sendEmail(string $email): void
     {
         if ($this->auth->getUserId()) {
             throw new LogicException('Cannot send password-reset email when the user is logged in!');
