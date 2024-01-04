@@ -6,6 +6,7 @@
 
 use App\Controllers\AuthController;
 use App\Controllers\BanUnbanController;
+use App\Controllers\PasswordResetController;
 use App\Controllers\UserController;
 use App\Controllers\HomeController;
 use App\Controllers\RegisterController;
@@ -16,6 +17,7 @@ use App\Core\Csrf;
 use App\Core\Http\HttpStatusCode;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
+use App\Core\Mailer;
 use App\Middlewares\CheckUserMiddleware;
 use App\Replies\ReplyRepository;
 use App\Replies\ReplySanitizer;
@@ -27,6 +29,8 @@ use App\Tickets\TicketService;
 use App\Tickets\TicketValidator;
 use App\Users\AdminService;
 use App\Users\AuthService;
+use App\Users\PasswordReset\PasswordResetRepository;
+use App\Users\PasswordReset\PasswordResetService;
 use App\Users\UserRepository;
 use App\Users\UserSanitizer;
 use App\Users\UserService;
@@ -67,6 +71,17 @@ if ($uri === '/') {
             $container->get(Auth::class)
         ),
         $container->get(Csrf::class)
+    );
+} elseif (preg_match("/^\/ajax\/password-reset\/?$/", $uri)) {
+    // Resets password via ajax
+    $response = (new PasswordResetController())->send(
+        $container->get(Request::class),
+        new PasswordResetService(
+            new PasswordResetRepository($container->get(PDO::class)),
+            new UserRepository($container->get(PDO::class)),
+            $container->get(Auth::class),
+            $container->get(Mailer::class)
+        )
     );
 } elseif (preg_match("/^\/ajax\/auth\/login\/?$/", $uri)) {
     // Logs in a user via ajax

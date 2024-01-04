@@ -4,6 +4,7 @@ use App\Core\Auth;
 use App\Core\Container;
 use App\Core\Csrf;
 use App\Core\Http\Request;
+use App\Core\Mailer;
 use App\Core\Session\ArraySessionHandler;
 use App\Core\Session\DatabaseSessionHandler;
 use App\Core\Session\FileSessionHandler;
@@ -139,6 +140,14 @@ $container->singleton(Csrf::class, function () use ($container) {
     $lifeTime = $container->get(Auth::class)->getUserId() ? $_ENV['SESSION_LIFE_TIME'] : $_ENV['CSRF_LIFE_TIME_FOR_NON_LOGGED_IN'];
 
     return new Csrf($container->get(Session::class), $_ENV['CSRF_SALT'], (int) $lifeTime);
+});
+
+//
+// Mailer
+//
+
+$container->singleton(Mailer::class, function () {
+    return new Mailer();
 });
 
 //
