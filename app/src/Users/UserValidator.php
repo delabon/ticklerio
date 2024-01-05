@@ -3,7 +3,6 @@
 namespace App\Users;
 
 use App\Interfaces\ValidatorInterface;
-use App\Utilities\PasswordUtils;
 use InvalidArgumentException;
 
 class UserValidator implements ValidatorInterface
@@ -117,11 +116,7 @@ class UserValidator implements ValidatorInterface
             throw new InvalidArgumentException("The password is of invalid type. It should be a string.");
         }
 
-        $isHashed = PasswordUtils::isPasswordHashed($data['password']);
-
-        if (!$isHashed && (strlen($data['password']) < 8 || strlen($data['password']) > 20)) {
-            throw new InvalidArgumentException('The password length should be between 8 and 20 characters.');
-        }
+        PasswordValidator::validate($data['password']);
     }
 
     /**
