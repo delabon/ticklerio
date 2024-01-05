@@ -22,7 +22,7 @@ require __DIR__ . '/parts/header.php';
             </div>
             <div>
                 <a href="/register">Register</a> -
-                <a href="/reset-password">Reset password</a>
+                <a href="/password-reset">Reset password</a>
             </div>
         </form>
     </div>

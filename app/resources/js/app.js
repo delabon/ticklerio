@@ -159,3 +159,110 @@ if (updateAccountBtn) {
         });
     });
 }
+
+//
+// Send password-reset email
+//
+
+const sendPassResetEmailBtn = document.getElementById('send-reset-password-email-btn');
+
+if (sendPassResetEmailBtn) {
+    const errorAlert = document.getElementById('error-alert');
+    const successAlert = document.getElementById('success-alert');
+
+    sendPassResetEmailBtn.addEventListener('click', function (e){
+        e.preventDefault();
+
+        // Reset alerts
+        successAlert.classList.add('d-none');
+        successAlert.innerHTML = '';
+        errorAlert.classList.add('d-none');
+        errorAlert.innerHTML = '';
+
+        // Send form data
+        let formData = new FormData();
+        formData.append('email', document.getElementById('email').value);
+        formData.append('csrf_token', csrfToken);
+
+        fetch('/ajax/password-reset/send', {
+            'method': 'POST',
+            'body': formData
+        }).then((response) => {
+            if (response.status === 200) {
+                response.text().then((text) => {
+                    successAlert.classList.remove('d-none');
+                    successAlert.innerHTML = text;
+                });
+
+                document.getElementById('email').value = '';
+            } else {
+                response.text().then((text) => {
+                    errorAlert.classList.remove('d-none');
+                    errorAlert.innerHTML = text;
+                });
+            }
+        }).catch((error) => {
+            errorAlert.classList.remove('d-none');
+            errorAlert.innerHTML = 'Something went wrong. Please try again later.';
+        });
+    });
+}
+
+//
+// Reset password
+//
+
+const resetPasswordBtn = document.getElementById('reset-password-btn');
+
+if (resetPasswordBtn) {
+    const errorAlert = document.getElementById('error-alert');
+    const successAlert = document.getElementById('success-alert');
+
+    resetPasswordBtn.addEventListener('click', function (e){
+        e.preventDefault();
+
+        // Reset alerts
+        successAlert.classList.add('d-none');
+        successAlert.innerHTML = '';
+        errorAlert.classList.add('d-none');
+        errorAlert.innerHTML = '';
+
+        const $password = document.getElementById('new_password');
+        const $passwordConfirm = document.getElementById('password_match');
+
+        if ($password.value !== $passwordConfirm.value) {
+            errorAlert.classList.remove('d-none');
+            errorAlert.innerHTML = 'Passwords do not match.';
+            return;
+        }
+
+        // Send form data
+        let formData = new FormData();
+        formData.append('reset_password_token', document.getElementById('reset_password_token').value);
+        formData.append('new_password', $password.value);
+        formData.append('csrf_token', csrfToken);
+
+        fetch('/ajax/password-reset/reset', {
+            'method': 'POST',
+            'body': formData
+        }).then((response) => {
+            if (response.status === 200) {
+                response.text().then((text) => {
+                    successAlert.classList.remove('d-none');
+                    successAlert.innerHTML = text + ' You can now <a href="/login">login</a>.';
+                });
+
+                $password.value = '';
+                $passwordConfirm.value = '';
+            } else {
+                response.text().then((text) => {
+                    errorAlert.classList.remove('d-none');
+                    errorAlert.innerHTML = text;
+                });
+            }
+        }).catch((error) => {
+            errorAlert.classList.remove('d-none');
+            errorAlert.innerHTML = 'Something went wrong. Please try again later.';
+        });
+    });
+}

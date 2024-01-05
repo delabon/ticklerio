@@ -263,9 +263,13 @@ if ($uri === '/') {
         new UserRepository($container->get(PDO::class)),
         $container->get(Auth::class),
     );
-} elseif (preg_match("/^\/password-reset\/.+\/?$/", $uri)) {
+} elseif (preg_match("/^\/password-reset\/?.*?$/", $uri)) {
     // Password-reset page
-    $response = (new PasswordResetController())->index();
+    if (isset($_GET['token'])) {
+        $response = (new PasswordResetController())->resetPassword();
+    } else {
+        $response = (new PasswordResetController())->index();
+    }
 }
 
 //

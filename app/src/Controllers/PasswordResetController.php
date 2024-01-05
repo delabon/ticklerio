@@ -22,6 +22,11 @@ class PasswordResetController
         return View::load('users.password-reset.index');
     }
 
+    public function resetPassword(): Response
+    {
+        return View::load('users.password-reset.reset');
+    }
+
     public function send(Request $request, PasswordResetService $passwordResetService, Csrf $csrf): Response
     {
         if (!$csrf->validate($request->query(RequestType::Post, 'csrf_token') ?? '')) {
