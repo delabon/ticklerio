@@ -2,20 +2,24 @@
 
 namespace Tests\Feature;
 
-use App\Core\Auth;
-use App\Core\Http\HttpStatusCode;
-use App\Users\PasswordReset\PasswordReset;
 use App\Users\PasswordReset\PasswordResetRepository;
-use App\Users\User;
+use App\Users\PasswordReset\PasswordReset;
+use App\Core\Http\HttpStatusCode;
+use App\Users\UserRepository;
+use Tests\Traits\CreatesPasswordResets;
 use Tests\Traits\CreatesUsers;
 use Tests\FeatureTestCase;
+use App\Users\User;
+use App\Core\Auth;
 
 class PasswordResetTest extends FeatureTestCase
 {
+    use CreatesPasswordResets;
     use CreatesUsers;
 
     private Auth $auth;
     private PasswordResetRepository $passwordResetRepository;
+    private UserRepository $userRepository;
 
     protected function setUp(): void
     {
@@ -23,6 +27,7 @@ class PasswordResetTest extends FeatureTestCase
 
         $this->auth = new Auth($this->session);
         $this->passwordResetRepository = new PasswordResetRepository($this->pdo);
+        $this->userRepository = new UserRepository($this->pdo);
     }
 
     //
@@ -34,7 +39,7 @@ class PasswordResetTest extends FeatureTestCase
         $user = $this->createUser();
 
         $response = $this->post(
-            '/ajax/password-reset',
+            '/ajax/password-reset/send/',
             [
                 'email' => $user->getEmail(),
                 'csrf_token' => $this->csrf->generate(),
@@ -48,7 +53,7 @@ class PasswordResetTest extends FeatureTestCase
     public function testReturnsForbiddenResponseWhenTryingToSendResetPasswordEmailWithInvalidCsrfToken(): void
     {
         $response = $this->post(
-            '/ajax/password-reset',
+            '/ajax/password-reset/send/',
             [
                 'email' => 'test@test.com',
                 'csrf_token' => 'invalid-csrf-token',
@@ -65,7 +70,7 @@ class PasswordResetTest extends FeatureTestCase
         $this->createAndLoginUser();
 
         $response = $this->post(
-            '/ajax/password-reset',
+            '/ajax/password-reset/send/',
             [
                 'email' => 'test@test.com',
                 'csrf_token' => $this->csrf->generate(),
@@ -80,7 +85,7 @@ class PasswordResetTest extends FeatureTestCase
     public function testReturnsBadRequestResponseWhenTryingToSendResetPasswordEmailWithInvalidEmailAddress(): void
     {
         $response = $this->post(
-            '/ajax/password-reset',
+            '/ajax/password-reset/send/',
             [
                 'email' => 'invalid-email',
                 'csrf_token' => $this->csrf->generate(),
@@ -97,7 +102,7 @@ class PasswordResetTest extends FeatureTestCase
         $email = 'doesnt-exist@email.com';
 
         $response = $this->post(
-            '/ajax/password-reset',
+            '/ajax/password-reset/send/',
             [
                 'email' => $email,
                 'csrf_token' => $this->csrf->generate(),
@@ -125,6 +130,125 @@ class PasswordResetTest extends FeatureTestCase
         $this->assertMatchesRegularExpression('/<input.*?type="hidden".*?name="reset_password_token".*?value="' . $token . '".*?>/i', $body);
         $this->assertMatchesRegularExpression('/<input.*?type="password".*?name="password".*?>/i', $body);
         $this->assertMatchesRegularExpression('/<input.*?type="password".*?name="password_match".*?>/i', $body);
+    }
+
+    //
+    // Reset password
+    //
+
+    public function testResetsPasswordSuccessfully(): void
+    {
+        $user = $this->createUser();
+        $token = $this->createPasswordResetToken($user);
+
+        $response = $this->post(
+            '/ajax/password-reset/reset/',
+            [
+                'reset_password_token' => $token,
+                'new_password' => 'new-password',
+                'csrf_token' => $this->csrf->generate(),
+            ]
+        );
+
+        $refreshedUser = $this->userRepository->find($user->getId());
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertSame('Your password has been reset!', $response->getBody()->getContents());
+        $this->assertTrue(password_verify('new-password', $refreshedUser->getPassword()));
+        $this->assertNotSame($user->getPassword(), $refreshedUser->getPassword());
+        $this->assertCount(0, $this->passwordResetRepository->all());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToResetPasswordWithInvalidCsrfToken(): void
+    {
+        $response = $this->post(
+            '/ajax/password-reset/reset/',
+            [
+                'reset_password_token' => str_repeat('a', 32),
+                'new_password' => 'new-password',
+                'csrf_token' => 'invalid-csrf-token',
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame('Invalid CSRF token.', $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToResetPasswordWhenLoggedIn(): void
+    {
+        $this->createAndLoginUser();
+
+        $response = $this->post(
+            '/ajax/password-reset/reset/',
+            [
+                'reset_password_token' => str_repeat('a', 32),
+                'new_password' => 'new-password',
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame('Cannot reset password when the user is logged in!', $response->getBody()->getContents());
+    }
+
+    /**
+     * @dataProvider Tests\_data\PasswordResetProvider::invalidResetPasswordDataProvider
+     * @param string $token
+     * @param string $password
+     * @param $expectedExceptionMessage
+     * @return void
+     * @throws \Exception
+     */
+    public function testReturnsBadRequestResponseWhenTryingToResetPasswordWithInvalidData(string $token, string $password, $expectedExceptionMessage): void
+    {
+        $response = $this->post(
+            '/ajax/password-reset/reset/',
+            [
+                'reset_password_token' => $token,
+                'new_password' => $password,
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::BadRequest->value, $response->getStatusCode());
+        $this->assertSame($expectedExceptionMessage, $response->getBody()->getContents());
+    }
+
+    public function testReturnsNotFoundResponseWhenTryingToResetPasswordWithNonExistentToken(): void
+    {
+        $response = $this->post(
+            '/ajax/password-reset/reset/',
+            [
+                'reset_password_token' => str_repeat('a', 32),
+                'new_password' => 'new-password',
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::NotFound->value, $response->getStatusCode());
+        $this->assertSame('There is no password-reset request with this token!', $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToResetPasswordWithExpiredToken(): void
+    {
+        $user = $this->createUser();
+        $passwordReset = $this->createPasswordReset($user->getId(), strtotime('-2 hour'));
+
+        $response = $this->post(
+            '/ajax/password-reset/reset/',
+            [
+                'reset_password_token' => $passwordReset->getToken(),
+                'new_password' => 'new-password',
+                'csrf_token' => $this->csrf->generate(),
+            ],
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertSame('The password-reset request has expired!', $response->getBody()->getContents());
     }
 
     //

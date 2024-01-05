@@ -72,9 +72,21 @@ if ($uri === '/') {
         ),
         $container->get(Csrf::class)
     );
-} elseif (preg_match("/^\/ajax\/password-reset\/?$/", $uri)) {
-    // Resets password via ajax
+} elseif (preg_match("/^\/ajax\/password-reset\/send\/?$/", $uri)) {
+    // Sends reset-password email via ajax
     $response = (new PasswordResetController())->send(
+        $container->get(Request::class),
+        new PasswordResetService(
+            new PasswordResetRepository($container->get(PDO::class)),
+            new UserRepository($container->get(PDO::class)),
+            $container->get(Auth::class),
+            $container->get(Mailer::class)
+        ),
+        $container->get(Csrf::class)
+    );
+} elseif (preg_match("/^\/ajax\/password-reset\/reset\/?$/", $uri)) {
+    // Resets password via ajax
+    $response = (new PasswordResetController())->reset(
         $container->get(Request::class),
         new PasswordResetService(
             new PasswordResetRepository($container->get(PDO::class)),
