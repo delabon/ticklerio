@@ -2,19 +2,21 @@
 
 namespace Tests\Unit\Users\PasswordReset;
 
-use App\Exceptions\UserDoesNotExistException;
 use App\Users\PasswordReset\PasswordResetRepository;
 use App\Users\PasswordReset\PasswordResetService;
+use App\Exceptions\UserDoesNotExistException;
+use App\Users\PasswordReset\PasswordReset;
 use App\Core\Session\ArraySessionHandler;
 use App\Core\Session\SessionHandlerType;
-use InvalidArgumentException;
-use LogicException;
+use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
 use App\Users\UserRepository;
+use InvalidArgumentException;
 use App\Core\Session\Session;
 use phpmock\phpunit\PHPMock;
 use Tests\Traits\MakesUsers;
 use App\Core\Mailer;
+use LogicException;
 use App\Core\Auth;
 use PDOStatement;
 use PDO;
@@ -73,6 +75,10 @@ class PasswordResetServiceTest extends TestCase
         parent::tearDown();
     }
 
+    //
+    // Send email
+    //
+
     public function testSendsResetPasswordEmailSuccessfully(): void
     {
         $user = $this->makeUser();
@@ -115,7 +121,7 @@ class PasswordResetServiceTest extends TestCase
         $this->passwordResetService->sendEmail($user->getEmail());
     }
 
-    public function testThrowsExceptionWhenUserIsLoggedIn(): void
+    public function testThrowsExceptionWhenTryingToSendEmailWhenUserIsLoggedIn(): void
     {
         $this->expectException(LogicException::class);
         $this->expectExceptionMessage('Cannot send password-reset email when the user is logged in!');
@@ -125,7 +131,7 @@ class PasswordResetServiceTest extends TestCase
         $this->passwordResetService->sendEmail('test@test.com');
     }
 
-    public function testThrowsExceptionWhenInvalidEmail(): void
+    public function testThrowsExceptionWhenTryingToSendEmailWithInvalidEmail(): void
     {
         $email = 'invalid-email';
 
@@ -135,7 +141,7 @@ class PasswordResetServiceTest extends TestCase
         $this->passwordResetService->sendEmail($email);
     }
 
-    public function testThrowsExceptionWhenEmailDoesNotExist(): void
+    public function testThrowsExceptionWhenTryingToSendEmailWithEmailDoesNotExist(): void
     {
         $email = 'not_registered@test.com';
 
@@ -157,5 +163,136 @@ class PasswordResetServiceTest extends TestCase
         $this->expectExceptionMessage('There is no user with this email address "' . $email . '"!');
 
         $this->passwordResetService->sendEmail($email);
+    }
+
+    //
+    // Reset password
+    //
+
+    public function testResetsPasswordSuccessfully(): void
+    {
+        $user = $this->makeUser();
+        $user->setId(1);
+        $passwordReset = PasswordReset::make([
+            'id' => 1,
+            'user_id' => $user->getId(),
+            'token' => 'supper-token',
+            'created_at' => strtotime('-1 hour'),
+        ]);
+
+        $this->pdoStatementMock->expects($this->exactly(5))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->exactly(1))
+            ->method('fetchAll')
+            ->with($this->equalTo(PDO::FETCH_ASSOC))
+            ->willReturn([$passwordReset->toArray()]);
+
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('fetch')
+            ->with($this->equalTo(PDO::FETCH_ASSOC))
+            ->willReturn($user->toArray());
+
+        $prepareCount = 1;
+        $this->pdoMock->expects($this->exactly(5))
+            ->method('prepare')
+            ->willReturnCallback(function ($query) use (&$prepareCount) {
+                if ($prepareCount === 1) {
+                    $this->assertMatchesRegularExpression('/.+?SELECT.+?FROM.+?password_resets.+?WHERE.+?token = \?/is', $query);
+                } elseif (in_array($prepareCount, [2, 3])) {
+                    $this->assertMatchesRegularExpression('/.+?SELECT.+?FROM.+?users.+?WHERE.+?id = \?/is', $query);
+                } elseif ($prepareCount === 4) {
+                    $this->assertMatchesRegularExpression('/.+?UPDATE.+?users.+?SET.+?password = \?.+?WHERE.+?id = \?/is', $query);
+                } else {
+                    $this->assertMatchesRegularExpression('/.+?DELETE.+?FROM.+?password_resets.+?WHERE.+?id = \?/is', $query);
+                }
+
+                $prepareCount++;
+
+                return $this->pdoStatementMock;
+            });
+
+        $this->passwordResetService->resetPassword('supper-token', 'supper-new-password');
+    }
+
+    public function testThrowsExceptionWhenTryingToResetPasswordWhenUserIsLoggedIn(): void
+    {
+        $this->makeAndLoginUser();
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('Cannot reset password when the user is logged in!');
+
+        $this->passwordResetService->resetPassword('supper-token', 'supper-new-password');
+    }
+
+    /**
+     * @dataProvider Tests\_data\PasswordResetProvider::invalidResetPasswordDataProvider
+     * @param string $token
+     * @param string $password
+     * @param $expectedExceptionMessage
+     * @return void
+     */
+    public function testThrowsExceptionWhenTryingToResetPasswordWithInvalidData(string $token, string $password, $expectedExceptionMessage): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage($expectedExceptionMessage);
+
+        $this->passwordResetService->resetPassword($token, $password);
+    }
+
+    public function testThrowsExceptionWhenTryingToResetPasswordWithTokenDoesNotExist(): void
+    {
+        $token = 'doesnt-exist-token';
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with($this->equalTo(PDO::FETCH_ASSOC))
+            ->willReturn([]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/.+?SELECT.+?FROM.+?password_resets.+?WHERE.+?token = \?/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $this->expectException(OutOfBoundsException::class);
+        $this->expectExceptionMessage('There is no password-reset request with this token!');
+
+        $this->passwordResetService->resetPassword($token, 'supper-new-password');
+    }
+
+    public function testThrowsExceptionWhenTryingToResetPasswordWithExpiredToken(): void
+    {
+        $token = 'expired-token';
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with($this->equalTo(PDO::FETCH_ASSOC))
+            ->willReturn([
+                [
+                    'id' => 1,
+                    'user_id' => 1,
+                    'token' => $token,
+                    'created_at' => strtotime('-2 hour'),
+                ]
+            ]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/.+?SELECT.+?FROM.+?password_resets.+?WHERE.+?token = \?/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $this->expectException(LogicException::class);
+        $this->expectExceptionMessage('The password-reset request has expired!');
+
+        $this->passwordResetService->resetPassword($token, 'supper-new-password');
     }
 }

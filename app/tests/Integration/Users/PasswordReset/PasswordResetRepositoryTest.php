@@ -4,11 +4,13 @@ namespace Tests\Integration\Users\PasswordReset;
 
 use App\Users\PasswordReset\PasswordResetRepository;
 use Tests\IntegrationTestCase;
+use Tests\Traits\CreatesPasswordResets;
 use Tests\Traits\CreatesUsers;
 use Tests\Traits\MakesPasswordResets;
 
 class PasswordResetRepositoryTest extends IntegrationTestCase
 {
+    use CreatesPasswordResets;
     use MakesPasswordResets;
     use CreatesUsers;
 
@@ -20,6 +22,10 @@ class PasswordResetRepositoryTest extends IntegrationTestCase
 
         $this->passwordResetRepository = new PasswordResetRepository($this->pdo);
     }
+
+    //
+    // Insert
+    //
 
     public function testInsertsSuccessfully(): void
     {
@@ -51,5 +57,23 @@ class PasswordResetRepositoryTest extends IntegrationTestCase
         $this->assertSame(2, $passwordResetTwo->getId());
         $this->assertSame($user->getId(), $passwordReset->getUserId());
         $this->assertSame($user->getId(), $passwordResetTwo->getUserId());
+    }
+
+    //
+    // Delete
+    //
+
+    public function testDeletesSuccessfully(): void
+    {
+        $user = $this->createUser();
+        $passwordReset = $this->createPasswordReset($user->getId());
+
+        $passwordResets = $this->passwordResetRepository->all();
+        $this->assertCount(1, $passwordResets);
+        $this->assertSame(1, $passwordReset->getId());
+
+        $this->passwordResetRepository->delete($passwordReset->getId());
+
+        $this->assertCount(0, $this->passwordResetRepository->all());
     }
 }

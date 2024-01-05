@@ -100,6 +100,30 @@ class PasswordResetRepositoryTest extends TestCase
 
         $this->passwordResetRepository->save(new InvalidPasswordReset());
     }
+
+    //
+    // Delete
+    //
+
+    public function testDeletesSuccessfully(): void
+    {
+        $passwordReset = $this->makePasswordReset();
+        $passwordReset->setId(5);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->with($this->equalTo([
+                $passwordReset->getId(),
+            ]))->willReturn(true);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/.+?DELETE FROM.+?password_resets.+?WHERE.+?id = \?/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $this->passwordResetRepository->delete($passwordReset->getId());
+    }
+
 }
 
 class InvalidPasswordReset extends Entity // phpcs:ignore
