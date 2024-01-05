@@ -5,9 +5,12 @@ namespace App\Users\PasswordReset;
 use App\Core\Auth;
 use App\Core\Mailer;
 use App\Exceptions\UserDoesNotExistException;
+use App\Users\PasswordValidator;
 use App\Users\UserRepository;
+use App\Utilities\PasswordUtils;
 use InvalidArgumentException;
 use LogicException;
+use OutOfBoundsException;
 use Random\RandomException;
 
 readonly class PasswordResetService
@@ -40,6 +43,40 @@ readonly class PasswordResetService
             ),
             'Content-Type: text/html; charset=UTF-8',
         );
+    }
+
+    public function resetPassword(string $token, string $password): void
+    {
+        if ($this->auth->getUserId()) {
+            throw new LogicException('Cannot reset password when the user is logged in!');
+        }
+
+        if (empty($token)) {
+            throw new InvalidArgumentException('The token cannot be empty!');
+        }
+
+        if (strlen($token) > 100) {
+            throw new InvalidArgumentException('The token length should be less than 100 characters.');
+        }
+
+        PasswordValidator::validate($password);
+
+        $passwordReset = $this->passwordResetRepository->findBy('token', $token);
+
+        if (empty($passwordReset)) {
+            throw new OutOfBoundsException('There is no password-reset request with this token!');
+        }
+
+        $passwordReset = $passwordReset[0];
+
+        if (time() - $passwordReset->getCreatedAt() > 3600) {
+            throw new LogicException('The password-reset request has expired!');
+        }
+
+        $user = $this->userRepository->find($passwordReset->getUserId());
+        $user->setPassword(PasswordUtils::hashPasswordIfNotHashed($password));
+        $this->userRepository->save($user);
+        $this->passwordResetRepository->delete($passwordReset->getId());
     }
 
     /**
