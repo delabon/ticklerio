@@ -115,10 +115,23 @@ class PasswordResetTest extends FeatureTestCase
     }
 
     //
-    // Reset password page
+    // Password-reset page
     //
 
-    public function testOpensResetPasswordPageUsingValidTokenSuccessfully(): void
+    public function testOpensSendResetPasswordEmailPageSuccessfully(): void
+    {
+        $response = $this->get('/password-reset/');
+
+        $body = $response->getBody()->getContents();
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertMatchesRegularExpression('/<input.*?type="email".*?name="email".*?>/i', $body);
+    }
+
+    //
+    // Send password-reset email page
+    //
+
+    public function testOpensPasswordResetPageUsingValidTokenSuccessfully(): void
     {
         $user = $this->createUser();
         $token = $this->createPasswordResetToken($user);
@@ -128,7 +141,7 @@ class PasswordResetTest extends FeatureTestCase
         $body = $response->getBody()->getContents();
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
         $this->assertMatchesRegularExpression('/<input.*?type="hidden".*?name="reset_password_token".*?value="' . $token . '".*?>/i', $body);
-        $this->assertMatchesRegularExpression('/<input.*?type="password".*?name="password".*?>/i', $body);
+        $this->assertMatchesRegularExpression('/<input.*?type="password".*?name="new_password".*?>/i', $body);
         $this->assertMatchesRegularExpression('/<input.*?type="password".*?name="password_match".*?>/i', $body);
     }
 
