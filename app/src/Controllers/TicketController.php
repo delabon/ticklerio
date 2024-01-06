@@ -114,7 +114,7 @@ class TicketController
             return new Response('You must be logged in to view this page.', HttpStatusCode::Forbidden);
         }
 
-        $tickets = $ticketRepository->all();
+        $tickets = $ticketRepository->all(orderBy: 'DESC');
 
         return View::load('tickets.index', [
             'tickets' => $tickets,
