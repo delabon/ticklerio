@@ -251,72 +251,6 @@ class UserRepositoryTest extends TestCase
         $this->assertNull($this->userRepository->find(0));
     }
 
-    public function testFindsAllUsers(): void
-    {
-        $this->pdoStatementMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(true);
-
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetchAll')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturnCallback(function () {
-                $userOneData = UserData::memberOne();
-                $userOneData['id'] = 1;
-                $userTwoData = UserData::memberTwo();
-                $userTwoData['id'] = 2;
-
-                return [
-                    $userOneData,
-                    $userTwoData
-                ];
-            });
-
-        $this->pdoMock->expects($this->once())
-            ->method('prepare')
-            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?users/is'))
-            ->willReturn($this->pdoStatementMock);
-
-        $usersFound = $this->userRepository->all();
-
-        $this->assertCount(2, $usersFound);
-        $this->assertSame(1, $usersFound[0]->getId());
-        $this->assertSame(2, $usersFound[1]->getId());
-        $this->assertInstanceOf(User::class, $usersFound[0]);
-        $this->assertInstanceOf(User::class, $usersFound[1]);
-    }
-
-    public function testFindsAllWithNoUsersInTableShouldReturnEmptyArray(): void
-    {
-        $this->pdoStatementMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(true);
-
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetchAll')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturn([]);
-
-        $this->pdoMock->expects($this->once())
-            ->method('prepare')
-            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?users/is'))
-            ->willReturn($this->pdoStatementMock);
-
-        $this->assertCount(0, $this->userRepository->all());
-    }
-
-    /**
-     * Prevents SQL injection attacks
-     * @return void
-     */
-    public function testThrowsExceptionWhenTryingToFindAllUsingInvalidColumns(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid column name '' and 1=1'.");
-
-        $this->userRepository->all(['id', "' and 1=1", 'invalid_column']);
-    }
-
     /**
      * @dataProvider validUserDataProvider
      * @param array $data
@@ -427,6 +361,146 @@ class UserRepositoryTest extends TestCase
         $this->expectExceptionMessage("Invalid column name 'not_a_valid_column_name'.");
 
         $this->userRepository->findBy('not_a_valid_column_name', 1);
+    }
+
+    //
+    // All
+    //
+
+    public function testFindsAllUsers(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () {
+                $userOneData = UserData::memberOne();
+                $userOneData['id'] = 1;
+                $userTwoData = UserData::memberTwo();
+                $userTwoData['id'] = 2;
+
+                return [
+                    $userOneData,
+                    $userTwoData
+                ];
+            });
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?users/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $usersFound = $this->userRepository->all();
+
+        $this->assertCount(2, $usersFound);
+        $this->assertSame(1, $usersFound[0]->getId());
+        $this->assertSame(2, $usersFound[1]->getId());
+        $this->assertInstanceOf(User::class, $usersFound[0]);
+        $this->assertInstanceOf(User::class, $usersFound[1]);
+    }
+
+    public function testFindsAllUsersInDescendingOrderSuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () {
+                $userOneData = UserData::memberOne();
+                $userOneData['id'] = 1;
+                $userTwoData = UserData::memberTwo();
+                $userTwoData['id'] = 2;
+
+                return [
+                    $userTwoData,
+                    $userOneData,
+                ];
+            });
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?users.+?ORDER BY.+?id DESC/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $usersFound = $this->userRepository->all(orderBy: 'DESC');
+
+        $this->assertCount(2, $usersFound);
+        $this->assertSame(2, $usersFound[0]->getId());
+        $this->assertSame(1, $usersFound[1]->getId());
+        $this->assertInstanceOf(User::class, $usersFound[0]);
+        $this->assertInstanceOf(User::class, $usersFound[1]);
+    }
+
+    public function testFindsAllUsersUsingInvalidOrderShouldDefaultToAscendingOrder(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () {
+                $userOneData = UserData::memberOne();
+                $userOneData['id'] = 1;
+                $userTwoData = UserData::memberTwo();
+                $userTwoData['id'] = 2;
+
+                return [
+                    $userOneData,
+                    $userTwoData,
+                ];
+            });
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?users.+?ORDER BY.+?id ASC/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $usersFound = $this->userRepository->all(orderBy: 'anything');
+
+        $this->assertCount(2, $usersFound);
+        $this->assertSame(1, $usersFound[0]->getId());
+        $this->assertSame(2, $usersFound[1]->getId());
+        $this->assertInstanceOf(User::class, $usersFound[0]);
+        $this->assertInstanceOf(User::class, $usersFound[1]);
+    }
+
+    public function testFindsAllWithNoUsersInTableShouldReturnEmptyArray(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?users/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $this->assertCount(0, $this->userRepository->all());
+    }
+
+    /**
+     * Prevents SQL injection attacks
+     * @return void
+     */
+    public function testThrowsExceptionWhenTryingToFindAllUsingInvalidColumns(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid column name '' and 1=1'.");
+
+        $this->userRepository->all(['id', "' and 1=1", 'invalid_column']);
     }
 
     //

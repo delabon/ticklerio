@@ -2,13 +2,13 @@
 
 namespace Tests\Integration\Tickets;
 
-use App\Tickets\Ticket;
 use App\Tickets\TicketRepository;
-use App\Tickets\TicketStatus;
-use OutOfBoundsException;
-use Tests\_data\TicketData;
 use Tests\IntegrationTestCase;
 use Tests\Traits\CreatesUsers;
+use App\Tickets\TicketStatus;
+use Tests\_data\TicketData;
+use OutOfBoundsException;
+use App\Tickets\Ticket;
 
 class TicketRepositoryTest extends IntegrationTestCase
 {
@@ -139,6 +139,10 @@ class TicketRepositoryTest extends IntegrationTestCase
         $this->assertNull($ticket);
     }
 
+    //
+    // All
+    //
+
     public function testFindsAllTickets(): void
     {
         $user = $this->createUser();
@@ -161,6 +165,44 @@ class TicketRepositoryTest extends IntegrationTestCase
     public function testFindsAllWithNoTicketsInTableShouldReturnEmptyArray(): void
     {
         $this->assertCount(0, $this->ticketRepository->all());
+    }
+
+    public function testFindsAllTicketsInDescendingOrderSuccessfully(): void
+    {
+        $user = $this->createUser();
+        $ticketOne = Ticket::make(TicketData::one());
+        $ticketOne->setUserId($user->getId());
+        $this->ticketRepository->save($ticketOne);
+        $ticketTwo = Ticket::make(TicketData::two());
+        $ticketTwo->setUserId($user->getId());
+        $this->ticketRepository->save($ticketTwo);
+
+        $ticketsFound = $this->ticketRepository->all(orderBy: 'DESC');
+
+        $this->assertCount(2, $ticketsFound);
+        $this->assertSame(2, $ticketsFound[0]->getId());
+        $this->assertSame(1, $ticketsFound[1]->getId());
+        $this->assertInstanceOf(Ticket::class, $ticketsFound[0]);
+        $this->assertInstanceOf(Ticket::class, $ticketsFound[1]);
+    }
+
+    public function testFindsAllTicketsUsingInvalidOrderShouldDefaultToAscendingOrder(): void
+    {
+        $user = $this->createUser();
+        $ticketOne = Ticket::make(TicketData::one());
+        $ticketOne->setUserId($user->getId());
+        $this->ticketRepository->save($ticketOne);
+        $ticketTwo = Ticket::make(TicketData::two());
+        $ticketTwo->setUserId($user->getId());
+        $this->ticketRepository->save($ticketTwo);
+
+        $ticketsFound = $this->ticketRepository->all(orderBy: 'anything');
+
+        $this->assertCount(2, $ticketsFound);
+        $this->assertSame(1, $ticketsFound[0]->getId());
+        $this->assertSame(2, $ticketsFound[1]->getId());
+        $this->assertInstanceOf(Ticket::class, $ticketsFound[0]);
+        $this->assertInstanceOf(Ticket::class, $ticketsFound[1]);
     }
 
     //

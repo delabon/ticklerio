@@ -239,76 +239,6 @@ class RepositoryTest extends TestCase
         $this->assertNull($this->personRepository->find(0));
     }
 
-    public function testFindsAllEntitiesSuccessfully(): void
-    {
-        $this->pdoStatementMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(true);
-
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetchAll')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturn([
-                [
-                    'id' => 1,
-                    'name' => 'one'
-                ],
-                [
-                    'id' => 2,
-                    'name' => 'two'
-                ]
-            ]);
-
-        $this->pdoMock->expects($this->once())
-            ->method('prepare')
-            ->with($this->matchesRegularExpression('/SELECT.+FROM.+test_repository/is'))
-            ->willReturn($this->pdoStatementMock);
-
-        $personOne = new Person();
-        $personOne->setId(1);
-        $personOne->setName('one');
-        $personTwo = new Person();
-        $personTwo->setId(2);
-        $personTwo->setName('two');
-
-        $found = $this->personRepository->all();
-
-        $this->assertCount(2, $found);
-        $this->assertInstanceOf(Person::class, $found[0]);
-        $this->assertInstanceOf(Person::class, $found[1]);
-        $this->assertEquals($found[0], $personOne);
-        $this->assertEquals($found[1], $personTwo);
-        $this->assertSame('one', $found[0]->getName());
-        $this->assertSame('two', $found[1]->getName());
-    }
-
-    public function testFindsAllWithNoEntitiesInTableShouldReturnEmptyArray(): void
-    {
-        $this->pdoStatementMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(true);
-
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetchAll')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturn([]);
-
-        $this->pdoMock->expects($this->once())
-            ->method('prepare')
-            ->with($this->matchesRegularExpression('/SELECT.+FROM.+test_repository/is'))
-            ->willReturn($this->pdoStatementMock);
-
-        $this->assertCount(0, $this->personRepository->all());
-    }
-
-    public function testThrowsExceptionWhenTryingToFindAllUsingInvalidColumns(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid column name 'invalid_column'.");
-
-        $this->personRepository->all(['id', 'invalid_column']);
-    }
-
     /**
      * @dataProvider validPersonDataProvider
      * @param $data
@@ -405,6 +335,166 @@ class RepositoryTest extends TestCase
         $this->expectExceptionMessage("Invalid column name 'and 1=1'.");
 
         $this->personRepository->findBy('and 1=1', 1);
+    }
+
+    //
+    // All
+    //
+
+    public function testFindsAllEntitiesSuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                [
+                    'id' => 1,
+                    'name' => 'one'
+                ],
+                [
+                    'id' => 2,
+                    'name' => 'two'
+                ]
+            ]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+FROM.+test_repository/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $personOne = new Person();
+        $personOne->setId(1);
+        $personOne->setName('one');
+        $personTwo = new Person();
+        $personTwo->setId(2);
+        $personTwo->setName('two');
+
+        $found = $this->personRepository->all();
+
+        $this->assertCount(2, $found);
+        $this->assertInstanceOf(Person::class, $found[0]);
+        $this->assertInstanceOf(Person::class, $found[1]);
+        $this->assertEquals($found[0], $personOne);
+        $this->assertEquals($found[1], $personTwo);
+        $this->assertSame('one', $found[0]->getName());
+        $this->assertSame('two', $found[1]->getName());
+    }
+
+    public function testFindsAllEntitiesInDescendingOrderSuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                [
+                    'id' => 2,
+                    'name' => 'two'
+                ],
+                [
+                    'id' => 1,
+                    'name' => 'one'
+                ],
+            ]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?test_repository.+?ORDER BY.+?id DESC/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $personOne = new Person();
+        $personOne->setId(1);
+        $personOne->setName('one');
+        $personTwo = new Person();
+        $personTwo->setId(2);
+        $personTwo->setName('two');
+
+        $found = $this->personRepository->all(orderBy: 'DESC');
+
+        $this->assertCount(2, $found);
+        $this->assertInstanceOf(Person::class, $found[0]);
+        $this->assertInstanceOf(Person::class, $found[1]);
+        $this->assertEquals($found[0], $personTwo);
+        $this->assertEquals($found[1], $personOne);
+        $this->assertSame('two', $found[0]->getName());
+        $this->assertSame('one', $found[1]->getName());
+    }
+
+    public function testFindsAllEntitiesUsingInvalidOrderShouldDefaultToAscendingOrder(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                [
+                    'id' => 1,
+                    'name' => 'one'
+                ],
+                [
+                    'id' => 2,
+                    'name' => 'two'
+                ],
+            ]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?test_repository.+?ORDER BY.+?id ASC/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $personOne = new Person();
+        $personOne->setId(1);
+        $personOne->setName('one');
+        $personTwo = new Person();
+        $personTwo->setId(2);
+        $personTwo->setName('two');
+
+        $found = $this->personRepository->all(orderBy: 'invalid');
+
+        $this->assertCount(2, $found);
+        $this->assertInstanceOf(Person::class, $found[0]);
+        $this->assertInstanceOf(Person::class, $found[1]);
+        $this->assertEquals($found[0], $personOne);
+        $this->assertEquals($found[1], $personTwo);
+        $this->assertSame('one', $found[0]->getName());
+        $this->assertSame('two', $found[1]->getName());
+    }
+
+    public function testFindsAllWithNoEntitiesInTableShouldReturnEmptyArray(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+FROM.+test_repository/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $this->assertCount(0, $this->personRepository->all());
+    }
+
+    public function testThrowsExceptionWhenTryingToFindAllUsingInvalidColumns(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid column name 'invalid_column'.");
+
+        $this->personRepository->all(['id', 'invalid_column']);
     }
 
     //

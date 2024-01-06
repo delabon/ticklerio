@@ -181,6 +181,10 @@ class UserRepositoryTest extends IntegrationTestCase
         ];
     }
 
+    //
+    // All
+    //
+
     public function testFindsAllUsers(): void
     {
         $userOne = User::make(UserData::memberOne());
@@ -189,6 +193,38 @@ class UserRepositoryTest extends IntegrationTestCase
         $this->userRepository->save($userTwo);
 
         $usersFound = $this->userRepository->all();
+
+        $this->assertCount(2, $usersFound);
+        $this->assertSame(1, $usersFound[0]->getId());
+        $this->assertSame(2, $usersFound[1]->getId());
+        $this->assertInstanceOf(User::class, $usersFound[0]);
+        $this->assertInstanceOf(User::class, $usersFound[1]);
+    }
+
+    public function testFindsAllUsersInDescendingOrderSuccessfully(): void
+    {
+        $userOne = User::make(UserData::memberOne());
+        $this->userRepository->save($userOne);
+        $userTwo = User::make(UserData::memberTwo());
+        $this->userRepository->save($userTwo);
+
+        $usersFound = $this->userRepository->all(orderBy: 'DESC');
+
+        $this->assertCount(2, $usersFound);
+        $this->assertSame(2, $usersFound[0]->getId());
+        $this->assertSame(1, $usersFound[1]->getId());
+        $this->assertInstanceOf(User::class, $usersFound[0]);
+        $this->assertInstanceOf(User::class, $usersFound[1]);
+    }
+
+    public function testFindsAllUsersUsingInvalidOrderShouldDefaultToAscendingOrder(): void
+    {
+        $userOne = User::make(UserData::memberOne());
+        $this->userRepository->save($userOne);
+        $userTwo = User::make(UserData::memberTwo());
+        $this->userRepository->save($userTwo);
+
+        $usersFound = $this->userRepository->all(orderBy: 'anything');
 
         $this->assertCount(2, $usersFound);
         $this->assertSame(1, $usersFound[0]->getId());

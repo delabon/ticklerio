@@ -123,15 +123,18 @@ abstract class Repository implements RepositoryInterface
      * @param string[] $columns
      * @return array|object[]
      */
-    public function all(array $columns = ['*']): array
+    public function all(array $columns = ['*'], string $orderBy = 'ASC'): array
     {
         $this->validateColumns($columns);
+        $orderBy = in_array(strtoupper($orderBy), ['ASC', 'DESC']) ? $orderBy : 'ASC';
 
         $stmt = $this->pdo->prepare("
             SELECT
                 " . implode(',', $columns) . "
             FROM
                 {$this->table}
+            ORDER BY
+                id {$orderBy}
         ");
         $stmt->execute();
         $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
