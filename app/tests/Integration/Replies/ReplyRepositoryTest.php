@@ -3,18 +3,18 @@
 namespace Tests\Integration\Replies;
 
 use App\Exceptions\ReplyDoesNotExistException;
-use App\Replies\ReplyRepository;
-use App\Tickets\Ticket;
-use App\Tickets\TicketFactory;
 use App\Tickets\TicketRepository;
-use App\Users\User;
-use App\Users\UserFactory;
-use App\Users\UserRepository;
-use Faker\Factory;
-use Faker\Generator;
+use App\Replies\ReplyRepository;
 use Tests\IntegrationTestCase;
+use App\Tickets\TicketFactory;
+use App\Users\UserRepository;
 use Tests\_data\ReplyData;
+use App\Users\UserFactory;
+use App\Tickets\Ticket;
 use App\Replies\Reply;
+use Faker\Generator;
+use App\Users\User;
+use Faker\Factory;
 
 class ReplyRepositoryTest extends IntegrationTestCase
 {
@@ -104,6 +104,75 @@ class ReplyRepositoryTest extends IntegrationTestCase
         $this->expectExceptionMessage("The reply with the id {$reply->getId()} does not exist in the database.");
 
         $this->replyRepository->save($reply);
+    }
+
+    //
+    // All
+    //
+
+    public function testFindsAllReplies(): void
+    {
+        $replyOne = Reply::make(ReplyData::one());
+        $replyOne->setUserId($this->user->getId());
+        $replyOne->setTicketId($this->ticket->getId());
+        $this->replyRepository->save($replyOne);
+        $replyTwo = Reply::make(ReplyData::two());
+        $replyTwo->setUserId($this->user->getId());
+        $replyTwo->setTicketId($this->ticket->getId());
+        $this->replyRepository->save($replyTwo);
+
+        $repliesFound = $this->replyRepository->all();
+
+        $this->assertCount(2, $repliesFound);
+        $this->assertSame(1, $repliesFound[0]->getId());
+        $this->assertSame(2, $repliesFound[1]->getId());
+        $this->assertInstanceOf(Reply::class, $repliesFound[0]);
+        $this->assertInstanceOf(Reply::class, $repliesFound[1]);
+    }
+
+    public function testFindsAllRepliesInDescendingOrderSuccessfully(): void
+    {
+        $replyOne = Reply::make(ReplyData::one());
+        $replyOne->setUserId($this->user->getId());
+        $replyOne->setTicketId($this->ticket->getId());
+        $this->replyRepository->save($replyOne);
+        $replyTwo = Reply::make(ReplyData::two());
+        $replyTwo->setUserId($this->user->getId());
+        $replyTwo->setTicketId($this->ticket->getId());
+        $this->replyRepository->save($replyTwo);
+
+        $repliesFound = $this->replyRepository->all(orderBy: 'DESC');
+
+        $this->assertCount(2, $repliesFound);
+        $this->assertSame(2, $repliesFound[0]->getId());
+        $this->assertSame(1, $repliesFound[1]->getId());
+        $this->assertInstanceOf(Reply::class, $repliesFound[0]);
+        $this->assertInstanceOf(Reply::class, $repliesFound[1]);
+    }
+
+    public function testFindsAllRepliesUsingInvalidOrderShouldDefaultToAscendingOrder(): void
+    {
+        $replyOne = Reply::make(ReplyData::one());
+        $replyOne->setUserId($this->user->getId());
+        $replyOne->setTicketId($this->ticket->getId());
+        $this->replyRepository->save($replyOne);
+        $replyTwo = Reply::make(ReplyData::two());
+        $replyTwo->setUserId($this->user->getId());
+        $replyTwo->setTicketId($this->ticket->getId());
+        $this->replyRepository->save($replyTwo);
+
+        $repliesFound = $this->replyRepository->all(orderBy: 'anything');
+
+        $this->assertCount(2, $repliesFound);
+        $this->assertSame(1, $repliesFound[0]->getId());
+        $this->assertSame(2, $repliesFound[1]->getId());
+        $this->assertInstanceOf(Reply::class, $repliesFound[0]);
+        $this->assertInstanceOf(Reply::class, $repliesFound[1]);
+    }
+
+    public function testFindsAllWithNoRepliesInTableShouldReturnEmptyArray(): void
+    {
+        $this->assertCount(0, $this->replyRepository->all());
     }
 
     //

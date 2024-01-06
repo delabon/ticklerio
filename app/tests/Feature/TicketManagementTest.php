@@ -17,13 +17,16 @@ use Exception;
 use Faker\Factory;
 use Tests\_data\TicketData;
 use Tests\FeatureTestCase;
+use Tests\Traits\CreatesUsers;
 
 class TicketManagementTest extends FeatureTestCase
 {
+    use CreatesUsers;
+
     private TicketRepository $ticketRepository;
+    private TicketFactory $ticketFactory;
     private UserFactory $userFactory;
     private Auth $auth;
-    private TicketFactory $ticketFactory;
 
     protected function setUp(): void
     {
@@ -36,15 +39,205 @@ class TicketManagementTest extends FeatureTestCase
     }
 
     //
+    // Pages
+    //
+
+    public function testAccessesTicketsPageSuccessfully(): void
+    {
+        $this->createAndLoginUser();
+
+        $response = $this->get('/tickets');
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertStringContainsString('Tickets', $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToAccessTheTicketsPageWhenNotLoggedIn(): void
+    {
+        $response = $this->get(
+            '/tickets',
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertStringContainsString('You must be logged in to view this page.', $response->getBody()->getContents());
+    }
+
+    public function testAccessesCreateTicketPageSuccessfully(): void
+    {
+        $this->createAndLoginUser();
+
+        $response = $this->get('/tickets/create');
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertStringContainsString('Create a ticket', $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToAccessTheCreateTicketPageWhenNotLoggedIn(): void
+    {
+        $response = $this->get(
+            '/tickets/create',
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertStringContainsString('You must be logged in to view this page.', $response->getBody()->getContents());
+    }
+
+    public function testAccessesTicketPageSuccessfully(): void
+    {
+        $user = $this->createAndLoginUser();
+        $ticket = $this->ticketFactory->create([
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Publish->value,
+        ])[0];
+
+        $response = $this->get('/tickets/' . $ticket->getId());
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertStringContainsString($ticket->getTitle(), $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToAccessTheTicketPageWhenNotLoggedIn(): void
+    {
+        $response = $this->get(
+            '/tickets/' . 555,
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertStringContainsString('You must be logged in to view this page.', $response->getBody()->getContents());
+    }
+
+    public function testReturnsNotFoundResponseWhenTryingToAccessTheTicketPageWithNonExistentId(): void
+    {
+        $this->createAndLoginUser();
+
+        $response = $this->get(
+            '/tickets/' . 555,
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::NotFound->value, $response->getStatusCode());
+        $this->assertStringContainsString('The ticket does not exist.', $response->getBody()->getContents());
+    }
+
+    public function testAccessesEditTicketPageSuccessfully(): void
+    {
+        $user = $this->createAndLoginUser();
+        $ticket = $this->ticketFactory->create([
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Publish->value,
+        ])[0];
+
+        $response = $this->get('/tickets/edit/' . $ticket->getId());
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertStringContainsString('Edit ticket', $response->getBody()->getContents());
+    }
+
+    public function testAccessesEditTicketPageWithAdminSuccessfully(): void
+    {
+        $user = $this->createUser();
+        $ticket = $this->ticketFactory->create([
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Publish->value,
+        ])[0];
+
+        $this->createAndLoginAdmin();
+
+        $response = $this->get('/tickets/edit/' . $ticket->getId());
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertStringContainsString('Edit ticket', $response->getBody()->getContents());
+    }
+
+    public function testAccessesEditTicketPageWhenNotPublishWithAdminSuccessfully(): void
+    {
+        $user = $this->createUser();
+        $ticket = $this->ticketFactory->create([
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Solved->value,
+        ])[0];
+
+        $this->createAndLoginAdmin();
+
+        $response = $this->get('/tickets/edit/' . $ticket->getId());
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertStringContainsString('Edit ticket', $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToAccessTheEditTicketPageWhenNotLoggedIn(): void
+    {
+        $response = $this->get(
+            '/tickets/edit/' . 555,
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertStringContainsString('You must be logged in to view this page.', $response->getBody()->getContents());
+    }
+
+    public function testReturnsNotFoundResponseWhenTryingToAccessTheEditTicketPageWithNonExistentId(): void
+    {
+        $this->createAndLoginUser();
+
+        $response = $this->get(
+            '/tickets/' . 555,
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::NotFound->value, $response->getStatusCode());
+        $this->assertStringContainsString('The ticket does not exist.', $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToAccessTheEditTicketPageWhenNotTheAuthorAndNotAnAdmin(): void
+    {
+        $user = $this->createUser();
+        $ticket = $this->ticketFactory->create([
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Publish->value,
+        ])[0];
+
+        $this->createAndLoginUser();
+
+        $response = $this->get(
+            '/tickets/edit/' . $ticket->getId(),
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertStringContainsString('You are not authorized to view this page.', $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToAccessTheEditTicketPageWhenTicketIsNotPublishAndNotAnAdmin(): void
+    {
+        $user = $this->createAndLoginUser();
+        $ticket = $this->ticketFactory->create([
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Closed->value,
+        ])[0];
+
+        $response = $this->get(
+            '/tickets/edit/' . $ticket->getId(),
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertStringContainsString('The ticket is not published.', $response->getBody()->getContents());
+    }
+
+    //
     // Create
     //
 
-    public function testAddsTicketSuccessfully(): void
+    public function testStoresTicketSuccessfully(): void
     {
         $user = $this->createAndLogInMember();
 
         $response = $this->post(
-            '/ajax/ticket/create',
+            '/ajax/ticket/store',
             [
                 'title' => 'Test ticket',
                 'description' => 'Test ticket description',
@@ -52,8 +245,14 @@ class TicketManagementTest extends FeatureTestCase
             ]
         );
 
+        $responseBody = json_decode($response->getBody()->getContents(), true);
         $tickets = $this->ticketRepository->all();
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertSame('application/json', $response->getHeader('content-type')[0]);
+        $this->assertIsArray($responseBody);
+        $this->assertArrayHasKey('id', $responseBody);
+        $this->assertArrayHasKey('message', $responseBody);
+        $this->assertSame('The ticket has been created successfully.', $responseBody['message']);
         $this->assertCount(1, $tickets);
         $this->assertSame(1, $tickets[0]->getId());
         $this->assertSame($user->getId(), $tickets[0]->getUserId());
@@ -70,7 +269,7 @@ class TicketManagementTest extends FeatureTestCase
         $data['csrf_token'] = 'invalid csrf';
 
         $response = $this->post(
-            '/ajax/ticket/create',
+            '/ajax/ticket/store',
             $data,
             self::DISABLE_GUZZLE_EXCEPTION
         );
@@ -86,7 +285,7 @@ class TicketManagementTest extends FeatureTestCase
         $data['csrf_token'] = $this->csrf->generate();
 
         $response = $this->post(
-            '/ajax/ticket/create',
+            '/ajax/ticket/store',
             $data,
             self::DISABLE_GUZZLE_EXCEPTION
         );
@@ -109,7 +308,7 @@ class TicketManagementTest extends FeatureTestCase
         $this->createAndLogInMember();
 
         $response = $this->post(
-            '/ajax/ticket/create',
+            '/ajax/ticket/store',
             $data,
             self::DISABLE_GUZZLE_EXCEPTION
         );

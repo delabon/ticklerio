@@ -2,11 +2,11 @@
 
 namespace Tests\Unit\Tickets;
 
-use App\Abstracts\Repository;
 use App\Exceptions\TicketDoesNotExistException;
 use PHPUnit\Framework\MockObject\Exception;
 use App\Tickets\TicketRepository;
 use PHPUnit\Framework\TestCase;
+use App\Abstracts\Repository;
 use InvalidArgumentException;
 use App\Tickets\TicketStatus;
 use Tests\_data\TicketData;
@@ -19,9 +19,9 @@ use function Symfony\Component\String\u;
 
 class TicketRepositoryTest extends TestCase
 {
+    private TicketRepository $ticketRepository;
     private object $pdoStatementMock;
     private object $pdoMock;
-    private TicketRepository $ticketRepository;
 
     protected function setUp(): void
     {
@@ -252,72 +252,6 @@ class TicketRepositoryTest extends TestCase
         $this->assertNull($this->ticketRepository->find(0));
     }
 
-    public function testFindsAllTicketsSuccessfully(): void
-    {
-        $this->pdoStatementMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(true);
-
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetchAll')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturnCallback(function () {
-                $ticketOneData = TicketData::one();
-                $ticketOneData['id'] = 1;
-                $ticketTwoData = TicketData::two();
-                $ticketTwoData['id'] = 2;
-
-                return [
-                    $ticketOneData,
-                    $ticketTwoData
-                ];
-            });
-
-        $this->pdoMock->expects($this->once())
-            ->method('prepare')
-            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?tickets/is'))
-            ->willReturn($this->pdoStatementMock);
-
-        $ticketsFound = $this->ticketRepository->all();
-
-        $this->assertCount(2, $ticketsFound);
-        $this->assertSame(1, $ticketsFound[0]->getId());
-        $this->assertSame(2, $ticketsFound[1]->getId());
-        $this->assertInstanceOf(Ticket::class, $ticketsFound[0]);
-        $this->assertInstanceOf(Ticket::class, $ticketsFound[1]);
-    }
-
-    public function testFindsAllWithNoTicketsInTableShouldReturnEmptyArray(): void
-    {
-        $this->pdoStatementMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(true);
-
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetchAll')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturn([]);
-
-        $this->pdoMock->expects($this->once())
-            ->method('prepare')
-            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?tickets/is'))
-            ->willReturn($this->pdoStatementMock);
-
-        $this->assertCount(0, $this->ticketRepository->all());
-    }
-
-    /**
-     * Prevents SQL injection attacks
-     * @return void
-     */
-    public function testThrowsExceptionWhenTryingToFindAllUsingInvalidColumns(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid column name '' and 1=1'.");
-
-        $this->ticketRepository->all(['id', "' and 1=1", 'invalid_column']);
-    }
-
     /**
      * @dataProvider validTicketDataProvider
      * @param $data
@@ -429,6 +363,146 @@ class TicketRepositoryTest extends TestCase
         $this->expectExceptionMessage("Invalid column name 'and 1=1'.");
 
         $this->ticketRepository->findBy('and 1=1', 1);
+    }
+
+    //
+    // All
+    //
+
+    public function testFindsAllTicketsSuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () {
+                $ticketOneData = TicketData::one();
+                $ticketOneData['id'] = 1;
+                $ticketTwoData = TicketData::two();
+                $ticketTwoData['id'] = 2;
+
+                return [
+                    $ticketOneData,
+                    $ticketTwoData
+                ];
+            });
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?tickets/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $ticketsFound = $this->ticketRepository->all();
+
+        $this->assertCount(2, $ticketsFound);
+        $this->assertSame(1, $ticketsFound[0]->getId());
+        $this->assertSame(2, $ticketsFound[1]->getId());
+        $this->assertInstanceOf(Ticket::class, $ticketsFound[0]);
+        $this->assertInstanceOf(Ticket::class, $ticketsFound[1]);
+    }
+
+    public function testFindsAllTicketsInDescendingOrderSuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () {
+                $ticketOneData = TicketData::one();
+                $ticketOneData['id'] = 1;
+                $ticketTwoData = TicketData::two();
+                $ticketTwoData['id'] = 2;
+
+                return [
+                    $ticketTwoData,
+                    $ticketOneData,
+                ];
+            });
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?tickets.+?ORDER BY.+?id DESC/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $ticketsFound = $this->ticketRepository->all(orderBy: 'DESC');
+
+        $this->assertCount(2, $ticketsFound);
+        $this->assertSame(2, $ticketsFound[0]->getId());
+        $this->assertSame(1, $ticketsFound[1]->getId());
+        $this->assertInstanceOf(Ticket::class, $ticketsFound[0]);
+        $this->assertInstanceOf(Ticket::class, $ticketsFound[1]);
+    }
+
+    public function testFindsAllTicketsUsingInvalidOrderShouldDefaultToAscendingOrder(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturnCallback(function () {
+                $ticketOneData = TicketData::one();
+                $ticketOneData['id'] = 1;
+                $ticketTwoData = TicketData::two();
+                $ticketTwoData['id'] = 2;
+
+                return [
+                    $ticketOneData,
+                    $ticketTwoData,
+                ];
+            });
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?tickets.+?ORDER BY.+?id ASC/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $ticketsFound = $this->ticketRepository->all(orderBy: 'anything');
+
+        $this->assertCount(2, $ticketsFound);
+        $this->assertSame(1, $ticketsFound[0]->getId());
+        $this->assertSame(2, $ticketsFound[1]->getId());
+        $this->assertInstanceOf(Ticket::class, $ticketsFound[0]);
+        $this->assertInstanceOf(Ticket::class, $ticketsFound[1]);
+    }
+
+    public function testFindsAllWithNoTicketsInTableShouldReturnEmptyArray(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?tickets/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $this->assertCount(0, $this->ticketRepository->all());
+    }
+
+    /**
+     * Prevents SQL injection attacks
+     * @return void
+     */
+    public function testThrowsExceptionWhenTryingToFindAllUsingInvalidColumns(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid column name '' and 1=1'.");
+
+        $this->ticketRepository->all(['id', "' and 1=1", 'invalid_column']);
     }
 
     //

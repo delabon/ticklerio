@@ -4,6 +4,7 @@ use App\Core\Auth;
 use App\Core\Csrf;
 use App\Core\Http\Response;
 use App\Core\Utilities\View;
+use App\Users\UserType;
 
 function csrf(): string
 {
@@ -28,6 +29,20 @@ function isLoggedIn(): bool
     global $container;
 
     return $container->get(Auth::class)->getUserId() > 0;
+}
+
+function isAdmin(): bool
+{
+    global $container;
+
+    return $container->get(Auth::class)->getUserType() === UserType::Admin->value;
+}
+
+function currentUserId(): int
+{
+    global $container;
+
+    return $container->get(Auth::class)->getUserId();
 }
 
 /**
