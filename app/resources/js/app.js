@@ -316,3 +316,51 @@ if (createTicketBtn) {
         });
     });
 }
+
+//
+// Edit ticket
+//
+
+const editTicketBtn = document.getElementById('edit-ticket-btn');
+
+if (editTicketBtn) {
+    const errorAlert = document.getElementById('error-alert');
+    const successAlert = document.getElementById('success-alert');
+
+    editTicketBtn.addEventListener('click', function (e){
+        e.preventDefault();
+
+        // Reset alerts
+        successAlert.classList.add('d-none');
+        successAlert.innerHTML = '';
+        errorAlert.classList.add('d-none');
+        errorAlert.innerHTML = '';
+
+        // Send form data
+        let formData = new FormData();
+        formData.append('title', document.getElementById('title').value);
+        formData.append('description', document.getElementById('description').value);
+        formData.append('id', document.getElementById('id').value);
+        formData.append('csrf_token', csrfToken);
+
+        fetch('/ajax/ticket/update', {
+            'method': 'POST',
+            'body': formData
+        }).then((response) => {
+            if (response.status === 200) {
+                response.text().then((text) => {
+                    successAlert.classList.remove('d-none');
+                    successAlert.innerHTML = text + ' You can now <a href="/tickets/' + document.getElementById('id').value + '">view your ticket</a>.';
+                });
+            } else {
+                response.text().then((text) => {
+                    errorAlert.classList.remove('d-none');
+                    errorAlert.innerHTML = text;
+                });
+            }
+        }).catch((error) => {
+            errorAlert.classList.remove('d-none');
+            errorAlert.innerHTML = 'Something went wrong. Please try again later.';
+        });
+    });
+}

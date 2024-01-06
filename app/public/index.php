@@ -279,6 +279,15 @@ if ($uri === '/') {
         new TicketRepository($container->get(PDO::class)),
         $container->get(Auth::class),
     );
+} elseif (preg_match("/^\/tickets\/edit\/[0-9]+\/?$/", $uri)) {
+    // Edit ticket page
+    $id = preg_match("/^\/tickets\/edit\/([0-9]+)\/?$/", $uri, $matches) ? (int) $matches[1] : 0;
+
+    $response = (new TicketController())->edit(
+        $id,
+        new TicketRepository($container->get(PDO::class)),
+        $container->get(Auth::class),
+    );
 } elseif (preg_match("/^\/tickets\/create\/?$/", $uri)) {
     // Create a ticket page
     $response = (new TicketController())->create(
