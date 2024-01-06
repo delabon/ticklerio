@@ -364,3 +364,38 @@ if (editTicketBtn) {
         });
     });
 }
+
+//
+// Delete ticket
+//
+
+const deleteTicketBtn = document.getElementById('delete-ticket-btn');
+
+if (deleteTicketBtn) {
+    deleteTicketBtn.addEventListener('click', function (e){
+        e.preventDefault();
+
+        // Send form data
+        let formData = new FormData();
+        formData.append('id', deleteTicketBtn.dataset.id);
+        formData.append('csrf_token', csrfToken);
+
+        fetch('/ajax/ticket/delete', {
+            'method': 'POST',
+            'body': formData
+        }).then((response) => {
+            if (response.status === 200) {
+                response.text().then((text) => {
+                    alert(text);
+                    location.href = '/tickets';
+                });
+            } else {
+                response.text().then((text) => {
+                    alert(text);
+                });
+            }
+        }).catch((error) => {
+            alert('Something went wrong. Please try again later.');
+        });
+    });
+}
