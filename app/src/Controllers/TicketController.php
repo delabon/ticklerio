@@ -13,6 +13,7 @@ use App\Tickets\TicketRepository;
 use App\Tickets\TicketService;
 use App\Tickets\TicketStatus;
 use App\Users\AdminService;
+use App\Users\UserRepository;
 use Exception;
 use InvalidArgumentException;
 use LogicException;
@@ -130,7 +131,7 @@ class TicketController
         return View::load('tickets.create');
     }
 
-    public function show(int $id, TicketRepository $ticketRepository, Auth $auth): Response
+    public function show(int $id, TicketRepository $ticketRepository, UserRepository $userRepository, Auth $auth): Response
     {
         if (!$auth->getUserId()) {
             return new Response('You must be logged in to view this page.', HttpStatusCode::Forbidden);
@@ -140,8 +141,11 @@ class TicketController
             return new Response('The ticket does not exist.', HttpStatusCode::NotFound);
         }
 
+        $author = $userRepository->find($ticket->getUserId());
+
         return View::load('tickets.show', [
             'ticket' => $ticket,
+            'author' => $author,
         ]);
     }
 

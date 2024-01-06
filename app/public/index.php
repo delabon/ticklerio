@@ -277,6 +277,7 @@ if ($uri === '/') {
     $response = (new TicketController())->show(
         $id,
         new TicketRepository($container->get(PDO::class)),
+        new UserRepository($container->get(PDO::class)),
         $container->get(Auth::class),
     );
 } elseif (preg_match("/^\/tickets\/edit\/[0-9]+\/?$/", $uri)) {

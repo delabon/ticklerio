@@ -21,11 +21,17 @@ require __DIR__ . '/../parts/header.php';
 
                     <?php foreach ($tickets as $ticket) : ?>
                         <div class="mb-2">
-                            <h3>
+                            <h3 class="mb-2">
                                 <a href="/tickets/<?= $ticket->getId() ?>"><?= $ticket->getTitle() ?></a>
                             </h3>
+
+                            <div class="mb-2">
+                                <span class="badge fs-6 text-bg-light"><?= $ticket->getStatus() ?></span>
+                            </div>
+
                             <p><?= $ticket->getDescription() ?></p>
                         </div>
+                        <hr>
                     <?php endforeach; ?>
             </div>
         </div>
