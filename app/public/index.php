@@ -18,7 +18,7 @@ use App\Core\Http\HttpStatusCode;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
 use App\Core\Mailer;
-use App\Middlewares\CheckUserMiddleware;
+use App\Middlewares\CheckUserTypeMiddleware;
 use App\Replies\ReplyRepository;
 use App\Replies\ReplySanitizer;
 use App\Replies\ReplyService;
@@ -46,7 +46,7 @@ $container = require __DIR__ . '/../src/bootstrap.php';
 // Middlewares before the request
 //
 
-(new CheckUserMiddleware(
+(new CheckUserTypeMiddleware(
     $container->get(Auth::class),
     new UserRepository($container->get(PDO::class))
 ))->handle();
@@ -165,9 +165,9 @@ if ($uri === '/') {
         ),
         $container->get(Csrf::class)
     );
-} elseif (preg_match("/^\/ajax\/ticket\/create\/?$/", $uri)) {
+} elseif (preg_match("/^\/ajax\/ticket\/store\/?$/", $uri)) {
     // Creates a ticket via ajax
-    $response = (new TicketController())->create(
+    $response = (new TicketController())->store(
         $container->get(Request::class),
         new TicketService(
             new TicketRepository($container->get(PDO::class)),
@@ -270,6 +270,17 @@ if ($uri === '/') {
     } else {
         $response = (new PasswordResetController())->index();
     }
+} elseif (preg_match("/^\/tickets\/create\/?$/", $uri)) {
+    // Create a ticket page
+    $response = (new TicketController())->create(
+        $container->get(Auth::class)
+    );
+} elseif (preg_match("/^\/tickets\/?$/", $uri)) {
+    // Tickets page
+    $response = (new TicketController())->index(
+        new TicketRepository($container->get(PDO::class)),
+        $container->get(Auth::class),
+    );
 }
 
 //

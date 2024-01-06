@@ -266,3 +266,53 @@ if (resetPasswordBtn) {
         });
     });
 }
+
+//
+// Create ticket
+//
+
+const createTicketBtn = document.getElementById('create-ticket-btn');
+
+if (createTicketBtn) {
+    const errorAlert = document.getElementById('error-alert');
+    const successAlert = document.getElementById('success-alert');
+
+    createTicketBtn.addEventListener('click', function (e){
+        e.preventDefault();
+
+        // Reset alerts
+        successAlert.classList.add('d-none');
+        successAlert.innerHTML = '';
+        errorAlert.classList.add('d-none');
+        errorAlert.innerHTML = '';
+
+        // Send form data
+        let formData = new FormData();
+        formData.append('title', document.getElementById('title').value);
+        formData.append('description', document.getElementById('description').value);
+        formData.append('csrf_token', csrfToken);
+
+        fetch('/ajax/ticket/store', {
+            'method': 'POST',
+            'body': formData
+        }).then((response) => {
+            if (response.status === 200) {
+                response.text().then((text) => {
+                    successAlert.classList.remove('d-none');
+                    successAlert.innerHTML = text;
+                });
+
+                document.getElementById('title').value = '';
+                document.getElementById('description').value = '';
+            } else {
+                response.text().then((text) => {
+                    errorAlert.classList.remove('d-none');
+                    errorAlert.innerHTML = text;
+                });
+            }
+        }).catch((error) => {
+            errorAlert.classList.remove('d-none');
+            errorAlert.innerHTML = 'Something went wrong. Please try again later.';
+        });
+    });
+}

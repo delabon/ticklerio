@@ -7,7 +7,9 @@ use App\Core\Csrf;
 use App\Core\Http\HttpStatusCode;
 use App\Core\Http\Request;
 use App\Core\Http\Response;
+use App\Core\Utilities\View;
 use App\Exceptions\TicketDoesNotExistException;
+use App\Tickets\TicketRepository;
 use App\Tickets\TicketService;
 use App\Users\AdminService;
 use Exception;
@@ -17,7 +19,7 @@ use OutOfBoundsException;
 
 class TicketController
 {
-    public function create(Request $request, TicketService $ticketService, Csrf $csrf): Response
+    public function store(Request $request, TicketService $ticketService, Csrf $csrf): Response
     {
         if (!$csrf->validate($request->postParams['csrf_token'] ?? '')) {
             return new Response('Invalid CSRF token.', HttpStatusCode::Forbidden);
@@ -100,5 +102,27 @@ class TicketController
         }
 
         return new Response('The ticket has been deleted.', HttpStatusCode::OK);
+    }
+
+    public function index(TicketRepository $ticketRepository, Auth $auth): Response
+    {
+        if (!$auth->getUserId()) {
+            return new Response('You must be logged in to view this page.', HttpStatusCode::Forbidden);
+        }
+
+        $tickets = $ticketRepository->all();
+
+        return View::load('tickets.index', [
+            'tickets' => $tickets,
+        ]);
+    }
+
+    public function create(Auth $auth): Response
+    {
+        if (!$auth->getUserId()) {
+            return new Response('You must be logged in to view this page.', HttpStatusCode::Forbidden);
+        }
+
+        return View::load('tickets.create');
     }
 }

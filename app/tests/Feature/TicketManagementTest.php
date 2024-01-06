@@ -17,13 +17,16 @@ use Exception;
 use Faker\Factory;
 use Tests\_data\TicketData;
 use Tests\FeatureTestCase;
+use Tests\Traits\CreatesUsers;
 
 class TicketManagementTest extends FeatureTestCase
 {
+    use CreatesUsers;
+
     private TicketRepository $ticketRepository;
+    private TicketFactory $ticketFactory;
     private UserFactory $userFactory;
     private Auth $auth;
-    private TicketFactory $ticketFactory;
 
     protected function setUp(): void
     {
@@ -33,6 +36,52 @@ class TicketManagementTest extends FeatureTestCase
         $this->userFactory = new UserFactory(new UserRepository($this->pdo), Factory::create());
         $this->ticketFactory = new TicketFactory($this->ticketRepository, $this->userFactory, Factory::create());
         $this->auth = new Auth($this->session);
+    }
+
+    //
+    // Pages
+    //
+
+    public function testAccessesTicketsPageSuccessfully(): void
+    {
+        $this->createAndLoginUser();
+
+        $response = $this->get('/tickets');
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertStringContainsString('Tickets', $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToAccessTheTicketsPageWhenNotLoggedIn(): void
+    {
+        $response = $this->get(
+            '/tickets',
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertStringContainsString('You must be logged in to view this page.', $response->getBody()->getContents());
+    }
+
+    public function testAccessesCreateTicketPageSuccessfully(): void
+    {
+        $this->createAndLoginUser();
+
+        $response = $this->get('/tickets/create');
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertStringContainsString('Create a ticket', $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToAccessTheCreateTicketPageWhenNotLoggedIn(): void
+    {
+        $response = $this->get(
+            '/tickets/create',
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertStringContainsString('You must be logged in to view this page.', $response->getBody()->getContents());
     }
 
     //

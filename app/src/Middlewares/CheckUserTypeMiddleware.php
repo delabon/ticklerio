@@ -6,11 +6,11 @@
 
 namespace App\Middlewares;
 
-use App\Core\Auth;
 use App\Users\UserRepository;
 use App\Users\UserType;
+use App\Core\Auth;
 
-readonly class CheckUserMiddleware
+readonly class CheckUserTypeMiddleware
 {
     public function __construct(private Auth $auth, private UserRepository $userRepository)
     {
