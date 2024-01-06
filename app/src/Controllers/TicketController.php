@@ -26,9 +26,12 @@ class TicketController
         }
 
         try {
-            $ticketService->createTicket($request->postParams);
+            $ticket = $ticketService->createTicket($request->postParams);
 
-            return new Response('The ticket has been created successfully.', HttpStatusCode::OK);
+            return new Response([
+                'message' => 'The ticket has been created successfully.',
+                'id' => $ticket->getId(),
+            ], HttpStatusCode::OK);
         } catch (InvalidArgumentException $e) {
             return new Response($e->getMessage(), HttpStatusCode::BadRequest);
         } catch (LogicException $e) {

@@ -6,7 +6,7 @@ require __DIR__ . '/../parts/header.php';
     <div class="container">
         <h1 class="text-center mt-5">Create a ticket</h1>
 
-        <form action="/ajax/ticket/create" method="post" id="create-ticket-form">
+        <form action="/ajax/ticket/store" method="post" id="create-ticket-form">
             <div id="error-alert" class="alert alert-danger d-none" role="alert"></div>
             <div id="success-alert" class="alert alert-success d-none" role="alert"></div>
 

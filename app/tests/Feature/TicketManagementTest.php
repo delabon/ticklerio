@@ -88,12 +88,12 @@ class TicketManagementTest extends FeatureTestCase
     // Create
     //
 
-    public function testAddsTicketSuccessfully(): void
+    public function testStoresTicketSuccessfully(): void
     {
         $user = $this->createAndLogInMember();
 
         $response = $this->post(
-            '/ajax/ticket/create',
+            '/ajax/ticket/store',
             [
                 'title' => 'Test ticket',
                 'description' => 'Test ticket description',
@@ -101,8 +101,14 @@ class TicketManagementTest extends FeatureTestCase
             ]
         );
 
+        $responseBody = json_decode($response->getBody()->getContents(), true);
         $tickets = $this->ticketRepository->all();
         $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertSame('application/json', $response->getHeader('content-type')[0]);
+        $this->assertIsArray($responseBody);
+        $this->assertArrayHasKey('id', $responseBody);
+        $this->assertArrayHasKey('message', $responseBody);
+        $this->assertSame('The ticket has been created successfully.', $responseBody['message']);
         $this->assertCount(1, $tickets);
         $this->assertSame(1, $tickets[0]->getId());
         $this->assertSame($user->getId(), $tickets[0]->getUserId());
@@ -119,7 +125,7 @@ class TicketManagementTest extends FeatureTestCase
         $data['csrf_token'] = 'invalid csrf';
 
         $response = $this->post(
-            '/ajax/ticket/create',
+            '/ajax/ticket/store',
             $data,
             self::DISABLE_GUZZLE_EXCEPTION
         );
@@ -135,7 +141,7 @@ class TicketManagementTest extends FeatureTestCase
         $data['csrf_token'] = $this->csrf->generate();
 
         $response = $this->post(
-            '/ajax/ticket/create',
+            '/ajax/ticket/store',
             $data,
             self::DISABLE_GUZZLE_EXCEPTION
         );
@@ -158,7 +164,7 @@ class TicketManagementTest extends FeatureTestCase
         $this->createAndLogInMember();
 
         $response = $this->post(
-            '/ajax/ticket/create',
+            '/ajax/ticket/store',
             $data,
             self::DISABLE_GUZZLE_EXCEPTION
         );
