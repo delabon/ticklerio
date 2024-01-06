@@ -297,9 +297,9 @@ if (createTicketBtn) {
             'body': formData
         }).then((response) => {
             if (response.status === 200) {
-                response.text().then((text) => {
+                response.json().then((jsonData) => {
                     successAlert.classList.remove('d-none');
-                    successAlert.innerHTML = text;
+                    successAlert.innerHTML = jsonData.message + ' You can now <a href="/tickets/' + jsonData.id + '">view your ticket</a>.';
                 });
 
                 document.getElementById('title').value = '';
