@@ -270,6 +270,15 @@ if ($uri === '/') {
     } else {
         $response = (new PasswordResetController())->index();
     }
+} elseif (preg_match("/^\/tickets\/[0-9]+\/?$/", $uri)) {
+    // Ticket page
+    $id = preg_match("/^\/tickets\/([0-9]+)\/?$/", $uri, $matches) ? (int) $matches[1] : 0;
+
+    $response = (new TicketController())->show(
+        $id,
+        new TicketRepository($container->get(PDO::class)),
+        $container->get(Auth::class),
+    );
 } elseif (preg_match("/^\/tickets\/create\/?$/", $uri)) {
     // Create a ticket page
     $response = (new TicketController())->create(

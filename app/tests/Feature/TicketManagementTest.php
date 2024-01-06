@@ -84,6 +84,44 @@ class TicketManagementTest extends FeatureTestCase
         $this->assertStringContainsString('You must be logged in to view this page.', $response->getBody()->getContents());
     }
 
+    public function testAccessesTicketPageSuccessfully(): void
+    {
+        $user = $this->createAndLoginUser();
+        $ticket = $this->ticketFactory->create([
+            'user_id' => $user->getId(),
+            'status' => TicketStatus::Publish->value,
+        ])[0];
+
+        $response = $this->get('/tickets/' . $ticket->getId());
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertStringContainsString($ticket->getTitle(), $response->getBody()->getContents());
+    }
+
+    public function testReturnsForbiddenResponseWhenTryingToAccessTheTicketPageWhenNotLoggedIn(): void
+    {
+        $response = $this->get(
+            '/tickets/' . 555,
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::Forbidden->value, $response->getStatusCode());
+        $this->assertStringContainsString('You must be logged in to view this page.', $response->getBody()->getContents());
+    }
+
+    public function testReturnsNotFoundResponseWhenTryingToAccessTheTicketPageWithNonExistentId(): void
+    {
+        $this->createAndLoginUser();
+
+        $response = $this->get(
+            '/tickets/' . 555,
+            self::DISABLE_GUZZLE_EXCEPTION
+        );
+
+        $this->assertSame(HttpStatusCode::NotFound->value, $response->getStatusCode());
+        $this->assertStringContainsString('The ticket does not exist.', $response->getBody()->getContents());
+    }
+
     //
     // Create
     //

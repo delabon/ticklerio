@@ -128,4 +128,19 @@ class TicketController
 
         return View::load('tickets.create');
     }
+
+    public function show(int $id, TicketRepository $ticketRepository, Auth $auth): Response
+    {
+        if (!$auth->getUserId()) {
+            return new Response('You must be logged in to view this page.', HttpStatusCode::Forbidden);
+        }
+
+        if (!$ticket = $ticketRepository->find($id)) {
+            return new Response('The ticket does not exist.', HttpStatusCode::NotFound);
+        }
+
+        return View::load('tickets.show', [
+            'ticket' => $ticket,
+        ]);
+    }
 }
