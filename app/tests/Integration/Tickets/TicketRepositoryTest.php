@@ -2,17 +2,19 @@
 
 namespace Tests\Integration\Tickets;
 
-use App\Tickets\Ticket;
 use App\Tickets\TicketRepository;
-use App\Tickets\TicketStatus;
-use OutOfBoundsException;
-use Tests\_data\TicketData;
+use Tests\Traits\CreatesTickets;
 use Tests\IntegrationTestCase;
 use Tests\Traits\CreatesUsers;
+use App\Tickets\TicketStatus;
+use Tests\_data\TicketData;
+use OutOfBoundsException;
+use App\Tickets\Ticket;
 
 class TicketRepositoryTest extends IntegrationTestCase
 {
     use CreatesUsers;
+    use CreatesTickets;
 
     private TicketRepository $ticketRepository;
 
@@ -139,6 +141,10 @@ class TicketRepositoryTest extends IntegrationTestCase
         $this->assertNull($ticket);
     }
 
+    //
+    // All
+    //
+
     public function testFindsAllTickets(): void
     {
         $user = $this->createUser();
@@ -161,6 +167,163 @@ class TicketRepositoryTest extends IntegrationTestCase
     public function testFindsAllWithNoTicketsInTableShouldReturnEmptyArray(): void
     {
         $this->assertCount(0, $this->ticketRepository->all());
+    }
+
+    public function testFindsAllTicketsInDescendingOrderSuccessfully(): void
+    {
+        $user = $this->createUser();
+        $ticketOne = Ticket::make(TicketData::one());
+        $ticketOne->setUserId($user->getId());
+        $this->ticketRepository->save($ticketOne);
+        $ticketTwo = Ticket::make(TicketData::two());
+        $ticketTwo->setUserId($user->getId());
+        $this->ticketRepository->save($ticketTwo);
+
+        $ticketsFound = $this->ticketRepository->all(orderBy: 'DESC');
+
+        $this->assertCount(2, $ticketsFound);
+        $this->assertSame(2, $ticketsFound[0]->getId());
+        $this->assertSame(1, $ticketsFound[1]->getId());
+        $this->assertInstanceOf(Ticket::class, $ticketsFound[0]);
+        $this->assertInstanceOf(Ticket::class, $ticketsFound[1]);
+    }
+
+    public function testFindsAllTicketsUsingInvalidOrderShouldDefaultToAscendingOrder(): void
+    {
+        $user = $this->createUser();
+        $ticketOne = Ticket::make(TicketData::one());
+        $ticketOne->setUserId($user->getId());
+        $this->ticketRepository->save($ticketOne);
+        $ticketTwo = Ticket::make(TicketData::two());
+        $ticketTwo->setUserId($user->getId());
+        $this->ticketRepository->save($ticketTwo);
+
+        $ticketsFound = $this->ticketRepository->all(orderBy: 'anything');
+
+        $this->assertCount(2, $ticketsFound);
+        $this->assertSame(1, $ticketsFound[0]->getId());
+        $this->assertSame(2, $ticketsFound[1]->getId());
+        $this->assertInstanceOf(Ticket::class, $ticketsFound[0]);
+        $this->assertInstanceOf(Ticket::class, $ticketsFound[1]);
+    }
+
+    //
+    // Paginate
+    //
+
+    public function testPaginatesTicketsSuccessfully(): void
+    {
+        $user = $this->createUser();
+        $ticketOne = $this->createTicket($user->getId());
+        $ticketTwo = $this->createTicket($user->getId());
+        $this->createTicket($user->getId());
+
+        $results = $this->ticketRepository->paginate(['*'], 2, 1, 'id');
+
+        $this->assertIsArray($results);
+        $this->assertCount(2, $results);
+        $this->assertArrayHasKey('entities', $results);
+        $this->assertArrayHasKey('total_pages', $results);
+        $this->assertSame(2, $results['total_pages']);
+        $this->assertCount(2, $results['entities']);
+        $this->assertInstanceOf(Ticket::class, $results['entities'][0]);
+        $this->assertInstanceOf(Ticket::class, $results['entities'][1]);
+        $this->assertEquals($results['entities'][0], $ticketOne);
+        $this->assertEquals($results['entities'][1], $ticketTwo);
+    }
+
+    public function testReturnsNextPageTicketsSuccessfully(): void
+    {
+        $user = $this->createUser();
+        $this->createTicket($user->getId());
+        $this->createTicket($user->getId());
+        $ticketThree = $this->createTicket($user->getId());
+
+        $results = $this->ticketRepository->paginate(['*'], 2, 2);
+
+        $this->assertIsArray($results);
+        $this->assertCount(2, $results);
+        $this->assertArrayHasKey('entities', $results);
+        $this->assertArrayHasKey('total_pages', $results);
+        $this->assertSame(2, $results['total_pages']);
+        $this->assertCount(1, $results['entities']);
+        $this->assertInstanceOf(Ticket::class, $results['entities'][0]);
+        $this->assertEquals($results['entities'][0], $ticketThree);
+    }
+
+    public function testSuccessfullyPaginatesTicketsWithNullOrderBy(): void
+    {
+        $user = $this->createUser();
+        $ticketOne = $this->createTicket($user->getId());
+        $ticketTwo = $this->createTicket($user->getId());
+        $this->createTicket($user->getId());
+
+        $results = $this->ticketRepository->paginate(['*'], 2, 1, null);
+
+        $this->assertIsArray($results);
+        $this->assertCount(2, $results);
+        $this->assertArrayHasKey('entities', $results);
+        $this->assertArrayHasKey('total_pages', $results);
+        $this->assertSame(2, $results['total_pages']);
+        $this->assertCount(2, $results['entities']);
+        $this->assertInstanceOf(Ticket::class, $results['entities'][0]);
+        $this->assertInstanceOf(Ticket::class, $results['entities'][1]);
+        $this->assertEquals($results['entities'][0], $ticketOne);
+        $this->assertEquals($results['entities'][1], $ticketTwo);
+    }
+
+    public function testSuccessfullyPaginatesTicketsWithOrderByAndOrderDirection(): void
+    {
+        $user = $this->createUser();
+        $this->createTicket($user->getId());
+        $ticketTwo = $this->createTicket($user->getId());
+        $ticketThree = $this->createTicket($user->getId());
+
+        $results = $this->ticketRepository->paginate(['*'], 2, 1, 'id', 'DESC');
+
+        $this->assertIsArray($results);
+        $this->assertCount(2, $results);
+        $this->assertArrayHasKey('entities', $results);
+        $this->assertArrayHasKey('total_pages', $results);
+        $this->assertSame(2, $results['total_pages']);
+        $this->assertCount(2, $results['entities']);
+        $this->assertInstanceOf(Ticket::class, $results['entities'][0]);
+        $this->assertInstanceOf(Ticket::class, $results['entities'][1]);
+        $this->assertEquals($results['entities'][0], $ticketThree);
+        $this->assertEquals($results['entities'][1], $ticketTwo);
+    }
+
+    public function testSuccessfullyPaginatesTicketsWithWithInvalidOrderDirection(): void
+    {
+        $user = $this->createUser();
+        $ticketOne = $this->createTicket($user->getId());
+        $ticketTwo = $this->createTicket($user->getId());
+        $this->createTicket($user->getId());
+
+        $results = $this->ticketRepository->paginate(['*'], 2, 1, 'id', 'invalid');
+
+        $this->assertIsArray($results);
+        $this->assertCount(2, $results);
+        $this->assertArrayHasKey('entities', $results);
+        $this->assertArrayHasKey('total_pages', $results);
+        $this->assertSame(2, $results['total_pages']);
+        $this->assertCount(2, $results['entities']);
+        $this->assertInstanceOf(Ticket::class, $results['entities'][0]);
+        $this->assertInstanceOf(Ticket::class, $results['entities'][1]);
+        $this->assertEquals($results['entities'][0], $ticketOne);
+        $this->assertEquals($results['entities'][1], $ticketTwo);
+    }
+
+    public function testReturnsEmptyTicketsAndZeroTotalPagesWhenNoTickets(): void
+    {
+        $results = $this->ticketRepository->paginate(['*'], 2);
+
+        $this->assertIsArray($results);
+        $this->assertCount(2, $results);
+        $this->assertArrayHasKey('entities', $results);
+        $this->assertArrayHasKey('total_pages', $results);
+        $this->assertSame(0, $results['total_pages']);
+        $this->assertCount(0, $results['entities']);
     }
 
     //

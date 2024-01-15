@@ -239,76 +239,6 @@ class RepositoryTest extends TestCase
         $this->assertNull($this->personRepository->find(0));
     }
 
-    public function testFindsAllEntitiesSuccessfully(): void
-    {
-        $this->pdoStatementMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(true);
-
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetchAll')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturn([
-                [
-                    'id' => 1,
-                    'name' => 'one'
-                ],
-                [
-                    'id' => 2,
-                    'name' => 'two'
-                ]
-            ]);
-
-        $this->pdoMock->expects($this->once())
-            ->method('prepare')
-            ->with($this->matchesRegularExpression('/SELECT.+FROM.+test_repository/is'))
-            ->willReturn($this->pdoStatementMock);
-
-        $personOne = new Person();
-        $personOne->setId(1);
-        $personOne->setName('one');
-        $personTwo = new Person();
-        $personTwo->setId(2);
-        $personTwo->setName('two');
-
-        $found = $this->personRepository->all();
-
-        $this->assertCount(2, $found);
-        $this->assertInstanceOf(Person::class, $found[0]);
-        $this->assertInstanceOf(Person::class, $found[1]);
-        $this->assertEquals($found[0], $personOne);
-        $this->assertEquals($found[1], $personTwo);
-        $this->assertSame('one', $found[0]->getName());
-        $this->assertSame('two', $found[1]->getName());
-    }
-
-    public function testFindsAllWithNoEntitiesInTableShouldReturnEmptyArray(): void
-    {
-        $this->pdoStatementMock->expects($this->once())
-            ->method('execute')
-            ->willReturn(true);
-
-        $this->pdoStatementMock->expects($this->once())
-            ->method('fetchAll')
-            ->with(PDO::FETCH_ASSOC)
-            ->willReturn([]);
-
-        $this->pdoMock->expects($this->once())
-            ->method('prepare')
-            ->with($this->matchesRegularExpression('/SELECT.+FROM.+test_repository/is'))
-            ->willReturn($this->pdoStatementMock);
-
-        $this->assertCount(0, $this->personRepository->all());
-    }
-
-    public function testThrowsExceptionWhenTryingToFindAllUsingInvalidColumns(): void
-    {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Invalid column name 'invalid_column'.");
-
-        $this->personRepository->all(['id', 'invalid_column']);
-    }
-
     /**
      * @dataProvider validPersonDataProvider
      * @param $data
@@ -405,6 +335,579 @@ class RepositoryTest extends TestCase
         $this->expectExceptionMessage("Invalid column name 'and 1=1'.");
 
         $this->personRepository->findBy('and 1=1', 1);
+    }
+
+    //
+    // All
+    //
+
+    public function testFindsAllEntitiesSuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                [
+                    'id' => 1,
+                    'name' => 'one'
+                ],
+                [
+                    'id' => 2,
+                    'name' => 'two'
+                ]
+            ]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+FROM.+test_repository/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $personOne = new Person();
+        $personOne->setId(1);
+        $personOne->setName('one');
+        $personTwo = new Person();
+        $personTwo->setId(2);
+        $personTwo->setName('two');
+
+        $found = $this->personRepository->all();
+
+        $this->assertCount(2, $found);
+        $this->assertInstanceOf(Person::class, $found[0]);
+        $this->assertInstanceOf(Person::class, $found[1]);
+        $this->assertEquals($found[0], $personOne);
+        $this->assertEquals($found[1], $personTwo);
+        $this->assertSame('one', $found[0]->getName());
+        $this->assertSame('two', $found[1]->getName());
+    }
+
+    public function testFindsAllEntitiesInDescendingOrderSuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                [
+                    'id' => 2,
+                    'name' => 'two'
+                ],
+                [
+                    'id' => 1,
+                    'name' => 'one'
+                ],
+            ]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?test_repository.+?ORDER BY.+?id DESC/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $personOne = new Person();
+        $personOne->setId(1);
+        $personOne->setName('one');
+        $personTwo = new Person();
+        $personTwo->setId(2);
+        $personTwo->setName('two');
+
+        $found = $this->personRepository->all(orderBy: 'DESC');
+
+        $this->assertCount(2, $found);
+        $this->assertInstanceOf(Person::class, $found[0]);
+        $this->assertInstanceOf(Person::class, $found[1]);
+        $this->assertEquals($found[0], $personTwo);
+        $this->assertEquals($found[1], $personOne);
+        $this->assertSame('two', $found[0]->getName());
+        $this->assertSame('one', $found[1]->getName());
+    }
+
+    public function testFindsAllEntitiesUsingInvalidOrderShouldDefaultToAscendingOrder(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                [
+                    'id' => 1,
+                    'name' => 'one'
+                ],
+                [
+                    'id' => 2,
+                    'name' => 'two'
+                ],
+            ]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+?FROM.+?test_repository.+?ORDER BY.+?id ASC/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $personOne = new Person();
+        $personOne->setId(1);
+        $personOne->setName('one');
+        $personTwo = new Person();
+        $personTwo->setId(2);
+        $personTwo->setName('two');
+
+        $found = $this->personRepository->all(orderBy: 'invalid');
+
+        $this->assertCount(2, $found);
+        $this->assertInstanceOf(Person::class, $found[0]);
+        $this->assertInstanceOf(Person::class, $found[1]);
+        $this->assertEquals($found[0], $personOne);
+        $this->assertEquals($found[1], $personTwo);
+        $this->assertSame('one', $found[0]->getName());
+        $this->assertSame('two', $found[1]->getName());
+    }
+
+    public function testFindsAllWithNoEntitiesInTableShouldReturnEmptyArray(): void
+    {
+        $this->pdoStatementMock->expects($this->once())
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([]);
+
+        $this->pdoMock->expects($this->once())
+            ->method('prepare')
+            ->with($this->matchesRegularExpression('/SELECT.+FROM.+test_repository/is'))
+            ->willReturn($this->pdoStatementMock);
+
+        $this->assertCount(0, $this->personRepository->all());
+    }
+
+    public function testThrowsExceptionWhenTryingToFindAllUsingInvalidColumns(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid column name 'invalid_column'.");
+
+        $this->personRepository->all(['id', 'invalid_column']);
+    }
+
+    //
+    // Paginate
+    //
+
+    public function testPaginatesEntitiesSuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                'total_rows' => 3
+            ]);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                [
+                    'id' => 1,
+                    'name' => 'one'
+                ],
+                [
+                    'id' => 2,
+                    'name' => 'two'
+                ]
+            ]);
+
+        $prepareCount = 1;
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturnCallback(function ($sql) use (&$prepareCount) {
+                if ($prepareCount === 1) {
+                    $this->assertMatchesRegularExpression('/SELECT.+?COUNT\(\*\) AS total_rows.+?FROM.+?test_repository/is', $sql);
+                } else {
+                    $this->assertMatchesRegularExpression('/SELECT.+?FROM.+?test_repository.+?ORDER BY.+?id ASC.+?LIMIT.+?0, 2/is', $sql);
+                }
+
+                $prepareCount++;
+
+                return $this->pdoStatementMock;
+            });
+
+        $personOne = new Person();
+        $personOne->setId(1);
+        $personOne->setName('one');
+        $personTwo = new Person();
+        $personTwo->setId(2);
+        $personTwo->setName('two');
+        $personTree = new Person();
+        $personTree->setId(3);
+        $personTree->setName('three');
+
+        $results = $this->personRepository->paginate(['*'], 2, 1, 'id');
+
+        $this->assertIsArray($results);
+        $this->assertCount(2, $results);
+        $this->assertArrayHasKey('entities', $results);
+        $this->assertArrayHasKey('total_pages', $results);
+        $this->assertSame(2, $results['total_pages']);
+        $this->assertCount(2, $results['entities']);
+        $this->assertInstanceOf(Person::class, $results['entities'][0]);
+        $this->assertInstanceOf(Person::class, $results['entities'][1]);
+        $this->assertEquals($results['entities'][0], $personOne);
+        $this->assertEquals($results['entities'][1], $personTwo);
+        $this->assertSame('one', $results['entities'][0]->getName());
+        $this->assertSame('two', $results['entities'][1]->getName());
+    }
+
+    public function testReturnsNextPageEntitiesSuccessfully(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                'total_rows' => 3
+            ]);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                [
+                    'id' => 3,
+                    'name' => 'three'
+                ]
+            ]);
+
+        $prepareCount = 1;
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturnCallback(function ($sql) use (&$prepareCount) {
+                if ($prepareCount === 1) {
+                    $this->assertMatchesRegularExpression('/SELECT.+?COUNT\(\*\) AS total_rows.+?FROM.+?test_repository/is', $sql);
+                } else {
+                    $this->assertMatchesRegularExpression('/SELECT.+?FROM.+?test_repository.+?ORDER BY.+?id ASC.+?LIMIT.+?2, 2/is', $sql);
+                }
+
+                $prepareCount++;
+
+                return $this->pdoStatementMock;
+            });
+
+        $personOne = new Person();
+        $personOne->setId(1);
+        $personOne->setName('one');
+        $personTwo = new Person();
+        $personTwo->setId(2);
+        $personTwo->setName('two');
+        $personThree = new Person();
+        $personThree->setId(3);
+        $personThree->setName('three');
+
+        $results = $this->personRepository->paginate(['*'], 2, 2, 'id');
+
+        $this->assertIsArray($results);
+        $this->assertCount(2, $results);
+        $this->assertArrayHasKey('entities', $results);
+        $this->assertArrayHasKey('total_pages', $results);
+        $this->assertSame(2, $results['total_pages']);
+        $this->assertCount(1, $results['entities']);
+        $this->assertInstanceOf(Person::class, $results['entities'][0]);
+        $this->assertEquals($results['entities'][0], $personThree);
+        $this->assertSame('three', $results['entities'][0]->getName());
+    }
+
+    public function testSuccessfullyPaginatesEntitiesWithNullOrderBy(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                'total_rows' => 3
+            ]);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                [
+                    'id' => 1,
+                    'name' => 'one'
+                ],
+                [
+                    'id' => 2,
+                    'name' => 'two'
+                ]
+            ]);
+
+        $prepareCount = 1;
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturnCallback(function ($sql) use (&$prepareCount) {
+                if ($prepareCount === 1) {
+                    $this->assertMatchesRegularExpression('/SELECT.+?COUNT\(\*\) AS total_rows.+?FROM.+?test_repository/is', $sql);
+                } else {
+                    $this->assertMatchesRegularExpression('/SELECT.+?\*.+?FROM.+?test_repository.+?LIMIT.+?0, 2/is', $sql);
+                    $this->assertMatchesRegularExpression('/^.+(?!.*\bORDER BY\b).*$/is', $sql);
+                }
+
+                $prepareCount++;
+
+                return $this->pdoStatementMock;
+            });
+
+        $personOne = new Person();
+        $personOne->setId(1);
+        $personOne->setName('one');
+        $personTwo = new Person();
+        $personTwo->setId(2);
+        $personTwo->setName('two');
+        $personTree = new Person();
+        $personTree->setId(3);
+        $personTree->setName('three');
+
+        $results = $this->personRepository->paginate(['*'], 2, 1, null);
+
+        $this->assertIsArray($results);
+        $this->assertCount(2, $results);
+        $this->assertArrayHasKey('entities', $results);
+        $this->assertArrayHasKey('total_pages', $results);
+        $this->assertSame(2, $results['total_pages']);
+        $this->assertCount(2, $results['entities']);
+        $this->assertInstanceOf(Person::class, $results['entities'][0]);
+        $this->assertInstanceOf(Person::class, $results['entities'][1]);
+        $this->assertEquals($results['entities'][0], $personOne);
+        $this->assertEquals($results['entities'][1], $personTwo);
+        $this->assertSame('one', $results['entities'][0]->getName());
+        $this->assertSame('two', $results['entities'][1]->getName());
+    }
+
+    public function testSuccessfullyPaginatesEntitiesWithOrderByAndOrderDirection(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                'total_rows' => 3
+            ]);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                [
+                    'id' => 2,
+                    'name' => 'two'
+                ],
+                [
+                    'id' => 1,
+                    'name' => 'one'
+                ],
+            ]);
+
+        $prepareCount = 1;
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturnCallback(function ($sql) use (&$prepareCount) {
+                if ($prepareCount === 1) {
+                    $this->assertMatchesRegularExpression('/SELECT.+?COUNT\(\*\) AS total_rows.+?FROM.+?test_repository/is', $sql);
+                } else {
+                    $this->assertMatchesRegularExpression('/SELECT.+?\*.+?FROM.+?test_repository.+?ORDER BY.+?id DESC.+?LIMIT.+?0, 2/is', $sql);
+                }
+
+                $prepareCount++;
+
+                return $this->pdoStatementMock;
+            });
+
+        $personOne = new Person();
+        $personOne->setId(1);
+        $personOne->setName('one');
+        $personTwo = new Person();
+        $personTwo->setId(2);
+        $personTwo->setName('two');
+        $personTree = new Person();
+        $personTree->setId(3);
+        $personTree->setName('three');
+
+        $results = $this->personRepository->paginate(['*'], 2, 1, 'id', 'DESC');
+
+        $this->assertIsArray($results);
+        $this->assertCount(2, $results);
+        $this->assertArrayHasKey('entities', $results);
+        $this->assertArrayHasKey('total_pages', $results);
+        $this->assertSame(2, $results['total_pages']);
+        $this->assertCount(2, $results['entities']);
+        $this->assertInstanceOf(Person::class, $results['entities'][0]);
+        $this->assertInstanceOf(Person::class, $results['entities'][1]);
+        $this->assertEquals($results['entities'][0], $personTwo);
+        $this->assertEquals($results['entities'][1], $personOne);
+        $this->assertSame('two', $results['entities'][0]->getName());
+        $this->assertSame('one', $results['entities'][1]->getName());
+    }
+
+    public function testSuccessfullyPaginatesEntitiesWithWithInvalidOrderDirection(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                'total_rows' => 3
+            ]);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                [
+                    'id' => 1,
+                    'name' => 'one'
+                ],
+                [
+                    'id' => 2,
+                    'name' => 'two'
+                ]
+            ]);
+
+        $prepareCount = 1;
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturnCallback(function ($sql) use (&$prepareCount) {
+                if ($prepareCount === 1) {
+                    $this->assertMatchesRegularExpression('/SELECT.+?COUNT\(\*\) AS total_rows.+?FROM.+?test_repository/is', $sql);
+                } else {
+                    $this->assertMatchesRegularExpression('/SELECT.+?\*.+?FROM.+?test_repository.+?ORDER BY.+?id ASC.+?LIMIT.+?0, 2/is', $sql);
+                }
+
+                $prepareCount++;
+
+                return $this->pdoStatementMock;
+            });
+
+        $personOne = new Person();
+        $personOne->setId(1);
+        $personOne->setName('one');
+        $personTwo = new Person();
+        $personTwo->setId(2);
+        $personTwo->setName('two');
+        $personTree = new Person();
+        $personTree->setId(3);
+        $personTree->setName('three');
+
+        $results = $this->personRepository->paginate(['*'], 2, 1, 'id', 'invalid-direction');
+
+        $this->assertIsArray($results);
+        $this->assertCount(2, $results);
+        $this->assertArrayHasKey('entities', $results);
+        $this->assertArrayHasKey('total_pages', $results);
+        $this->assertSame(2, $results['total_pages']);
+        $this->assertCount(2, $results['entities']);
+        $this->assertInstanceOf(Person::class, $results['entities'][0]);
+        $this->assertInstanceOf(Person::class, $results['entities'][1]);
+        $this->assertEquals($results['entities'][0], $personOne);
+        $this->assertEquals($results['entities'][1], $personTwo);
+        $this->assertSame('one', $results['entities'][0]->getName());
+        $this->assertSame('two', $results['entities'][1]->getName());
+    }
+
+    public function testReturnsEmptyEntitiesAndZeroTotalPagesWhenNoEntities(): void
+    {
+        $this->pdoStatementMock->expects($this->exactly(2))
+            ->method('execute')
+            ->willReturn(true);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetch')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([
+                'total_rows' => 0
+            ]);
+
+        $this->pdoStatementMock->expects($this->once())
+            ->method('fetchAll')
+            ->with(PDO::FETCH_ASSOC)
+            ->willReturn([]);
+
+        $prepareCount = 1;
+        $this->pdoMock->expects($this->exactly(2))
+            ->method('prepare')
+            ->willReturnCallback(function ($sql) use (&$prepareCount) {
+                if ($prepareCount === 1) {
+                    $this->assertMatchesRegularExpression('/SELECT.+?COUNT\(\*\) AS total_rows.+?FROM.+?test_repository/is', $sql);
+                } else {
+                    $this->assertMatchesRegularExpression('/SELECT.+?FROM.+?test_repository.+?LIMIT.+?0, 2/is', $sql);
+                }
+
+                $prepareCount++;
+
+                return $this->pdoStatementMock;
+            });
+
+        $results = $this->personRepository->paginate(['*'], 2);
+
+        $this->assertIsArray($results);
+        $this->assertCount(2, $results);
+        $this->assertArrayHasKey('entities', $results);
+        $this->assertArrayHasKey('total_pages', $results);
+        $this->assertSame(0, $results['total_pages']);
+        $this->assertCount(0, $results['entities']);
+    }
+
+    public function testThrowsExceptionWhenTryingToPaginateWithInvalidColumns(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid column name 'invalid_column'.");
+
+        $this->personRepository->paginate(['id', 'invalid_column']);
+    }
+
+    public function testThrowsExceptionWhenTryingToPaginateWithNonPositiveLimitNumber(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Limit must be greater than 0.");
+
+        $this->personRepository->paginate(['*'], -5);
+    }
+
+    public function testThrowsExceptionWhenTryingToPaginateWithNonPositivePageNumber(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Page must be greater than 0.");
+
+        $this->personRepository->paginate(['*'], 10, -2);
+    }
+
+    public function testThrowsExceptionWhenTryingToPaginateWithInvalidOrderByColumn(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Invalid order-by column name 'invalid_column'.");
+
+        $this->personRepository->paginate(['*'], 2, 1, 'invalid_column');
     }
 
     //

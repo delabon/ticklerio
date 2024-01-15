@@ -6,7 +6,7 @@ use App\Core\Auth;
 use App\Core\Session\ArraySessionHandler;
 use App\Core\Session\Session;
 use App\Core\Session\SessionHandlerType;
-use App\Middlewares\CheckUserMiddleware;
+use App\Middlewares\CheckUserTypeMiddleware;
 use App\Users\User;
 use App\Users\UserRepository;
 use App\Users\UserType;
@@ -73,7 +73,7 @@ class CheckUserMiddlewareTest extends TestCase
             ->willReturn($this->pdoStatementMock);
 
         $this->auth->login($user);
-        $middleware = new CheckUserMiddleware($this->auth, new UserRepository($this->pdoMock));
+        $middleware = new CheckUserTypeMiddleware($this->auth, new UserRepository($this->pdoMock));
 
         $middleware->handle();
 
@@ -109,7 +109,7 @@ class CheckUserMiddlewareTest extends TestCase
         $user->setId(1);
         $this->auth->login($user);
 
-        $middleware = new CheckUserMiddleware($this->auth, new UserRepository($this->pdoMock));
+        $middleware = new CheckUserTypeMiddleware($this->auth, new UserRepository($this->pdoMock));
         $middleware->handle();
 
         $this->assertSame($expectedUserId, $this->auth->getUserId());
