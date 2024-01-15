@@ -2,22 +2,22 @@
 
 namespace App\Controllers;
 
-use App\Core\Auth;
-use App\Core\Csrf;
-use App\Core\Http\HttpStatusCode;
-use App\Core\Http\Request;
-use App\Core\Http\Response;
-use App\Core\Utilities\View;
 use App\Exceptions\TicketDoesNotExistException;
 use App\Tickets\TicketRepository;
+use App\Core\Http\HttpStatusCode;
 use App\Tickets\TicketService;
 use App\Tickets\TicketStatus;
-use App\Users\AdminService;
 use App\Users\UserRepository;
-use Exception;
 use InvalidArgumentException;
-use LogicException;
+use App\Core\Utilities\View;
+use App\Core\Http\Response;
+use App\Users\AdminService;
+use App\Core\Http\Request;
 use OutOfBoundsException;
+use LogicException;
+use App\Core\Auth;
+use App\Core\Csrf;
+use Exception;
 
 class TicketController
 {
