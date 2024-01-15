@@ -399,3 +399,34 @@ if (deleteTicketBtn) {
         });
     });
 }
+
+//
+// Change ticket status by admin
+//
+
+const ticketStatusDropdown = document.getElementById('ticket-status');
+
+if (ticketStatusDropdown) {
+    ticketStatusDropdown.addEventListener('change', function (){
+        // Send form data
+        let formData = new FormData();
+        formData.append('id', ticketStatusDropdown.dataset.id);
+        formData.append('status', ticketStatusDropdown.value);
+        formData.append('csrf_token', csrfToken);
+
+        fetch('/ajax/ticket/status/update', {
+            'method': 'POST',
+            'body': formData
+        }).then((response) => {
+            response.text().then((text) => {
+                alert(text);
+            });
+
+            if (response.status === 200) {
+                location.reload();
+            }
+        }).catch((error) => {
+            alert('Something went wrong. Please try again later.');
+        });
+    });
+}
