@@ -39,7 +39,7 @@ require __DIR__ . '/../parts/header.php';
         <div>
             <div class="mb-3">
                 <div><strong>Status:</strong> <span class="badge fs-6 text-bg-light"><?= escape($ticket->getStatus()) ?></span></div>
-                <div><strong>Author:</strong> <?= escape($author->getFirstName()) ?> <?= escape($author->getLastName()) ?></div>
+                <div><strong>Author:</strong> <a href="/users/<?= $author->getId() ?>"><?= escape($author->getFirstName() . ' ' . $author->getLastName()) ?></a> </div>
                 <div><strong>Created at:</strong> <?= date('Y-m-d H:i:s', $ticket->getCreatedAt()) ?></div>
                 <div><strong>Updated at:</strong> <?= date('Y-m-d H:i:s', $ticket->getUpdatedAt()) ?></div>
             </div>

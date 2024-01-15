@@ -36,6 +36,20 @@ class UserManagementTest extends FeatureTestCase
     }
 
     //
+    // Pages
+    //
+
+    public function testAccessesUserPageSuccessfully(): void
+    {
+        $user = $this->createUser();
+
+        $response = $this->get('/users/' . $user->getId());
+
+        $this->assertSame(HttpStatusCode::OK->value, $response->getStatusCode());
+        $this->assertStringContainsString($user->getFirstName() . ' ' . $user->getLastName() . "'s profile", $response->getBody()->getContents());
+    }
+
+    //
     // Update
     //
 

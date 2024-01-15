@@ -301,6 +301,14 @@ if ($uri === '/') {
         new TicketRepository($container->get(PDO::class)),
         $container->get(Auth::class),
     );
+} elseif (preg_match("/^\/users\/[0-9]+\/?$/", $uri)) {
+    // User profile
+    $id = preg_match("/^\/users\/([0-9]+)\/?$/", $uri, $matches) ? (int) $matches[1] : 0;
+
+    $response = (new UserController())->show(
+        $id,
+        new UserRepository($container->get(PDO::class))
+    );
 }
 
 //
