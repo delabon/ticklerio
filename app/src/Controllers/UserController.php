@@ -79,4 +79,17 @@ class UserController
             return new Response('Exception ' . $e->getMessage() . "An error occurred while trying to update the user.", HttpStatusCode::InternalServerError);
         }
     }
+
+    public function show(int $id, UserRepository $userRepository): Response
+    {
+        $user = $userRepository->find($id);
+
+        if (!$user) {
+            return new Response("User does not exist.", HttpStatusCode::NotFound);
+        }
+
+        return view('users.show', [
+            'user' => $user,
+        ]);
+    }
 }
