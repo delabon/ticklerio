@@ -13,7 +13,7 @@ require __DIR__ . '/../parts/header.php';
     <div class="container">
         <div class="row my-5">
             <div class="col-6">
-                <h1 class="h3 my-0 mx-0"><?= $ticket->getTitle() ?></h1>
+                <h1 class="h3 my-0 mx-0"><?= escape($ticket->getTitle()) ?></h1>
             </div>
 
             <div class="col-6 text-end">
@@ -29,7 +29,7 @@ require __DIR__ . '/../parts/header.php';
                 <?php if (isAdmin()) : ?>
                     <select id="ticket-status" data-id="<?= $ticket->getId() ?>">
                         <?php foreach (TicketStatus::toArray() as $status) : ?>
-                            <option value="<?= $status ?>" <?= $ticket->getStatus() === $status ? 'selected="selected"' : '' ?>><?= ucfirst($status) ?></option>
+                            <option value="<?= $status ?>" <?= $ticket->getStatus() === $status ? 'selected="selected"' : '' ?>><?= escape(ucfirst($status)) ?></option>
                         <?php endforeach; ?>
                     </select>
                 <?php endif ?>
@@ -38,13 +38,13 @@ require __DIR__ . '/../parts/header.php';
 
         <div>
             <div class="mb-3">
-                <div><strong>Status:</strong> <span class="badge fs-6 text-bg-light"><?= $ticket->getStatus() ?></span></div>
-                <div><strong>Author:</strong> <?= $author->getFirstName(); ?> <?= $author->getLastName(); ?></div>
+                <div><strong>Status:</strong> <span class="badge fs-6 text-bg-light"><?= escape($ticket->getStatus()) ?></span></div>
+                <div><strong>Author:</strong> <?= escape($author->getFirstName()) ?> <?= escape($author->getLastName()) ?></div>
                 <div><strong>Created at:</strong> <?= date('Y-m-d H:i:s', $ticket->getCreatedAt()) ?></div>
                 <div><strong>Updated at:</strong> <?= date('Y-m-d H:i:s', $ticket->getUpdatedAt()) ?></div>
             </div>
 
-            <p><?= $ticket->getDescription() ?></p>
+            <p><?= escape($ticket->getDescription()) ?></p>
         </div>
     </div>
 

@@ -64,3 +64,13 @@ function asset(string $path): string
 {
     return url(sprintf('dist/%s', ltrim($path, '/')));
 }
+
+function escape(string $string): string
+{
+    $string = trim($string);
+    $string = stripslashes($string);
+    $string = strip_tags($string);
+    $string = htmlentities($string, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+    return $string;
+}

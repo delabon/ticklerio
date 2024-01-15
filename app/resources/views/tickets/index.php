@@ -22,8 +22,8 @@ require __DIR__ . '/../parts/header.php';
                 <?php foreach ($tickets as $ticket) : ?>
                     <div class="mb-2">
                         <h3 class="mb-2 h4">
-                            <a href="/tickets/<?= $ticket->getId() ?>"><?= $ticket->getTitle() ?></a>
-                            <span class="badge fs-6 text-bg-light"><?= $ticket->getStatus() ?></span>
+                            <a href="/tickets/<?= $ticket->getId() ?>"><?= escape($ticket->getTitle()) ?></a>
+                            <span class="badge fs-6 text-bg-light"><?= escape($ticket->getStatus()) ?></span>
                         </h3>
                     </div>
                     <hr>
