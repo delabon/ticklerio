@@ -15,9 +15,12 @@ use App\Replies\Reply;
 use Faker\Generator;
 use App\Users\User;
 use Faker\Factory;
+use Tests\Traits\CreatesReplies;
 
 class ReplyRepositoryTest extends IntegrationTestCase
 {
+    use CreatesReplies;
+
     private ReplyRepository $replyRepository;
     private Generator $faker;
     private UserFactory $userFactory;
@@ -173,6 +176,120 @@ class ReplyRepositoryTest extends IntegrationTestCase
     public function testFindsAllWithNoRepliesInTableShouldReturnEmptyArray(): void
     {
         $this->assertCount(0, $this->replyRepository->all());
+    }
+
+    //
+    // Paginate
+    //
+
+    public function testPaginatesRepliesSuccessfully(): void
+    {
+        $replyOne = $this->createReply($this->user->getId(), $this->ticket->getId());
+        $replyTwo = $this->createReply($this->user->getId(), $this->ticket->getId());
+        $this->createReply($this->user->getId(), $this->ticket->getId());
+
+        $results = $this->replyRepository->paginate(['*'], 2, 1);
+
+        $this->assertIsArray($results);
+        $this->assertCount(2, $results);
+        $this->assertArrayHasKey('entities', $results);
+        $this->assertArrayHasKey('total_pages', $results);
+        $this->assertSame(2, $results['total_pages']);
+        $this->assertCount(2, $results['entities']);
+        $this->assertInstanceOf(Reply::class, $results['entities'][0]);
+        $this->assertInstanceOf(Reply::class, $results['entities'][1]);
+        $this->assertEquals($results['entities'][0], $replyOne);
+        $this->assertEquals($results['entities'][1], $replyTwo);
+    }
+
+    public function testReturnsNextPageEntitiesSuccessfully(): void
+    {
+        $this->createReply($this->user->getId(), $this->ticket->getId());
+        $this->createReply($this->user->getId(), $this->ticket->getId());
+        $replyThree = $this->createReply($this->user->getId(), $this->ticket->getId());
+
+        $results = $this->replyRepository->paginate(['*'], 2, 2);
+
+        $this->assertIsArray($results);
+        $this->assertCount(2, $results);
+        $this->assertArrayHasKey('entities', $results);
+        $this->assertArrayHasKey('total_pages', $results);
+        $this->assertSame(2, $results['total_pages']);
+        $this->assertCount(1, $results['entities']);
+        $this->assertInstanceOf(Reply::class, $results['entities'][0]);
+        $this->assertEquals($results['entities'][0], $replyThree);
+    }
+
+    public function testSuccessfullyPaginatesEntitiesWithNullOrderBy(): void
+    {
+        $replyOne = $this->createReply($this->user->getId(), $this->ticket->getId());
+        $replyTwo = $this->createReply($this->user->getId(), $this->ticket->getId());
+        $this->createReply($this->user->getId(), $this->ticket->getId());
+
+        $results = $this->replyRepository->paginate(['*'], 2, 1, null);
+
+        $this->assertIsArray($results);
+        $this->assertCount(2, $results);
+        $this->assertArrayHasKey('entities', $results);
+        $this->assertArrayHasKey('total_pages', $results);
+        $this->assertSame(2, $results['total_pages']);
+        $this->assertCount(2, $results['entities']);
+        $this->assertInstanceOf(Reply::class, $results['entities'][0]);
+        $this->assertInstanceOf(Reply::class, $results['entities'][1]);
+        $this->assertEquals($results['entities'][0], $replyOne);
+        $this->assertEquals($results['entities'][1], $replyTwo);
+    }
+
+    public function testSuccessfullyPaginatesEntitiesWithOrderByAndOrderDirection(): void
+    {
+        $this->createReply($this->user->getId(), $this->ticket->getId());
+        $replyTwo = $this->createReply($this->user->getId(), $this->ticket->getId());
+        $replyThree = $this->createReply($this->user->getId(), $this->ticket->getId());
+
+        $results = $this->replyRepository->paginate(['*'], 2, 1, 'id', 'DESC');
+
+        $this->assertIsArray($results);
+        $this->assertCount(2, $results);
+        $this->assertArrayHasKey('entities', $results);
+        $this->assertArrayHasKey('total_pages', $results);
+        $this->assertSame(2, $results['total_pages']);
+        $this->assertCount(2, $results['entities']);
+        $this->assertInstanceOf(Reply::class, $results['entities'][0]);
+        $this->assertInstanceOf(Reply::class, $results['entities'][1]);
+        $this->assertEquals($results['entities'][0], $replyThree);
+        $this->assertEquals($results['entities'][1], $replyTwo);
+    }
+
+    public function testSuccessfullyPaginatesEntitiesWithWithInvalidOrderDirection(): void
+    {
+        $replyOne = $this->createReply($this->user->getId(), $this->ticket->getId());
+        $replyTwo = $this->createReply($this->user->getId(), $this->ticket->getId());
+        $this->createReply($this->user->getId(), $this->ticket->getId());
+
+        $results = $this->replyRepository->paginate(['*'], 2, 1, 'id', 'invalid');
+
+        $this->assertIsArray($results);
+        $this->assertCount(2, $results);
+        $this->assertArrayHasKey('entities', $results);
+        $this->assertArrayHasKey('total_pages', $results);
+        $this->assertSame(2, $results['total_pages']);
+        $this->assertCount(2, $results['entities']);
+        $this->assertInstanceOf(Reply::class, $results['entities'][0]);
+        $this->assertInstanceOf(Reply::class, $results['entities'][1]);
+        $this->assertEquals($results['entities'][0], $replyOne);
+        $this->assertEquals($results['entities'][1], $replyTwo);
+    }
+
+    public function testReturnsEmptyEntitiesAndZeroTotalPagesWhenNoEntities(): void
+    {
+        $results = $this->replyRepository->paginate(['*'], 2, 1);
+
+        $this->assertIsArray($results);
+        $this->assertCount(2, $results);
+        $this->assertArrayHasKey('entities', $results);
+        $this->assertArrayHasKey('total_pages', $results);
+        $this->assertSame(0, $results['total_pages']);
+        $this->assertCount(0, $results['entities']);
     }
 
     //

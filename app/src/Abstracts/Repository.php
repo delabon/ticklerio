@@ -153,6 +153,88 @@ abstract class Repository implements RepositoryInterface
     }
 
     /**
+     * Paginates
+     * @param string[] $columns
+     * @return array|object[]
+     */
+    public function paginate(array $columns = ['*'], int $limit = 10, int $page = 1, ?string $orderBy = null, string $orderDirection = 'ASC'): array
+    {
+        $this->validateColumns($columns);
+
+        if ($limit < 1) {
+            throw new InvalidArgumentException('Limit must be greater than 0.');
+        }
+
+        if ($page < 1) {
+            throw new InvalidArgumentException('Page must be greater than 0.');
+        }
+
+        if ($orderBy !== null) {
+            try {
+                $this->validateColumns([$orderBy]);
+            } catch (InvalidArgumentException) {
+                throw new InvalidArgumentException("Invalid order-by column name '{$orderBy}'.");
+            }
+        }
+
+        $orderDirection = in_array(strtoupper($orderDirection), ['ASC', 'DESC']) ? strtoupper($orderDirection) : 'ASC';
+
+        // Get total pages
+        $stmt = $this->pdo->prepare("
+            SELECT
+                COUNT(*) AS total_rows
+            FROM
+                {$this->table}
+        ");
+        $stmt->execute();
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        $totalPages = (int) ceil($result['total_rows'] / $limit);
+        $offset = ($page - 1) * $limit;
+
+        // Get entities
+        $sql = "
+            SELECT
+                " . implode(',', $columns) . "
+            FROM
+                {$this->table}
+        ";
+
+        if ($orderBy !== null) {
+            $sql .= "
+                ORDER BY
+                    {$orderBy} {$orderDirection}
+            ";
+        }
+
+        $sql .= "
+            LIMIT
+                {$offset}, {$limit}
+        ";
+
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute();
+        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (!$results) {
+            return [
+                'entities' => [],
+                'total_pages' => $totalPages,
+            ];
+        }
+
+        $entities = [];
+
+        foreach ($results as $result) {
+            $entities[] = $this->entityClass::make($result);
+        }
+
+        return [
+            'entities' => $entities,
+            'total_pages' => $totalPages,
+        ];
+    }
+
+    /**
      * @param array<string> $columns
      * @return void
      */
