@@ -109,16 +109,19 @@ class TicketController
         return new Response('The ticket has been deleted.', HttpStatusCode::OK);
     }
 
-    public function index(TicketRepository $ticketRepository, Auth $auth): Response
+    public function index(Request $request, TicketRepository $ticketRepository, Auth $auth): Response
     {
         if (!$auth->getUserId()) {
             return new Response('You must be logged in to view this page.', HttpStatusCode::Forbidden);
         }
 
-        $tickets = $ticketRepository->all(orderBy: 'DESC');
+        $page = $request->getParams['page'] ? (int) $request->getParams['page'] : 1;
+        $result = $ticketRepository->paginate(page: $page, orderBy: 'id', orderDirection: 'DESC');
 
         return View::load('tickets.index', [
-            'tickets' => $tickets,
+            'tickets' => $result['entities'],
+            'totalPages' => $result['total_pages'],
+            'currentPage' => $page,
         ]);
     }
 

@@ -294,9 +294,10 @@ if ($uri === '/') {
     $response = (new TicketController())->create(
         $container->get(Auth::class)
     );
-} elseif (preg_match("/^\/tickets\/?$/", $uri)) {
+} elseif (preg_match("/^\/tickets\/?(\?page=[0-9]*)?$/", $uri)) {
     // Tickets page
     $response = (new TicketController())->index(
+        $container->get(Request::class),
         new TicketRepository($container->get(PDO::class)),
         $container->get(Auth::class),
     );

@@ -19,20 +19,22 @@ require __DIR__ . '/../parts/header.php';
                     </div>
                 </div>
 
-                    <?php foreach ($tickets as $ticket) : ?>
+                <?php foreach ($tickets as $ticket) : ?>
+                    <div class="mb-2">
+                        <h3 class="mb-2">
+                            <a href="/tickets/<?= $ticket->getId() ?>"><?= $ticket->getTitle() ?></a>
+                        </h3>
+
                         <div class="mb-2">
-                            <h3 class="mb-2">
-                                <a href="/tickets/<?= $ticket->getId() ?>"><?= $ticket->getTitle() ?></a>
-                            </h3>
-
-                            <div class="mb-2">
-                                <span class="badge fs-6 text-bg-light"><?= $ticket->getStatus() ?></span>
-                            </div>
-
-                            <p><?= $ticket->getDescription() ?></p>
+                            <span class="badge fs-6 text-bg-light"><?= $ticket->getStatus() ?></span>
                         </div>
-                        <hr>
-                    <?php endforeach; ?>
+
+                        <p><?= $ticket->getDescription() ?></p>
+                    </div>
+                    <hr>
+                <?php endforeach; ?>
+
+                <?php require __DIR__ . '/../parts/pagination.php'; ?>
             </div>
         </div>
     </div>
