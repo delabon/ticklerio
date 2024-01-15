@@ -115,7 +115,7 @@ class TicketController
             return new Response('You must be logged in to view this page.', HttpStatusCode::Forbidden);
         }
 
-        $page = $request->getParams['page'] ? (int) $request->getParams['page'] : 1;
+        $page = isset($request->getParams['page']) ? (int) $request->getParams['page'] : 1;
         $result = $ticketRepository->paginate(page: $page, orderBy: 'id', orderDirection: 'DESC');
 
         return View::load('tickets.index', [
