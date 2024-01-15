@@ -155,7 +155,12 @@ abstract class Repository implements RepositoryInterface
     /**
      * Paginates
      * @param string[] $columns
-     * @return array|object[]
+     * @param int $limit
+     * @param int $page
+     * @param string|null $orderBy
+     * @param string $orderDirection
+     * @return array<string, array|object[]|int>
+     * @throws InvalidArgumentException
      */
     public function paginate(array $columns = ['*'], int $limit = 10, int $page = 1, ?string $orderBy = null, string $orderDirection = 'ASC'): array
     {
