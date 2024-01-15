@@ -25,6 +25,14 @@ require __DIR__ . '/../parts/header.php';
                 <?php if ($ticket->getStatus() === TicketStatus::Publish->value) : ?>
                     <a href="#reply-form" class="btn btn-secondary">Reply</a>
                 <?php endif ?>
+
+                <?php if (isAdmin()) : ?>
+                    <select id="ticket-status" data-id="<?= $ticket->getId() ?>">
+                        <?php foreach (TicketStatus::toArray() as $status) : ?>
+                            <option value="<?= $status ?>" <?= $ticket->getStatus() === $status ? 'selected="selected"' : '' ?>><?= ucfirst($status) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                <?php endif ?>
             </div>
         </div>
 
