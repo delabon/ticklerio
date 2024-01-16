@@ -1,6 +1,7 @@
 <?php
 
 use App\Users\User;
+use App\Users\UserType;
 
 require __DIR__ . '/../parts/header.php';
 
@@ -11,6 +12,16 @@ require __DIR__ . '/../parts/header.php';
         <div class="row my-5">
             <div class="col-6">
                 <h1 class="h3 my-0 mx-0"><?= escape($user->getFirstName() . ' ' . $user->getLastName()) ?>'s profile</h1>
+            </div>
+
+            <div class="col-6 text-end">
+                <?php if (isAdmin()) : ?>
+                    <?php if ($user->getType() === UserType::Banned->value) : ?>
+                        <button id="unban-user-btn" data-id="<?= $user->getId() ?>" class="btn btn-secondary">Unban</button>
+                    <?php else : ?>
+                        <button id="ban-user-btn" data-id="<?= $user->getId() ?>" class="btn btn-danger">Ban</button>
+                    <?php endif; ?>
+                <?php endif ?>
             </div>
         </div>
 

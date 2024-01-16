@@ -430,3 +430,73 @@ if (ticketStatusDropdown) {
         });
     });
 }
+
+//
+// Ban user by admin
+//
+
+const banUserBtn = document.getElementById('ban-user-btn');
+
+if (banUserBtn) {
+    banUserBtn.addEventListener('click', function (e){
+        e.preventDefault();
+
+        // Send form data
+        let formData = new FormData();
+        formData.append('id', banUserBtn.dataset.id);
+        formData.append('csrf_token', csrfToken);
+
+        fetch('/ajax/user/ban', {
+            'method': 'POST',
+            'body': formData
+        }).then((response) => {
+            if (response.status === 200) {
+                response.text().then((text) => {
+                    alert(text);
+                    location.reload();
+                });
+            } else {
+                response.text().then((text) => {
+                    alert(text);
+                });
+            }
+        }).catch((error) => {
+            alert('Something went wrong. Please try again later.');
+        });
+    });
+}
+
+//
+// Unban user by admin
+//
+
+const unbanUserBtn = document.getElementById('unban-user-btn');
+
+if (unbanUserBtn) {
+    unbanUserBtn.addEventListener('click', function (e){
+        e.preventDefault();
+
+        // Send form data
+        let formData = new FormData();
+        formData.append('id', unbanUserBtn.dataset.id);
+        formData.append('csrf_token', csrfToken);
+
+        fetch('/ajax/user/unban', {
+            'method': 'POST',
+            'body': formData
+        }).then((response) => {
+            if (response.status === 200) {
+                response.text().then((text) => {
+                    alert(text);
+                    location.reload();
+                });
+            } else {
+                response.text().then((text) => {
+                    alert(text);
+                });
+            }
+        }).catch((error) => {
+            alert('Something went wrong. Please try again later.');
+        });
+    });
+}

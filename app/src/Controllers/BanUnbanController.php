@@ -41,7 +41,7 @@ class BanUnbanController
         try {
             $adminService->unbanUser(isset($request->postParams['id']) ? (int)$request->postParams['id'] : 0);
 
-            return new Response('The user has been banned.', HttpStatusCode::OK);
+            return new Response('The user has been unbanned.', HttpStatusCode::OK);
         } catch (UserDoesNotExistException $e) {
             return new Response($e->getMessage(), HttpStatusCode::NotFound);
         } catch (LogicException $e) {
