@@ -1,5 +1,6 @@
 <?php
 
+use App\Replies\Reply;
 use App\Tickets\Ticket;
 use App\Tickets\TicketStatus;
 use App\Users\User;
@@ -8,6 +9,8 @@ require __DIR__ . '/../parts/header.php';
 
 /** @var Ticket $ticket */
 /** @var User $author */
+/** @var Reply[] $replies */
+/** @var User[] $replyAuthors */
 ?>
 
     <div class="container">
@@ -45,6 +48,33 @@ require __DIR__ . '/../parts/header.php';
             </div>
 
             <p><?= escape($ticket->getDescription()) ?></p>
+
+            <div class="my-5">
+                <h2 class="h4">Replies</h2>
+
+                <?php foreach ($replies as $reply) : ?>
+                    <div class="card reply-card mb-3" id="reply-<?= $reply->getId() ?>" data-id="<?= $reply->getId() ?>">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <div><strong>Author:</strong> <a href="/users/<?= $reply->getUserId() ?>"><?= escape($replyAuthors[$reply->getUserId()]->getFirstName() . ' ' . $replyAuthors[$reply->getUserId()]->getLastName()) ?></a> </div>
+                                <div><strong>Created at:</strong> <?= date('Y-m-d H:i:s', $reply->getCreatedAt()) ?></div>
+                            </div>
+
+                            <p class="reply-message"><?= escape($reply->getMessage()) ?></p>
+
+                            <?php if ($reply->getUserId() === currentUserId() || isAdmin()) : ?>
+                                <button class="btn btn-primary trigger-edit-reply-btn" data-id="<?= $reply->getId() ?>">Edit</button>
+                                <button class="btn btn-danger delete-reply-btn" data-id="<?= $reply->getId() ?>">Delete</button>
+                            <?php endif ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+
+                <div id="reply-form">
+                    <?php require __DIR__ . '/../replies/create-form.php' ?>
+                    <?php require __DIR__ . '/../replies/edit-form.php' ?>
+                </div>
+            </div>
         </div>
     </div>
 

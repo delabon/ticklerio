@@ -535,3 +535,162 @@ if (deleteUserBtn) {
         });
     });
 }
+
+//
+// Create reply
+//
+
+const createReplyBtn = document.getElementById('create-reply-btn');
+
+if (createReplyBtn) {
+    createReplyBtn.addEventListener('click', function (e){
+        e.preventDefault();
+
+        // Send form data
+        let formData = new FormData();
+        formData.append('ticket_id', document.querySelector('#create-reply-form [name="ticket_id"]').value);
+        formData.append('message', document.querySelector('#create-reply-form [name="message"]').value);
+        formData.append('csrf_token', csrfToken);
+
+        fetch('/ajax/reply/create', {
+            'method': 'POST',
+            'body': formData
+        }).then((response) => {
+            if (response.status === 200) {
+                response.text().then((text) => {
+                    alert(text);
+                    location.href = location.href.split('?')[0].split('#')[0];
+                });
+            } else {
+                response.text().then((text) => {
+                    alert(text);
+                });
+            }
+        }).catch((error) => {
+            alert('Something went wrong. Please try again later.');
+        });
+    });
+}
+
+//
+// Trigger edit reply
+//
+
+const triggerEditReplyBtns = document.querySelectorAll('.trigger-edit-reply-btn');
+
+if (triggerEditReplyBtns.length > 0) {
+    triggerEditReplyBtns.forEach((triggerEditReplyBtn) => {
+        triggerEditReplyBtn.addEventListener('click', function (e){
+            e.preventDefault();
+
+            const replyId = triggerEditReplyBtn.dataset.id;
+            const $editForm = document.getElementById('edit-reply-form');
+            const $createForm = document.getElementById('create-reply-form');
+
+            $createForm.classList.add('d-none');
+            $editForm.classList.remove('d-none');
+            $editForm.querySelector('[name="reply_id"]').value = replyId;
+            $editForm.querySelector('[name="message"]').value = document.querySelector('.reply-card[data-id="' + replyId + '"] .reply-message').innerHTML;
+
+            location.href = "#edit-reply-form";
+        });
+    });
+}
+
+//
+// Trigger cancel edit reply
+//
+
+const triggerCancelEditReplyBtn = document.getElementById('trigger-cancel-edit-reply-btn');
+
+if (triggerCancelEditReplyBtn) {
+    triggerCancelEditReplyBtn.addEventListener('click', function (e){
+        e.preventDefault();
+
+        const $editForm = document.getElementById('edit-reply-form');
+        const $createForm = document.getElementById('create-reply-form');
+
+        $createForm.classList.remove('d-none');
+        $editForm.classList.add('d-none');
+        $editForm.querySelector('[name="reply_id"]').value = 0;
+        $editForm.querySelector('[name="message"]').value = '';
+
+        location.href = "#create-reply-form";
+    });
+}
+
+//
+// Update reply
+//
+
+const updateReplyBtn = document.getElementById('update-reply-btn');
+
+if (updateReplyBtn) {
+    updateReplyBtn.addEventListener('click', function (e){
+        e.preventDefault();
+
+        const id = document.querySelector('#edit-reply-form [name="reply_id"]').value;
+
+        // Send form data
+        let formData = new FormData();
+        formData.append('id', id);
+        formData.append('ticket_id', document.querySelector('#edit-reply-form [name="ticket_id"]').value);
+        formData.append('message', document.querySelector('#edit-reply-form [name="message"]').value);
+        formData.append('csrf_token', csrfToken);
+
+        fetch('/ajax/reply/update', {
+            'method': 'POST',
+            'body': formData
+        }).then((response) => {
+            if (response.status === 200) {
+                response.text().then((text) => {
+                    alert(text);
+                    location.reload();
+                });
+            } else {
+                response.text().then((text) => {
+                    alert(text);
+                });
+            }
+        }).catch((error) => {
+            alert('Something went wrong. Please try again later.');
+        });
+    });
+}
+
+//
+// Delete reply
+//
+
+const deleteReplyBtns = document.querySelectorAll('.delete-reply-btn');
+
+if (deleteReplyBtns.length > 0) {
+    deleteReplyBtns.forEach((deleteReplyBtn) => {
+        deleteReplyBtn.addEventListener('click', function (e){
+            e.preventDefault();
+
+            // Send form data
+            let formData = new FormData();
+            formData.append('id', deleteReplyBtn.dataset.id);
+            formData.append('csrf_token', csrfToken);
+
+            fetch('/ajax/reply/delete', {
+                'method': 'POST',
+                'body': formData
+            }).then((response) => {
+                if (response.status === 200) {
+                    response.text().then((text) => {
+                        alert(text);
+                        location.href = location.href.split('?')[0].split('#')[0];
+                    });
+                } else {
+                    response.text().then((text) => {
+                        alert(text);
+                    });
+                }
+            }).catch((error) => {
+                alert('Something went wrong. Please try again later.');
+            });
+        });
+    });
+}
