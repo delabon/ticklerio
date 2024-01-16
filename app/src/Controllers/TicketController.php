@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Exceptions\TicketDoesNotExistException;
+use App\Replies\ReplyRepository;
 use App\Tickets\TicketRepository;
 use App\Core\Http\HttpStatusCode;
 use App\Tickets\TicketService;
@@ -134,7 +135,7 @@ class TicketController
         return View::load('tickets.create');
     }
 
-    public function show(int $id, TicketRepository $ticketRepository, UserRepository $userRepository, Auth $auth): Response
+    public function show(int $id, TicketRepository $ticketRepository, UserRepository $userRepository, ReplyRepository $replyRepository, Auth $auth): Response
     {
         if (!$auth->getUserId()) {
             return new Response('You must be logged in to view this page.', HttpStatusCode::Forbidden);
@@ -145,9 +146,17 @@ class TicketController
         }
 
         $author = $userRepository->find($ticket->getUserId());
+        $replies = $replyRepository->findBy('ticket_id', $ticket->getId());
+        $replyAuthors = [];
+
+        foreach ($replies as $reply) {
+            $replyAuthors[$reply->getId()] = $userRepository->find($reply->getUserId());
+        }
 
         return View::load('tickets.show', [
             'ticket' => $ticket,
+            'replies' => $replies,
+            'replyAuthors' => $replyAuthors,
             'author' => $author,
         ]);
     }
