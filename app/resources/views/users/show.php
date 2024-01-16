@@ -15,12 +15,17 @@ require __DIR__ . '/../parts/header.php';
             </div>
 
             <div class="col-6 text-end">
-                <?php if (isAdmin()) : ?>
+                <?php if (isAdmin() && $user->getType() !== UserType::Deleted->value) : ?>
                     <?php if ($user->getType() === UserType::Banned->value) : ?>
                         <button id="unban-user-btn" data-id="<?= $user->getId() ?>" class="btn btn-secondary">Unban</button>
                     <?php else : ?>
                         <button id="ban-user-btn" data-id="<?= $user->getId() ?>" class="btn btn-danger">Ban</button>
                     <?php endif; ?>
+                <?php endif ?>
+
+                <?php if ($user->getId() === currentUserId()) : ?>
+                    <a href="/account" class="btn btn-primary">Edit</a>
+                    <button id="delete-user-btn" data-id="<?= $user->getId() ?>" class="btn btn-danger">Delete</button>
                 <?php endif ?>
             </div>
         </div>

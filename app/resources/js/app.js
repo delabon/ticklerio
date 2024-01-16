@@ -500,3 +500,38 @@ if (unbanUserBtn) {
         });
     });
 }
+
+//
+// Delete user account by themselves
+//
+
+const deleteUserBtn = document.getElementById('delete-user-btn');
+
+if (deleteUserBtn) {
+    deleteUserBtn.addEventListener('click', function (e){
+        e.preventDefault();
+
+        // Send form data
+        let formData = new FormData();
+        formData.append('id', deleteUserBtn.dataset.id);
+        formData.append('csrf_token', csrfToken);
+
+        fetch('/ajax/user/delete', {
+            'method': 'POST',
+            'body': formData
+        }).then((response) => {
+            if (response.status === 200) {
+                response.text().then((text) => {
+                    alert(text);
+                    location.reload();
+                });
+            } else {
+                response.text().then((text) => {
+                    alert(text);
+                });
+            }
+        }).catch((error) => {
+            alert('Something went wrong. Please try again later.');
+        });
+    });
+}
