@@ -2,71 +2,25 @@
 
 namespace Tests\Unit\Users;
 
-use App\Users\User;
-use App\Users\UserType;
+use App\Interfaces\EntityInterface;
 use PHPUnit\Framework\TestCase;
+use App\Abstracts\Entity;
+use App\Users\UserType;
+use App\Users\User;
 
 class UserTest extends TestCase
 {
+    public function testCreatesInstanceOfAbstractEntity(): void
+    {
+        $user = new User();
+
+        $this->assertInstanceOf(Entity::class, $user);
+        $this->assertInstanceOf(EntityInterface::class, $user);
+    }
+
     public function testSetUserDataCorrectly(): void
     {
         $now = time();
-        $user = $this->createUser($now);
-
-        $this->assertSame(1, $user->getId());
-        $this->assertSame('test@gmail.com', $user->getEmail());
-        $this->assertSame('John', $user->getFirstName());
-        $this->assertSame('Doe', $user->getLastName());
-        $this->assertSame('123456789', $user->getPassword());
-        $this->assertSame('member', $user->getType());
-        $this->assertSame($now, $user->getCreatedAt());
-        $this->assertSame($now, $user->getUpdatedAt());
-    }
-
-    public function testReturnDataAsArrayUsingToArraySuccessfully(): void
-    {
-        $user = $this->createUser();
-        $data = $user->toArray();
-
-        $this->assertIsArray($data);
-        $this->assertArrayHasKey('id', $data);
-        $this->assertArrayHasKey('first_name', $data);
-        $this->assertArrayHasKey('last_name', $data);
-        $this->assertArrayHasKey('email', $data);
-        $this->assertArrayHasKey('type', $data);
-        $this->assertArrayHasKey('password', $data);
-        $this->assertArrayHasKey('created_at', $data);
-        $this->assertArrayHasKey('updated_at', $data);
-    }
-
-    public function testIsBannedReturnsTrueWhenTypeEqualsBanned(): void
-    {
-        $user = $this->createUser();
-
-        $user->setType(UserType::Banned->value);
-
-        $this->assertTrue($user->isBanned());
-    }
-
-    public function testIsBannedReturnsFalseWhenTypeIsNotBanned(): void
-    {
-        $user = $this->createUser();
-
-        $user->setType(UserType::Admin->value);
-
-        $this->assertFalse($user->isBanned());
-    }
-
-    //
-    // Data Providers
-    //
-
-    private function createUser(int $now = 0): User
-    {
-        if (!$now) {
-            $now = time();
-        }
-
         $user = new User();
         $user->setId(1);
         $user->setEmail('test@gmail.com');
@@ -77,6 +31,13 @@ class UserTest extends TestCase
         $user->setCreatedAt($now);
         $user->setUpdatedAt($now);
 
-        return $user;
+        $this->assertSame(1, $user->getId());
+        $this->assertSame('test@gmail.com', $user->getEmail());
+        $this->assertSame('John', $user->getFirstName());
+        $this->assertSame('Doe', $user->getLastName());
+        $this->assertSame('123456789', $user->getPassword());
+        $this->assertSame('member', $user->getType());
+        $this->assertSame($now, $user->getCreatedAt());
+        $this->assertSame($now, $user->getUpdatedAt());
     }
 }

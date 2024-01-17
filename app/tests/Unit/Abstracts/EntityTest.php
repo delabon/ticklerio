@@ -2,8 +2,9 @@
 
 namespace Tests\Unit\Abstracts;
 
-use App\Abstracts\Entity;
+use App\Interfaces\EntityInterface;
 use PHPUnit\Framework\TestCase;
+use App\Abstracts\Entity;
 
 class EntityTest extends TestCase
 {
@@ -12,7 +13,7 @@ class EntityTest extends TestCase
         $product = new Product();
 
         $this->assertInstanceOf(Entity::class, $product);
-        $this->assertInstanceOf(Product::class, $product);
+        $this->assertInstanceOf(EntityInterface::class, $product);
     }
 
     public function testReturnsArrayOfPropertiesAndValues(): void
@@ -39,20 +40,21 @@ class EntityTest extends TestCase
         $this->assertEquals('Product 1', $product->getName());
     }
 
-    public function testInstantiatesEntityUsingDataAndEntity(): void
+    public function testInstantiatesEntityUsingDataAndEntityShouldNotCreateNewInstance(): void
     {
         $product = new Product();
         $product->setId(1);
         $product->setName('Product 1');
 
-        $product = Product::make([
+        $newProduct = Product::make([
             'id' => 2,
             'name' => 'Product 2',
         ], $product);
 
-        $this->assertInstanceOf(Product::class, $product);
-        $this->assertEquals(2, $product->getId());
-        $this->assertEquals('Product 2', $product->getName());
+        $this->assertInstanceOf(Product::class, $newProduct);
+        $this->assertSame($product, $newProduct);
+        $this->assertEquals(2, $newProduct->getId());
+        $this->assertEquals('Product 2', $newProduct->getName());
     }
 
     public function testInstantiatesEntityUsingDataAndEntityWithMissingData(): void
