@@ -56,7 +56,7 @@ require __DIR__ . '/../parts/header.php';
                     <div class="card reply-card mb-3" id="reply-<?= $reply->getId() ?>" data-id="<?= $reply->getId() ?>">
                         <div class="card-body">
                             <div class="mb-3">
-                                <div><strong>Author:</strong> <a href="/users/<?= $reply->getUserId() ?>"><?= escape($replyAuthors[$reply->getUserId()]->getFirstName() . ' ' . $replyAuthors[$reply->getUserId()]->getLastName()) ?></a> </div>
+                                <div><strong>Author:</strong> <a href="/users/<?= $reply->getUserId() ?>"><?= escape($replyAuthors[$reply->getId()]->getFirstName() . ' ' . $replyAuthors[$reply->getId()]->getLastName()) ?></a> </div>
                                 <div><strong>Created at:</strong> <?= date('Y-m-d H:i:s', $reply->getCreatedAt()) ?></div>
                             </div>
 
