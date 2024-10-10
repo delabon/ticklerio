@@ -57,7 +57,7 @@ function view(string $path, array $params = []): Response
 
 function url(string $path): string
 {
-    return sprintf('https://%s/%s', $_ENV['APP_DOMAIN'], ltrim($path, '/'));
+    return sprintf('http%s://%s/%s', ($_ENV['APP_HTTPS'] === 'true' ? 's' : ''), $_ENV['APP_DOMAIN'], ltrim($path, '/'));
 }
 
 function asset(string $path): string
