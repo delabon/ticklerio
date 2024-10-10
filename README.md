@@ -13,56 +13,45 @@ Ticklerio is a robust customer support ticketing system designed to streamline t
 
 ## How to setup
 
-#### Add domain to /etc/hosts (host)
+#### Build & Up containers
 
 ```bash
-sudo vi /etc/hosts
-127.0.0.111  ticklerio.test
+# From the root folder run:
+docker compose up -d
 ```
 
-#### Install mkcert (host)
-
-```bash
-sudo apt install libnss3-tools
-curl -JLO "https://dl.filippo.io/mkcert/latest?for=linux/amd64"
-chmod +x mkcert-v*-linux-amd64
-sudo mv mkcert-v*-linux-amd64 /usr/local/bin/mkcert
-cd config/ssls/
-mkcert -install ticklerio.test
-```
-
-#### Build & Up containers (host)
-
-```bash
-cd ../../
-docker-compose up --build -d
-```
-
-#### Create .env and database files
+#### Create .env, database file, and sessions folder
 
 ```bash
 cp app/.env.example app/.env
 touch app/database/database.sqlite
-```
-
-#### Create sessions folder
-
-```bash
 mkdir app/sessions
 ```
 
-#### Build assets
+#### Install required libraries using composer
 
 ```bash
-docker-compose run node-service npm install
-docker-compose run node-service npm run build
+docker compose run php-service composer install
 ```
 
 #### Run migration scripts
 
 ```bash
-docker exec -it php-container bash
-php database/migrate.php
+docker compose run php-service php database/migrate.php
 ```
 
-Finally, open ticklerio.test on your browser
+#### Run seeders if you like
+
+```bash
+# Admin account credentials: admin/123456789
+docker compose run php-service php database/seed.php
+```
+
+#### Build assets
+
+```bash
+docker compose run --rm node-service npm install
+docker compose run --rm node-service npm run build
+```
+
+Finally, open https://ticklerio.test on your browser
