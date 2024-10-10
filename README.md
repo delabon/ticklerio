@@ -54,4 +54,4 @@ docker compose run --rm node-service npm install
 docker compose run --rm node-service npm run build
 ```
 
-Finally, open https://ticklerio.test on your browser
+Finally, open http://localhost on your browser
