@@ -265,6 +265,7 @@ if ($uri === '/') {
     $response = (new TicketController())->index(
         $container->get(Request::class),
         $container->get(TicketRepository::class),
+        $container->get(UserRepository::class),
         $container->get(Auth::class),
     );
 } elseif (preg_match("/^\/users\/[0-9]+\/?$/", $uri)) {
