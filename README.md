@@ -4,7 +4,7 @@ Ticklerio is a robust customer support ticketing system designed to streamline t
 
 ## Tech Stack
 
-- **Backend:** PHP 8.2
+- **Backend:** PHP 8.4
 - **Frontend:** JavaScript, SASS, Bootstrap 5.3
 - **Database:** SQLite
 - **Testing:** PHPUnit for unit and integration tests. PHPUnit + Guzzle for feature tests.
