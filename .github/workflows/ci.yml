@@ -67,6 +67,5 @@ jobs:
           working_dir: app
 
       - name: PHPStan Static Analysis
-        uses: php-actions/phpstan@v3
-        with:
-          configuration: app/phpstan.neon
+        run: vendor/bin/phpstan analyse -c phpstan.neon
+        working-directory: app
