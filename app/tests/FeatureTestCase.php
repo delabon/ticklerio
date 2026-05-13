@@ -24,6 +24,7 @@ class FeatureTestCase extends TestCase
     private const TMP_ENV_NAME = '.env';
     private const TMP_DB_FILE_NAME = 'tmp.sqlite';
     private const HTTP_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36';
+    protected string $appMode = 'private';
     private string $sessionId = '';
     private Migration $migration;
     protected ?Client $http;
@@ -93,6 +94,7 @@ class FeatureTestCase extends TestCase
         file_put_contents(self::TMP_DIR . '/.env', "\nSESSION_USE_COOKIES=false\n", FILE_APPEND);
         file_put_contents(self::TMP_DIR . '/.env', "\nSESSION_HTTP_ONLY=false\n", FILE_APPEND);
         file_put_contents(self::TMP_DIR . '/.env', "\nSESSION_SSL=false\n", FILE_APPEND);
+        file_put_contents(self::TMP_DIR . '/.env', "\nAPP_MODE=" . $this->appMode . "\n", FILE_APPEND);
     }
 
     private function loadEnv(): void
