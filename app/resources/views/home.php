@@ -15,7 +15,7 @@ require __DIR__ . '/parts/header.php';
                 </div>
             <?php else : ?>
                 <div class="hero-actions">
-                    <a href="/register" class="btn btn-primary btn-icon"><i class="fa-solid fa-user-plus"></i> Get Started</a>
+                    <a href="/register" class="btn btn-primary btn-icon"><i class="fa-solid fa-user-plus"></i> Create Account</a>
                     <a href="/login" class="btn btn-secondary btn-icon"><i class="fa-solid fa-arrow-right-to-bracket"></i> Sign In</a>
                     <?php if (isPublicMode()) : ?>
                         <a href="/tickets" class="btn btn-secondary btn-icon"><i class="fa-solid fa-list"></i> Browse Tickets</a>
