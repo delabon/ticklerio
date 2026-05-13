@@ -65,6 +65,11 @@ function asset(string $path): string
     return url(sprintf('dist/%s', ltrim($path, '/')));
 }
 
+function isPublicMode(): bool
+{
+    return isset($_ENV['APP_MODE']) && $_ENV['APP_MODE'] === 'public';
+}
+
 function escape(string $string): string
 {
     $string = trim($string);

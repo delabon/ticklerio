@@ -36,6 +36,11 @@
                             <a class="nav-link" href="/logout"><i class="fa-solid fa-arrow-right-from-bracket me-1"></i>Logout</a>
                         </li>
                     <?php else : ?>
+                        <?php if (isPublicMode()) : ?>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/tickets"><i class="fa-solid fa-list me-1"></i>Tickets</a>
+                            </li>
+                        <?php endif ?>
                         <li class="nav-item">
                             <a class="nav-link" href="/login">Login</a>
                         </li>

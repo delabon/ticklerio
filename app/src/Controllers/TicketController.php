@@ -112,7 +112,7 @@ class TicketController
 
     public function index(Request $request, TicketRepository $ticketRepository, UserRepository $userRepository, Auth $auth): Response
     {
-        if (!$auth->getUserId()) {
+        if (!isPublicMode() && !$auth->getUserId()) {
             return new Response('You must be logged in to view this page.', HttpStatusCode::Forbidden);
         }
 
@@ -143,7 +143,7 @@ class TicketController
 
     public function show(int $id, TicketRepository $ticketRepository, UserRepository $userRepository, ReplyRepository $replyRepository, Auth $auth): Response
     {
-        if (!$auth->getUserId()) {
+        if (!isPublicMode() && !$auth->getUserId()) {
             return new Response('You must be logged in to view this page.', HttpStatusCode::Forbidden);
         }
 
