@@ -1,5 +1,22 @@
 @import "../../node_modules/bootstrap/scss/bootstrap";
 
-body{
-  background:#f1f1f1;
-}
+@import "abstracts/variables";
+@import "abstracts/mixins";
+
+@import "base/base";
+
+@import "components/buttons";
+@import "components/cards";
+@import "components/forms";
+@import "components/alerts";
+@import "components/badges";
+@import "components/pagination";
+
+@import "layout/navbar";
+@import "layout/footer";
+@import "layout/layout";
+
+@import "pages/auth";
+@import "pages/home";
+@import "pages/tickets";
+@import "pages/users";

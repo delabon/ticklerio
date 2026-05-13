@@ -1,0 +1,69 @@
+.profile-page {
+    .profile-card {
+        @include surface-card;
+        padding: 2rem;
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+
+            .profile-avatar {
+                width: 56px;
+                height: 56px;
+                border-radius: 50%;
+                background: $primary-light;
+                color: $primary;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.25rem;
+                font-weight: 700;
+                flex-shrink: 0;
+            }
+
+            .profile-name {
+                font-size: 1.25rem;
+                font-weight: 700;
+                margin-bottom: 0.15rem;
+            }
+        }
+
+        .profile-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem 2rem;
+            font-size: 0.875rem;
+
+            .detail-item {
+                display: flex;
+                align-items: center;
+                gap: 0.4rem;
+
+                .detail-label {
+                    color: $text-muted;
+                    font-weight: 500;
+                }
+            }
+        }
+    }
+}
+
+.form-page {
+    max-width: 600px;
+    margin: 0 auto;
+
+    .form-card {
+        @include surface-card;
+        padding: 2rem;
+        box-shadow: $shadow;
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.75rem;
+            text-align: center;
+        }
+    }
+}

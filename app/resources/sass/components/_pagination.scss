@@ -1,0 +1,30 @@
+.pagination {
+    gap: 4px;
+
+    .page-item {
+        .page-link {
+            border: 1px solid $surface-border;
+            border-radius: $radius-sm;
+            color: $body-color;
+            font-size: 0.875rem;
+            font-weight: 500;
+            padding: 0.4rem 0.75rem;
+            min-width: 36px;
+            text-align: center;
+            transition: $transition-base;
+            background: $surface;
+
+            &:hover {
+                background: $primary-light;
+                border-color: $primary;
+                color: $primary;
+            }
+
+            &.active {
+                background: $primary;
+                border-color: $primary;
+                color: #fff;
+            }
+        }
+    }
+}

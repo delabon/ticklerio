@@ -1,0 +1,15 @@
+.badge-new {
+    @include badge-status($primary);
+}
+
+.badge-solved {
+    @include badge-status($success);
+}
+
+.badge-closed {
+    @include badge-status($secondary);
+}
+
+.badge-type {
+    @include badge-status(#f1f5f9, #475569);
+}

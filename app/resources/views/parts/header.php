@@ -6,15 +6,16 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title><?= $_ENV['APP_NAME'] ?></title>
 
-    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
     <link rel="stylesheet" href="<?= asset('app.min.css') ?>">
     <meta name="csrf-token" content="<?= csrf() ?>">
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg bg-body-tertiary" data-bs-theme="dark">
+    <div class="page-wrapper">
+    <nav class="navbar navbar-expand-lg app-navbar" data-bs-theme="dark">
         <div class="container">
             <a class="navbar-brand" href="/">
-                <?= ucfirst($_ENV['APP_ID']) ?>
+                <i class="fa-solid fa-ticket-simple me-2"></i><?= ucfirst($_ENV['APP_ID']) ?>
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
@@ -26,15 +27,20 @@
                     </li>
                     <?php if (isLoggedIn()) : ?>
                         <li class="nav-item">
-                            <a class="nav-link" href="/account">Account</a>
+                            <a class="nav-link" href="/account"><i class="fa-regular fa-user me-1"></i>Account</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/tickets">Tickets</a>
+                            <a class="nav-link" href="/tickets"><i class="fa-solid fa-list me-1"></i>Tickets</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/logout">Logout</a>
+                            <a class="nav-link" href="/logout"><i class="fa-solid fa-arrow-right-from-bracket me-1"></i>Logout</a>
                         </li>
                     <?php else : ?>
+                        <?php if (isPublicMode()) : ?>
+                            <li class="nav-item">
+                                <a class="nav-link" href="/tickets"><i class="fa-solid fa-list me-1"></i>Tickets</a>
+                            </li>
+                        <?php endif ?>
                         <li class="nav-item">
                             <a class="nav-link" href="/login">Login</a>
                         </li>
@@ -46,3 +52,5 @@
             </div>
         </div>
     </nav>
+
+    <main class="page-content">

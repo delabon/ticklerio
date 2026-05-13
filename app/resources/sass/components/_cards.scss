@@ -1,0 +1,18 @@
+.card {
+    @include surface-card;
+    border: none;
+    overflow: hidden;
+
+    &-body {
+        padding: 1.5rem;
+    }
+}
+
+.card-elevated {
+    box-shadow: $shadow-md;
+}
+
+.card-flat {
+    box-shadow: none;
+    border: 1px solid $surface-border;
+}

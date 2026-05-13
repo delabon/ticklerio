@@ -1,0 +1,17 @@
+.alert {
+    border: none;
+    border-radius: $radius-sm;
+    padding: 0.85rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+
+    &-danger {
+        background: #fef2f2;
+        color: $danger;
+    }
+
+    &-success {
+        background: #f0fdf4;
+        color: #16a34a;
+    }
+}

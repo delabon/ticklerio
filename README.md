@@ -43,7 +43,7 @@ docker compose run php-service php database/migrate.php
 #### Run seeders if you like
 
 ```bash
-# Admin account credentials: admin/123456789
+# Admin account credentials: admin@test.com/123456789
 docker compose run php-service php database/seed.php
 ```
 
@@ -55,3 +55,16 @@ docker compose run --rm node-service npm run build
 ```
 
 Finally, open http://localhost on your browser
+
+## App Modes
+
+The application supports two visibility modes, controlled by the `APP_MODE` environment variable:
+
+- **`private`** (default) — Only authenticated users can view tickets. Guests are blocked from the tickets list and individual ticket pages.
+- **`public`** — Guests can browse the tickets list and view individual tickets. All other actions (create, edit, delete, reply) still require authentication.
+
+Set this in your `.env` file:
+
+```bash
+APP_MODE=public  # or private
+```
