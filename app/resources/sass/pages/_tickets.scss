@@ -1,0 +1,174 @@
+.ticket-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+
+    .ticket-item {
+        @include surface-card;
+        padding: 1rem 1.25rem;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        transition: $transition-base;
+
+        &:hover {
+            box-shadow: $shadow-md;
+            transform: translateY(-1px);
+        }
+
+        .ticket-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: $radius-sm;
+            background: $primary-light;
+            color: $primary;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 1rem;
+        }
+
+        .ticket-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .ticket-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: $body-color;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+
+            a {
+                color: $body-color;
+                text-decoration: none;
+
+                &:hover {
+                    color: $primary;
+                }
+            }
+        }
+
+        .ticket-meta {
+            font-size: 0.8125rem;
+            color: $text-muted;
+            margin-top: 0.3rem;
+
+            strong {
+                color: $body-color;
+                font-weight: 600;
+            }
+        }
+
+        .ticket-number {
+            font-size: 0.8125rem;
+            color: $text-muted;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+    }
+}
+
+.ticket-detail {
+    .ticket-info-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem 2rem;
+        margin-bottom: 1.25rem;
+        font-size: 0.875rem;
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+
+            .info-label {
+                color: $text-muted;
+                font-weight: 500;
+            }
+
+            .info-value {
+                color: $body-color;
+                font-weight: 600;
+            }
+        }
+    }
+
+    .ticket-description {
+        font-size: 0.925rem;
+        line-height: 1.7;
+        color: $body-color;
+        padding-top: 1.25rem;
+        border-top: 1px solid $surface-border;
+    }
+}
+
+.reply-list {
+    .reply-item {
+        @include surface-card;
+        padding: 1.25rem;
+        margin-bottom: 0.75rem;
+        border-left: 3px solid $primary-light;
+        transition: $transition-base;
+
+        &:hover {
+            border-left-color: $primary;
+        }
+
+        &.reply-highlighted {
+            border-left-color: $primary;
+            background: $primary-light;
+        }
+    }
+
+    .reply-meta {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 0.75rem;
+        font-size: 0.8125rem;
+        color: $text-muted;
+
+        a {
+            font-weight: 600;
+            color: $body-color;
+
+            &:hover {
+                color: $primary;
+            }
+        }
+
+        .reply-date {
+            color: $text-muted;
+        }
+    }
+
+    .reply-body {
+        font-size: 0.9rem;
+        line-height: 1.7;
+        color: $body-color;
+    }
+
+    .reply-actions {
+        margin-top: 0.75rem;
+        display: flex;
+        gap: 0.5rem;
+    }
+}
+
+.reply-form-section {
+    @include surface-card;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+
+    h3 {
+        font-size: 1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+}

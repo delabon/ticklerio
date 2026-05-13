@@ -1,0 +1,36 @@
+.app-navbar {
+    background: $navbar-bg;
+    height: $navbar-height;
+    box-shadow: $shadow-md;
+    border: none;
+    padding: 0;
+
+    .navbar-brand {
+        font-weight: 700;
+        font-size: 1.25rem;
+        color: #fff !important;
+        letter-spacing: -0.02em;
+    }
+
+    .nav-link {
+        color: rgba(255, 255, 255, 0.7) !important;
+        font-weight: 500;
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem !important;
+        border-radius: $radius-sm;
+        transition: $transition-base;
+
+        &:hover {
+            color: #fff !important;
+            background: rgba(255, 255, 255, 0.08);
+        }
+    }
+
+    .navbar-toggler {
+        border-color: rgba(255, 255, 255, 0.2);
+
+        &-icon {
+            filter: brightness(0) invert(1);
+        }
+    }
+}

@@ -1,0 +1,28 @@
+.form-control,
+.form-select {
+    border: 1px solid $surface-border;
+    border-radius: $radius-sm;
+    padding: 0.6rem 0.85rem;
+    font-size: 0.9rem;
+    transition: $transition-base;
+    background: $surface;
+    color: $body-color;
+
+    @include focus-ring;
+
+    &::placeholder {
+        color: $text-muted;
+    }
+}
+
+.form-label {
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: $body-color;
+    margin-bottom: 0.4rem;
+}
+
+textarea.form-control {
+    min-height: 120px;
+    resize: vertical;
+}

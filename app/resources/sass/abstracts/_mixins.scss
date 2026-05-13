@@ -1,0 +1,25 @@
+@mixin surface-card {
+    background: $surface;
+    border: 1px solid $surface-border;
+    border-radius: $radius;
+    box-shadow: $shadow-sm;
+}
+
+@mixin focus-ring {
+    &:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba($primary, 0.15);
+        border-color: $primary;
+    }
+}
+
+@mixin badge-status($bg, $color: #fff) {
+    background: $bg;
+    color: $color;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: $radius-sm;
+}
