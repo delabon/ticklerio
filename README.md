@@ -43,7 +43,7 @@ docker compose run php-service php database/migrate.php
 #### Run seeders if you like
 
 ```bash
-# Admin account credentials: admin/123456789
+# Admin account credentials: admin@test.com/123456789
 docker compose run php-service php database/seed.php
 ```
 
