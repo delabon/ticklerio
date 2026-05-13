@@ -77,7 +77,7 @@ if ($status === 'SOLVED') {
 
             <div class="reply-list">
                 <?php foreach ($replies as $reply) : ?>
-                    <div class="reply-item" id="reply-<?= $reply->getId() ?>" data-id="<?= $reply->getId() ?>">
+                    <div class="reply-item reply-card" id="reply-<?= $reply->getId() ?>" data-id="<?= $reply->getId() ?>">
                         <div class="reply-meta">
                             <a href="/users/<?= $reply->getUserId() ?>"><?= escape($replyAuthors[$reply->getId()]->getFirstName() . ' ' . $replyAuthors[$reply->getId()]->getLastName()) ?></a>
                             <span class="reply-date"><i class="fa-regular fa-clock me-1"></i><?= date('M j, Y \a\t g:i a', $reply->getCreatedAt()) ?></span>
